@@ -19,5 +19,14 @@ EXPOSE 10000
 # Set environment variables
 ENV NODE_ENV=production
 
-# Start the application
-CMD ["npm", "run", "start:prod"]
+# Create a startup script that runs migrations then starts the app
+RUN echo '#!/bin/sh' > start.sh && \
+    echo 'echo "Starting application..."' >> start.sh && \
+    echo 'echo "Running database migrations..."' >> start.sh && \
+    echo 'npm run migration:run || echo "Migration failed, continuing..."' >> start.sh && \
+    echo 'echo "Starting NestJS application..."' >> start.sh && \
+    echo 'npm run start:prod' >> start.sh && \
+    chmod +x start.sh
+
+# Start the application with migrations
+CMD ["./start.sh"]
