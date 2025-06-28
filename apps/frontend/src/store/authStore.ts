@@ -8,6 +8,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
@@ -20,6 +21,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      isInitialized: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
@@ -27,7 +29,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await authAPI.login(email, password);
           const { access_token, user }: AuthResponse = response.data;
 
-          Cookies.set('auth_token', access_token, { expires: 7 });
+          Cookies.set('auth_token', access_token, { expires: 7, secure: true, sameSite: 'strict' });
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
@@ -41,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await authAPI.register(email, password, name);
           const { access_token, user }: AuthResponse = response.data;
 
-          Cookies.set('auth_token', access_token, { expires: 7 });
+          Cookies.set('auth_token', access_token, { expires: 7, secure: true, sameSite: 'strict' });
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
@@ -51,13 +53,15 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         Cookies.remove('auth_token');
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false, isInitialized: true });
       },
 
       loadUser: async () => {
+        if (get().isInitialized) return;
+
         const token = Cookies.get('auth_token');
         if (!token) {
-          set({ isAuthenticated: false, user: null });
+          set({ isAuthenticated: false, user: null, isInitialized: true });
           return;
         }
 
@@ -67,7 +71,8 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: response.data,
             isAuthenticated: true,
-            isLoading: false
+            isLoading: false,
+            isInitialized: true
           });
         } catch (error) {
           // Token không hợp lệ hoặc đã hết hạn
@@ -75,40 +80,25 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: null,
             isAuthenticated: false,
-            isLoading: false
+            isLoading: false,
+            isInitialized: true
           });
         }
       },
     }),
     {
       name: 'auth-storage',
-      // Chỉ persist user data, không persist token (vì đã lưu trong cookies)
+      // Chỉ persist user data, không persist isLoading và isInitialized
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated
       }),
-      // Khôi phục state và kiểm tra token khi load
+      // Đơn giản hóa rehydration
       onRehydrateStorage: () => (state) => {
+        // Reset isInitialized để loadUser() có thể chạy lại
         if (state) {
-          const token = Cookies.get('auth_token');
-          if (token && state.isAuthenticated) {
-            // Có token và state cho biết đã đăng nhập, verify lại token
-            userAPI.getProfile()
-              .then((response) => {
-                state.user = response.data;
-                state.isAuthenticated = true;
-              })
-              .catch(() => {
-                // Token không hợp lệ
-                Cookies.remove('auth_token');
-                state.user = null;
-                state.isAuthenticated = false;
-              });
-          } else {
-            // Không có token hoặc state chưa đăng nhập
-            state.user = null;
-            state.isAuthenticated = false;
-          }
+          state.isInitialized = false;
+          state.isLoading = false;
         }
       },
     }

@@ -2,6 +2,7 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import AuthProvider from '@/components/AuthProvider'
+import Navigation from '@/components/Navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,7 +21,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <div className="min-h-screen bg-gray-50">
-            {children}
+            <Navigation />
+            <main className="flex-1">
+              {children}
+            </main>
           </div>
         </AuthProvider>
         <Toaster position="top-right" />
