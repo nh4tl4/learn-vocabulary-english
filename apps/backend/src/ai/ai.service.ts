@@ -57,7 +57,7 @@ export class AIService {
     try {
       const messages = [
         {
-          role: 'system',
+          role: 'system' as const,
           content: `Bạn là một giáo viên tiếng Anh thân thiện và kiên nhẫn, giúp học sinh Việt Nam luyện tập tiếng Anh. 
           - Trả lời bằng tiếng Anh đơn giản, dễ hiểu
           - Sửa lỗi ngữ pháp một cách nhẹ nhàng
@@ -67,7 +67,7 @@ export class AIService {
         },
         ...conversationHistory.slice(-5), // Keep last 5 messages for context
         {
-          role: 'user',
+          role: 'user' as const,
           content: userMessage
         }
       ];

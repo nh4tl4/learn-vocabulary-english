@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
-import { User } from './src/database/entities/user.entity';
-import { Vocabulary } from './src/database/entities/vocabulary.entity';
-import { UserVocabulary } from './src/database/entities/user-vocabulary.entity';
+import { User } from './database/entities/user.entity';
+import { Vocabulary } from './database/entities/vocabulary.entity';
+import { UserVocabulary } from './database/entities/user-vocabulary.entity';
 
 // Load environment variables
 dotenv.config();
