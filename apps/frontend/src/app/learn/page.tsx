@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { vocabularyAPI } from '@/lib/api';
 import { Vocabulary } from '@/types';
 import { toast } from 'react-hot-toast';
 
-export default function LearnPage() {
+// Component that uses useSearchParams wrapped in Suspense
+function LearnContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuthStore();
@@ -249,5 +250,13 @@ export default function LearnPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LearnPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LearnContent />
+    </Suspense>
   );
 }
