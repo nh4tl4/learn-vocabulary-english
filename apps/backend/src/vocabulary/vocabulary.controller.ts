@@ -65,43 +65,18 @@ export class VocabularyController {
   }
 
   @Post('test/submit')
-  async submitTestResults(@Request() req, @Body() results: TestResultDto[]) {
-    const processedResults = [];
-
-    for (const result of results) {
-      const quality = result.selectedOptionId === result.correctOptionId ? 4 : 1;
-      const sessionData: StudySessionDto = {
-        vocabularyId: result.vocabularyId,
-        quality,
-        responseTime: result.timeSpent,
-      };
-
-      const processed = await this.learningService.processStudySession(req.user.userId, sessionData);
-      processedResults.push({
-        vocabularyId: result.vocabularyId,
-        correct: result.selectedOptionId === result.correctOptionId,
-        newStatus: processed.status,
-        nextReview: processed.nextReviewDate,
-      });
-    }
-
-    return {
-      results: processedResults,
-      totalCorrect: processedResults.filter(r => r.correct).length,
-      totalQuestions: results.length,
-      score: Math.round((processedResults.filter(r => r.correct).length / results.length) * 100),
-    };
+  async submitTest(@Request() req, @Body() testResults: TestResultDto[]) {
+    return this.learningService.submitTestResults(req.user.userId, testResults);
   }
 
-  @Get('progress/today')
-  async getTodayProgress(@Request() req) {
-    return this.learningService.getTodayProgress(req.user.userId);
+  @Get('difficult')
+  async getDifficultWords(@Request() req, @Query('limit') limit: number = 20) {
+    return this.learningService.getDifficultWords(req.user.userId, limit);
   }
 
-  // Existing endpoints...
   @Get('progress')
   async getProgress(@Request() req) {
-    return this.vocabularyService.getUserProgress(req.user.userId);
+    return this.learningService.getUserProgress(req.user.userId);
   }
 
   @Post('progress')

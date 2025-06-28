@@ -101,15 +101,15 @@ export const vocabularyAPI = {
   generateTest: (count = 10) =>
     apiClient.get(`/vocabulary/test/generate?count=${count}`),
 
-  submitTest: (results: Array<{
+  submitTest: (testResults: Array<{
     vocabularyId: number;
     selectedOptionId: number;
     correctOptionId: number;
     timeSpent: number;
-  }>) => apiClient.post('/vocabulary/test/submit', results),
+  }>) => apiClient.post('/vocabulary/test/submit', testResults),
 
-  getTodayProgress: () =>
-    apiClient.get('/vocabulary/progress/today'),
+  getDifficultWords: (limit = 20) =>
+    apiClient.get(`/vocabulary/difficult?limit=${limit}`),
 };
 
 export default apiClient;

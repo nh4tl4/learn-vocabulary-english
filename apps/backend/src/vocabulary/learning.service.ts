@@ -53,209 +53,233 @@ export class LearningService {
       where: {
         userId,
         nextReviewDate: LessThan(now),
-        status: LearningStatus.REVIEWING,
+        status: LearningStatus.LEARNING,
       },
       relations: ['vocabulary'],
-      order: { nextReviewDate: 'ASC' },
       take: limit,
+      order: { nextReviewDate: 'ASC' },
     });
   }
 
   // Get new words for learning
   async getNewWordsForLearning(userId: number, limit: number = 10) {
-    // Get words user hasn't seen yet
-    const learnedWordIds = await this.userVocabularyRepository.find({
-      where: { userId },
-      select: ['vocabularyId'],
-    });
+    // Get words user hasn't learned yet
+    const learnedWordIds = await this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .select('uv.vocabularyId')
+      .where('uv.userId = :userId', { userId })
+      .getRawMany();
 
-    const learnedIds = learnedWordIds.map(uv => uv.vocabularyId);
+    const learnedIds = learnedWordIds.map(item => item.uv_vocabularyId);
 
-    const queryBuilder = this.vocabularyRepository.createQueryBuilder('vocabulary');
+    const queryBuilder = this.vocabularyRepository
+      .createQueryBuilder('v')
+      .take(limit)
+      .orderBy('RANDOM()');
 
     if (learnedIds.length > 0) {
-      queryBuilder.where('vocabulary.id NOT IN (:...learnedIds)', { learnedIds });
+      queryBuilder.where('v.id NOT IN (:...learnedIds)', { learnedIds });
     }
 
-    return await queryBuilder
-      .orderBy('RANDOM()')
-      .limit(limit)
-      .getMany();
+    return await queryBuilder.getMany();
   }
 
-  // Process study session result with spaced repetition
+  // Process study session
   async processStudySession(userId: number, sessionData: StudySessionDto) {
+    const { vocabularyId, quality, responseTime } = sessionData;
+
     let userVocab = await this.userVocabularyRepository.findOne({
-      where: { userId, vocabularyId: sessionData.vocabularyId },
+      where: { userId, vocabularyId },
     });
 
     if (!userVocab) {
       // First time learning this word
       userVocab = this.userVocabularyRepository.create({
         userId,
-        vocabularyId: sessionData.vocabularyId,
+        vocabularyId,
         status: LearningStatus.LEARNING,
+        correctCount: quality >= 3 ? 1 : 0,
+        incorrectCount: quality < 3 ? 1 : 0,
         firstLearnedDate: new Date(),
+        lastReviewedAt: new Date(),
+        nextReviewDate: this.calculateNextReviewDate(quality, 0),
+      });
+    } else {
+      // Update existing record
+      if (quality >= 3) {
+        userVocab.correctCount++;
+      } else {
+        userVocab.incorrectCount++;
+      }
+
+      userVocab.lastReviewedAt = new Date();
+      userVocab.nextReviewDate = this.calculateNextReviewDate(quality, userVocab.correctCount);
+
+      // Update status based on performance
+      if (userVocab.correctCount >= 5 && userVocab.incorrectCount === 0) {
+        userVocab.status = LearningStatus.MASTERED;
+      } else if (userVocab.incorrectCount > userVocab.correctCount) {
+        userVocab.status = LearningStatus.DIFFICULT;
+      }
+    }
+
+    await this.userVocabularyRepository.save(userVocab);
+    return userVocab;
+  }
+
+  // Generate test questions
+  async generateTest(userId: number, count: number = 10) {
+    // Get learned words for test
+    const learnedWords = await this.userVocabularyRepository.find({
+      where: { userId },
+      relations: ['vocabulary'],
+      take: count,
+      order: { lastReviewedAt: 'DESC' },
+    });
+
+    const testQuestions = [];
+
+    for (const userVocab of learnedWords) {
+      const word = userVocab.vocabulary;
+
+      // Get 3 random wrong answers
+      const wrongAnswers = await this.vocabularyRepository
+        .createQueryBuilder('v')
+        .where('v.id != :correctId', { correctId: word.id })
+        .orderBy('RANDOM()')
+        .take(3)
+        .getMany();
+
+      const options = [
+        { id: 1, text: word.meaning, isCorrect: true },
+        { id: 2, text: wrongAnswers[0]?.meaning || 'Đáp án sai 1', isCorrect: false },
+        { id: 3, text: wrongAnswers[1]?.meaning || 'Đáp án sai 2', isCorrect: false },
+        { id: 4, text: wrongAnswers[2]?.meaning || 'Đáp án sai 3', isCorrect: false },
+      ].sort(() => Math.random() - 0.5); // Shuffle options
+
+      testQuestions.push({
+        vocabularyId: word.id,
+        question: `Nghĩa của từ "${word.word}" là gì?`,
+        options,
+        correctAnswerId: options.find(opt => opt.isCorrect)?.id,
       });
     }
 
-    // Update based on quality (0-5 scale)
-    const quality = sessionData.quality;
+    return testQuestions;
+  }
 
-    if (quality >= 3) {
-      userVocab.correctCount++;
+  // Submit test results
+  async submitTestResults(userId: number, testResults: any[]) {
+    let correctAnswers = 0;
 
-      // Calculate next review using spaced repetition algorithm
-      if (quality >= 4) {
-        // Good response
-        userVocab.easeFactor = Math.max(1.3, userVocab.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
-      } else {
-        // Acceptable response
-        userVocab.easeFactor = Math.max(1.3, userVocab.easeFactor - 0.14);
-      }
+    for (const result of testResults) {
+      const isCorrect = result.selectedOptionId === result.correctOptionId;
+      if (isCorrect) correctAnswers++;
 
-      if (userVocab.reviewCount === 0) {
-        userVocab.interval = 1;
-      } else if (userVocab.reviewCount === 1) {
-        userVocab.interval = 6;
-      } else {
-        userVocab.interval = Math.round(userVocab.interval * userVocab.easeFactor);
-      }
-
-      userVocab.status = userVocab.reviewCount >= 3 ? LearningStatus.MASTERED : LearningStatus.REVIEWING;
-
-    } else {
-      // Poor response
-      userVocab.incorrectCount++;
-      userVocab.interval = 1;
-      userVocab.status = LearningStatus.DIFFICULT;
-      userVocab.easeFactor = Math.max(1.3, userVocab.easeFactor - 0.2);
+      // Update vocabulary stats based on test performance
+      await this.processStudySession(userId, {
+        vocabularyId: result.vocabularyId,
+        quality: isCorrect ? 4 : 2,
+        responseTime: result.timeSpent,
+      });
     }
 
-    userVocab.reviewCount++;
-    userVocab.lastReviewedAt = new Date();
-    userVocab.nextReviewDate = new Date(Date.now() + userVocab.interval * 24 * 60 * 60 * 1000);
+    return {
+      totalQuestions: testResults.length,
+      correctAnswers,
+      percentage: Math.round((correctAnswers / testResults.length) * 100),
+    };
+  }
 
-    await this.userVocabularyRepository.save(userVocab);
+  // Get difficult words
+  async getDifficultWords(userId: number, limit: number = 20) {
+    return await this.userVocabularyRepository.find({
+      where: {
+        userId,
+        status: LearningStatus.DIFFICULT,
+      },
+      relations: ['vocabulary'],
+      take: limit,
+      order: { incorrectCount: 'DESC' },
+    });
+  }
 
-    // Update user statistics
-    await this.updateUserStats(userId);
+  // Get user progress
+  async getUserProgress(userId: number) {
+    const totalLearned = await this.userVocabularyRepository.count({
+      where: { userId },
+    });
 
-    return userVocab;
+    const mastered = await this.userVocabularyRepository.count({
+      where: { userId, status: LearningStatus.MASTERED },
+    });
+
+    const learning = await this.userVocabularyRepository.count({
+      where: { userId, status: LearningStatus.LEARNING },
+    });
+
+    const difficult = await this.userVocabularyRepository.count({
+      where: { userId, status: LearningStatus.DIFFICULT },
+    });
+
+    return {
+      totalLearned,
+      mastered,
+      learning,
+      difficult,
+      masteryPercentage: totalLearned > 0 ? Math.round((mastered / totalLearned) * 100) : 0,
+    };
   }
 
   // Get learning dashboard data
   async getLearningDashboard(userId: number) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     const todayProgress = await this.getTodayProgress(userId);
+    const userProgress = await this.getUserProgress(userId);
 
     const wordsToReview = await this.userVocabularyRepository.count({
       where: {
         userId,
         nextReviewDate: LessThan(new Date()),
-        status: LearningStatus.REVIEWING,
+        status: LearningStatus.LEARNING,
       },
     });
 
-    const difficultWords = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.DIFFICULT },
-    });
-
-    const masteredWords = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.MASTERED },
-    });
-
-    const totalLearned = await this.userVocabularyRepository.count({
-      where: { userId },
-    });
+    const progressPercentage = user?.dailyGoal > 0
+      ? Math.round((todayProgress.totalProgress / user.dailyGoal) * 100)
+      : 0;
 
     return {
       user: {
-        dailyGoal: user.dailyGoal,
-        currentStreak: user.currentStreak,
-        longestStreak: user.longestStreak,
-        totalWordsLearned: user.totalWordsLearned,
+        dailyGoal: user?.dailyGoal || 10,
+        currentStreak: user?.currentStreak || 0,
+        longestStreak: user?.longestStreak || 0,
+        totalWordsLearned: userProgress.totalLearned,
       },
       todayProgress,
       wordsToReview,
-      difficultWords,
-      masteredWords,
-      totalLearned,
-      progressPercentage: Math.round((todayProgress.totalProgress / user.dailyGoal) * 100),
+      difficultWords: userProgress.difficult,
+      masteredWords: userProgress.mastered,
+      totalLearned: userProgress.totalLearned,
+      progressPercentage: Math.min(progressPercentage, 100),
     };
   }
 
-  // Generate multiple choice test
-  async generateTest(userId: number, count: number = 10) {
-    // Get user's learned words for testing
-    const userWords = await this.userVocabularyRepository.find({
-      where: {
-        userId,
-        status: LearningStatus.REVIEWING,
-      },
-      relations: ['vocabulary'],
-      order: { lastReviewedAt: 'ASC' },
-      take: count,
-    });
+  // Helper method to calculate next review date
+  private calculateNextReviewDate(quality: number, successCount: number): Date {
+    const now = new Date();
+    let daysToAdd = 1;
 
-    const questions = [];
-
-    for (const userWord of userWords) {
-      // Get 3 random wrong answers
-      const wrongAnswers = await this.vocabularyRepository
-        .createQueryBuilder('vocabulary')
-        .where('vocabulary.id != :correctId', { correctId: userWord.vocabulary.id })
-        .orderBy('RANDOM()')
-        .limit(3)
-        .getMany();
-
-      const options = [
-        { id: userWord.vocabulary.id, text: userWord.vocabulary.meaning, isCorrect: true },
-        ...wrongAnswers.map(w => ({ id: w.id, text: w.meaning, isCorrect: false })),
-      ];
-
-      // Shuffle options
-      options.sort(() => Math.random() - 0.5);
-
-      questions.push({
-        vocabularyId: userWord.vocabulary.id,
-        question: `What does "${userWord.vocabulary.word}" mean?`,
-        options,
-        correctAnswerId: userWord.vocabulary.id,
-      });
+    // Simple spaced repetition algorithm
+    if (quality >= 4) {
+      daysToAdd = Math.min(successCount * 2, 30); // Max 30 days
+    } else if (quality === 3) {
+      daysToAdd = Math.min(successCount, 7); // Max 7 days
+    } else {
+      daysToAdd = 1; // Review tomorrow if difficulty
     }
 
-    return questions;
-  }
-
-  private async updateUserStats(userId: number) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-
-    // Update streak
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const lastStudy = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
-
-    if (!lastStudy || lastStudy < today) {
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      if (lastStudy && lastStudy.getTime() === yesterday.getTime()) {
-        user.currentStreak++;
-      } else if (!lastStudy || lastStudy < yesterday) {
-        user.currentStreak = 1;
-      }
-
-      user.longestStreak = Math.max(user.longestStreak, user.currentStreak);
-      user.lastStudyDate = today;
-    }
-
-    // Update total words learned
-    user.totalWordsLearned = await this.userVocabularyRepository.count({
-      where: { userId },
-    });
-
-    await this.userRepository.save(user);
+    now.setDate(now.getDate() + daysToAdd);
+    return now;
   }
 }

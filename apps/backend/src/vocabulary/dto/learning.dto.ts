@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsEnum, Min, Max } from 'class-validator';
+import { IsNumber, IsBoolean, IsOptional, IsEnum, Min, Max } from 'class-validator';
 import { LearningStatus } from '../../database/entities/user-vocabulary.entity';
 
 export class SetDailyGoalDto {
@@ -13,13 +13,10 @@ export class StudySessionDto {
   vocabularyId: number;
 
   @IsNumber()
-  @Min(0)
-  @Max(5)
-  quality: number; // 0-5 for spaced repetition (0 = total blackout, 5 = perfect response)
+  quality: number; // 1-5 rating
 
   @IsNumber()
-  @Min(0)
-  responseTime: number; // Time taken to answer in seconds
+  responseTime: number; // in seconds
 }
 
 export class TestResultDto {
@@ -33,8 +30,7 @@ export class TestResultDto {
   correctOptionId: number;
 
   @IsNumber()
-  @Min(0)
-  timeSpent: number; // Time in seconds
+  timeSpent: number; // in seconds
 }
 
 export class ReviewFilterDto {
@@ -51,4 +47,20 @@ export class ReviewFilterDto {
   @IsNumber()
   @Min(0)
   skip?: number = 0;
+
+  @IsOptional()
+  @IsBoolean()
+  onlyDue?: boolean;
+}
+
+export class UpdateProgressDto {
+  @IsNumber()
+  vocabularyId: number;
+
+  @IsBoolean()
+  isCorrect: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  responseTime?: number;
 }
