@@ -22,7 +22,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        value: sqlite:vocabulary.db
+        fromDatabase:
+          name: vocabulary-postgres
+          property: connectionString
       - key: OPENAI_API_KEY
         sync: false  # This will be set manually in Render dashboard
     healthCheckPath: /api/health
