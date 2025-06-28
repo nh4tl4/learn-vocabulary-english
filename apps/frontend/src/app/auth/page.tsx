@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
@@ -21,10 +21,31 @@ interface RegisterForm {
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const router = useRouter();
-  const { login, register, isLoading } = useAuthStore();
+  const { login, register, isLoading, isAuthenticated, isInitialized } = useAuthStore();
 
   const loginForm = useForm<LoginForm>();
   const registerForm = useForm<RegisterForm>();
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, isInitialized, router]);
+
+  // Show loading while checking authentication
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Don't render auth form if user is authenticated
+  if (isAuthenticated) {
+    return null;
+  }
 
   const onLogin = async (data: LoginForm) => {
     try {

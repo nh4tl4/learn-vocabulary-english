@@ -119,19 +119,19 @@ export const vocabularyAPI = {
     apiClient.get('/vocabulary/topics/stats'),
 
   getVocabularyByTopic: (topic: string, page = 1, limit = 20) =>
-    apiClient.get(`/vocabulary/topic/${encodeURIComponent(topic)}?page=${page}&limit=${limit}`),
+    apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}?page=${page}&limit=${limit}`),
 
   getNewWordsByTopic: (topic: string, limit = 10) =>
-    apiClient.get(`/vocabulary/learn/new/topic/${encodeURIComponent(topic)}?limit=${limit}`),
+    apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/new?limit=${limit}`),
 
   getReviewWordsByTopic: (topic: string, limit = 20) =>
-    apiClient.get(`/vocabulary/review/topic/${encodeURIComponent(topic)}?limit=${limit}`),
+    apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/review?limit=${limit}`),
 
   generateTestByTopic: (topic: string, count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') =>
-    apiClient.get(`/vocabulary/test/topic/${encodeURIComponent(topic)}?count=${count}&mode=${mode}&inputType=${inputType}`),
+    apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/test?count=${count}&mode=${mode}&inputType=${inputType}`),
 
   getProgressByTopic: (topic: string) =>
-    apiClient.get(`/vocabulary/progress/topic/${encodeURIComponent(topic)}`),
+    apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/progress`),
 
   // Search words by topic
   searchWordsByTopic: (topic: string, word: string, limit = 10) =>
