@@ -11,7 +11,7 @@ services:
     plan: free
     buildCommand: |
       cd apps/backend && 
-      npm install && 
+      npm ci --only=production --include=dev &&
       npm run build
     startCommand: cd apps/backend && npm run start:prod
     envVars:
@@ -24,8 +24,8 @@ services:
       - key: DATABASE_URL
         value: sqlite:vocabulary.db
       - key: OPENAI_API_KEY
-        value: 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
-    healthCheckPath: /
+        sync: false  # This will be set manually in Render dashboard
+    healthCheckPath: /api/health
 
   # Frontend Service
   - type: web
@@ -34,7 +34,7 @@ services:
     plan: free
     buildCommand: |
       cd apps/frontend && 
-      npm install && 
+      npm ci &&
       npm run build
     startCommand: cd apps/frontend && npm start
     envVars:
