@@ -63,25 +63,44 @@ export class LearningService {
 
   // Get new words for learning
   async getNewWordsForLearning(userId: number, limit: number = 10) {
-    // Get words user hasn't learned yet
-    const learnedWordIds = await this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .select('uv.vocabularyId')
-      .where('uv.userId = :userId', { userId })
-      .getRawMany();
+    try {
+      // Get words user hasn't learned yet
+      const learnedWordIds = await this.userVocabularyRepository
+        .createQueryBuilder('uv')
+        .select('uv.vocabularyId')
+        .where('uv.userId = :userId', { userId })
+        .getRawMany();
 
-    const learnedIds = learnedWordIds.map(item => item.uv_vocabularyId);
+      const learnedIds = learnedWordIds.map(item => item.uv_vocabularyId);
 
-    const queryBuilder = this.vocabularyRepository
-      .createQueryBuilder('v')
-      .take(limit)
-      .orderBy('RANDOM()');
+      let queryBuilder = this.vocabularyRepository
+        .createQueryBuilder('v')
+        .take(limit);
 
-    if (learnedIds.length > 0) {
-      queryBuilder.where('v.id NOT IN (:...learnedIds)', { learnedIds });
+      if (learnedIds.length > 0) {
+        queryBuilder = queryBuilder.where('v.id NOT IN (:...learnedIds)', { learnedIds });
+      }
+
+      // Use ORDER BY id ASC instead of RANDOM() for SQLite compatibility
+      const words = await queryBuilder
+        .orderBy('v.id', 'ASC')
+        .getMany();
+
+      // If we need randomization, shuffle the results in memory
+      if (words.length > limit) {
+        // Fisher-Yates shuffle algorithm
+        for (let i = words.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [words[i], words[j]] = [words[j], words[i]];
+        }
+        return words.slice(0, limit);
+      }
+
+      return words;
+    } catch (error) {
+      console.error('Error in getNewWordsForLearning:', error);
+      throw error;
     }
-
-    return await queryBuilder.getMany();
   }
 
   // Process study session
