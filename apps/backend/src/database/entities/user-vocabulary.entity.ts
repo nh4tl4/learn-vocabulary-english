@@ -56,7 +56,7 @@ export class UserVocabulary {
   nextReviewDate: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastReviewDate: Date;
+  lastReviewedAt: Date;
 
   @Column({ type: 'timestamp', nullable: true })
   firstLearnedDate: Date;

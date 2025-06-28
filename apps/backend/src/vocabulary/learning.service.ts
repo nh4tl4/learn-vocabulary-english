@@ -34,7 +34,7 @@ export class LearningService {
     const todayReviewed = await this.userVocabularyRepository.count({
       where: {
         userId,
-        lastReviewDate: Between(today, tomorrow),
+        lastReviewedAt: Between(today, tomorrow),
       },
     });
 
@@ -133,7 +133,7 @@ export class LearningService {
     }
 
     userVocab.reviewCount++;
-    userVocab.lastReviewDate = new Date();
+    userVocab.lastReviewedAt = new Date();
     userVocab.nextReviewDate = new Date(Date.now() + userVocab.interval * 24 * 60 * 60 * 1000);
 
     await this.userVocabularyRepository.save(userVocab);
@@ -194,7 +194,7 @@ export class LearningService {
         status: LearningStatus.REVIEWING,
       },
       relations: ['vocabulary'],
-      order: { lastReviewDate: 'ASC' },
+      order: { lastReviewedAt: 'ASC' },
       take: count,
     });
 
