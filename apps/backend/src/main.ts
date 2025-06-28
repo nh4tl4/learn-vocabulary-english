@@ -17,9 +17,15 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // Use PORT environment variable from Render (usually 10000) or default to 3000
+  // Force use Render's PORT or fallback to 10000
   const port = process.env.PORT || 10000;
+
+  // Log the port for debugging
+  console.log(`Environment PORT: ${process.env.PORT}`);
+  console.log(`Using port: ${port}`);
+
   await app.listen(port, '0.0.0.0');
   console.log(`Backend running on port ${port}`);
+  console.log(`Health check available at: http://0.0.0.0:${port}/api/health`);
 }
 bootstrap();
