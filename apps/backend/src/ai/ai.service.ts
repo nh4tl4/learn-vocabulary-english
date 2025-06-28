@@ -66,7 +66,7 @@ export class AIService {
       const messages = [
         {
           role: 'system' as const,
-          content: `Bạn là một giáo viên tiếng Anh thân thiện và kiên nhẫn, giúp học sinh Việt Nam luy��n tập tiếng Anh. 
+          content: `Bạn là một giáo viên tiếng Anh thân thiện và kiên nhẫn, giúp học sinh Việt Nam luyện tập tiếng Anh. 
           - Trả lời bằng tiếng Anh đơn giản, dễ hiểu
           - Sửa lỗi ngữ pháp một cách nhẹ nhàng
           - Khuyến khích học sinh tiếp tục thực hành
@@ -90,7 +90,29 @@ export class AIService {
       return response.choices[0]?.message?.content || "I'm sorry, I didn't understand. Could you try again?";
     } catch (error) {
       console.error('AI Chat Error:', error);
-      return "Sorry, I'm having trouble right now. Please try again later.";
+
+      // Handle specific OpenAI errors
+      if (error.status === 429) {
+        return "I'm currently busy helping other students. Let me give you a simple response: Hello! I'm here to help you practice English. What would you like to talk about today?";
+      } else if (error.status === 401) {
+        return "I'm having some technical difficulties. But I can still help! Try asking me about English grammar, vocabulary, or practice conversations.";
+      } else if (error.status === 403) {
+        return "The AI service is temporarily unavailable. Meanwhile, you can practice by describing your day in English!";
+      }
+
+      // Fallback to simple responses based on common patterns
+      const lowerMessage = userMessage.toLowerCase();
+      if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+        return "Hello! I'm your English practice partner. How are you today? Tell me about yourself in English!";
+      } else if (lowerMessage.includes('how are you')) {
+        return "I'm doing well, thank you for asking! How about you? Can you tell me what you did today?";
+      } else if (lowerMessage.includes('help')) {
+        return "I'm here to help you practice English! You can ask me about grammar, vocabulary, or just have a conversation. What would you like to practice?";
+      } else if (lowerMessage.includes('goodbye') || lowerMessage.includes('bye')) {
+        return "Goodbye! Keep practicing your English every day. You're doing great!";
+      } else {
+        return "That's interesting! Can you tell me more about that in English? I'm here to help you practice.";
+      }
     }
   }
 
@@ -101,7 +123,7 @@ export class AIService {
     }
 
     try {
-      const prompt = `Đánh giá độ khó của từ tiếng Anh "${word}" (nghĩa: ${meaning}) cho người học tiếng Anh. Trả lời chỉ một từ: beginner, intermediate, hoặc advanced.`;
+      const prompt = `Đánh giá độ khó của t�� tiếng Anh "${word}" (nghĩa: ${meaning}) cho người học tiếng Anh. Trả lời chỉ một từ: beginner, intermediate, hoặc advanced.`;
 
       const response = await this.openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
