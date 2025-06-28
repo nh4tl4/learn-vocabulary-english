@@ -1,13 +1,15 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Use production backend URL from Render or fallback to localhost
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vocabulary-backend.onrender.com/api';
 
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout for production
 });
 
 // Add auth token to requests
@@ -19,7 +21,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors
+// Handle auth errors and network issues
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -27,6 +29,15 @@ apiClient.interceptors.response.use(
       Cookies.remove('auth_token');
       window.location.href = '/auth';
     }
+
+    // Log API errors for debugging
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message
+    });
+
     return Promise.reject(error);
   }
 );
