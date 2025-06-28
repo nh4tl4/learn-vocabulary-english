@@ -31,8 +31,8 @@ export class UserVocabulary {
   vocabularyId: number;
 
   @Column({
-    type: 'enum',
-    enum: LearningStatus,
+    type: 'varchar',
+    length: 20,
     default: LearningStatus.NEW,
   })
   status: LearningStatus;
