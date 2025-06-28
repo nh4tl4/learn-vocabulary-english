@@ -1,0 +1,62 @@
+databases:
+  - name: vocabulary-postgres
+    databaseName: vocabulary_db
+    user: postgres
+    plan: free
+
+services:
+  # Backend Service
+  - type: web
+    name: vocabulary-backend
+    runtime: docker
+    dockerfilePath: ./apps/backend/Dockerfile
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: vocabulary-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: vocabulary-postgres
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: vocabulary-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: vocabulary-postgres
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: vocabulary-postgres
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 3000
+
+  # Frontend Service
+  - type: web
+    name: vocabulary-frontend
+    runtime: docker
+    dockerfilePath: ./apps/frontend/Dockerfile
+    plan: free
+    region: oregon
+    branch: main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: vocabulary-backend
+          property: host
+      - key: PORT
+        value: 3000

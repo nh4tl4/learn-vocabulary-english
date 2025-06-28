@@ -239,7 +239,7 @@ docker-compose*.yml
 .docker/
 
 # Kubernetes
-*.yaml
+#*.yaml
 *.yml
 k8s/
 
