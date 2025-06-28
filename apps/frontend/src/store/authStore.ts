@@ -56,19 +56,60 @@ export const useAuthStore = create<AuthState>()(
 
       loadUser: async () => {
         const token = Cookies.get('auth_token');
-        if (!token) return;
+        if (!token) {
+          set({ isAuthenticated: false, user: null });
+          return;
+        }
 
         try {
+          set({ isLoading: true });
           const response = await userAPI.getProfile();
-          set({ user: response.data, isAuthenticated: true });
+          set({
+            user: response.data,
+            isAuthenticated: true,
+            isLoading: false
+          });
         } catch (error) {
-          get().logout();
+          // Token không hợp lệ hoặc đã hết hạn
+          Cookies.remove('auth_token');
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false
+          });
         }
       },
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      // Chỉ persist user data, không persist token (vì đã lưu trong cookies)
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated
+      }),
+      // Khôi phục state và kiểm tra token khi load
+      onRehydrate: async (state) => {
+        if (state) {
+          const token = Cookies.get('auth_token');
+          if (token && state.isAuthenticated) {
+            // Có token và state cho biết đã đăng nhập, verify lại
+            try {
+              const response = await userAPI.getProfile();
+              state.user = response.data;
+              state.isAuthenticated = true;
+            } catch (error) {
+              // Token không hợp lệ
+              Cookies.remove('auth_token');
+              state.user = null;
+              state.isAuthenticated = false;
+            }
+          } else {
+            // Không có token hoặc state chưa đăng nhập
+            state.user = null;
+            state.isAuthenticated = false;
+          }
+        }
+      },
     }
   )
 );

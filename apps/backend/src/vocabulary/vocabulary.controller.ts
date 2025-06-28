@@ -60,8 +60,13 @@ export class VocabularyController {
   }
 
   @Get('test/generate')
-  async generateTest(@Request() req, @Query('count') count: number = 10) {
-    return this.learningService.generateTest(req.user.userId, count);
+  async generateTest(
+    @Request() req,
+    @Query('count') count: number = 10,
+    @Query('mode') mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed',
+    @Query('inputType') inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice'
+  ) {
+    return this.learningService.generateTest(req.user.userId, count, mode, inputType);
   }
 
   @Post('test/submit')
@@ -87,5 +92,47 @@ export class VocabularyController {
   @Post()
   async create(@Body() createVocabularyDto: any) {
     return this.vocabularyService.create(createVocabularyDto);
+  }
+
+  // Topic-based endpoints
+  @Get('topics')
+  async getTopics() {
+    return this.vocabularyService.getTopics();
+  }
+
+  @Get('topics/stats')
+  async getTopicStats() {
+    return this.vocabularyService.getTopicStats();
+  }
+
+  @Get('topic/:topic')
+  async getVocabularyByTopic(@Param('topic') topic: string, @Query('page') page: number = 1, @Query('limit') limit: number = 20) {
+    return this.vocabularyService.findByTopic(topic, page, limit);
+  }
+
+  @Get('learn/new/topic/:topic')
+  async getNewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 10) {
+    return this.learningService.getNewWordsForLearningByTopic(req.user.userId, topic, limit);
+  }
+
+  @Get('review/topic/:topic')
+  async getReviewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 20) {
+    return this.learningService.getWordsForReviewByTopic(req.user.userId, topic, limit);
+  }
+
+  @Get('test/topic/:topic')
+  async generateTestByTopic(
+    @Request() req,
+    @Param('topic') topic: string,
+    @Query('count') count: number = 10,
+    @Query('mode') mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed',
+    @Query('inputType') inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice'
+  ) {
+    return this.learningService.generateTestByTopic(req.user.userId, topic, count, mode, inputType);
+  }
+
+  @Get('progress/topic/:topic')
+  async getProgressByTopic(@Request() req, @Param('topic') topic: string) {
+    return this.learningService.getUserProgressByTopic(req.user.userId, topic);
   }
 }

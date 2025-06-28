@@ -88,4 +88,51 @@ export class VocabularyService {
 
     return await this.userVocabularyRepository.save(userVocabulary);
   }
+
+  // Get all available topics
+  async getTopics(): Promise<string[]> {
+    const result = await this.vocabularyRepository
+      .createQueryBuilder('vocabulary')
+      .select('DISTINCT vocabulary.topic', 'topic')
+      .where('vocabulary.topic IS NOT NULL')
+      .orderBy('vocabulary.topic', 'ASC')
+      .getRawMany();
+
+    return result.map(item => item.topic);
+  }
+
+  // Get vocabulary by topic
+  async findByTopic(topic: string, page: number = 1, limit: number = 20) {
+    const [vocabularies, total] = await this.vocabularyRepository.findAndCount({
+      where: { topic },
+      take: limit,
+      skip: (page - 1) * limit,
+      order: { word: 'ASC' },
+    });
+
+    return {
+      vocabularies,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      topic,
+    };
+  }
+
+  // Get vocabulary count by topic
+  async getTopicStats() {
+    const result = await this.vocabularyRepository
+      .createQueryBuilder('vocabulary')
+      .select('vocabulary.topic', 'topic')
+      .addSelect('COUNT(*)', 'count')
+      .where('vocabulary.topic IS NOT NULL')
+      .groupBy('vocabulary.topic')
+      .orderBy('COUNT(*)', 'DESC')
+      .getRawMany();
+
+    return result.map(item => ({
+      topic: item.topic,
+      count: parseInt(item.count),
+    }));
+  }
 }

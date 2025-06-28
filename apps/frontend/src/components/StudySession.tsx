@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { vocabularyAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import AIAssistant from './AIAssistant';
 
 interface Vocabulary {
   id: number;
@@ -23,6 +24,7 @@ export default function StudySession() {
   const [loading, setLoading] = useState(true);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [learnedCount, setLearnedCount] = useState(0);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -129,8 +131,16 @@ export default function StudySession() {
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-0">Học Từ Mới</h1>
-          <div className="text-sm sm:text-base text-gray-600">
-            {currentIndex + 1} / {words.length}
+          <div className="flex items-center gap-3">
+            <div className="text-sm sm:text-base text-gray-600">
+              {currentIndex + 1} / {words.length}
+            </div>
+            <button
+              onClick={() => setShowAIAssistant(true)}
+              className="bg-purple-500 text-white px-3 py-1 rounded-lg hover:bg-purple-600 text-xs sm:text-sm flex items-center gap-1"
+            >
+              🤖 AI Trợ Lý
+            </button>
           </div>
         </div>
 
@@ -180,6 +190,16 @@ export default function StudySession() {
               </div>
             )}
 
+            {/* AI Helper Button */}
+            <div className="mb-6 sm:mb-8 text-center">
+              <button
+                onClick={() => setShowAIAssistant(true)}
+                className="bg-purple-100 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-200 text-sm sm:text-base inline-flex items-center gap-2"
+              >
+                🤖 Nhờ AI tạo thêm ví dụ và mẹo học
+              </button>
+            </div>
+
             {/* Quality Rating Buttons */}
             <div className="space-y-3 sm:space-y-0 sm:space-x-4 sm:flex">
               <button
@@ -220,6 +240,15 @@ export default function StudySession() {
       <div className="text-center text-gray-500 text-xs sm:text-sm">
         Đánh giá mức độ dễ nhớ của từ này để cải thiện quá trình học tập
       </div>
+
+      {/* AI Assistant Modal */}
+      {showAIAssistant && (
+        <AIAssistant
+          word={currentWord.word}
+          meaning={currentWord.meaning}
+          onClose={() => setShowAIAssistant(false)}
+        />
+      )}
     </div>
   );
 }

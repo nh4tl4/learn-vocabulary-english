@@ -15,14 +15,20 @@ export class Vocabulary {
   @Column({ nullable: true })
   pronunciation: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   example: string;
 
-  @Column({ default: 'beginner' })
-  level: string; // beginner, intermediate, advanced
+  @Column({ nullable: true })
+  partOfSpeech: string;
 
-  @Column({ default: 'noun' })
-  partOfSpeech: string; // noun, verb, adjective, etc.
+  @Column({ nullable: true })
+  level: string;
+
+  @Column({ nullable: true })
+  topic: string; // Thêm trường topic
+
+  @Column({ nullable: true })
+  imageUrl: string;
 
   @CreateDateColumn()
   createdAt: Date;

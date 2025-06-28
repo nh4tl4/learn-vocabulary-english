@@ -98,8 +98,8 @@ export const vocabularyAPI = {
     responseTime: number;
   }) => apiClient.post('/vocabulary/learn/session', sessionData),
 
-  generateTest: (count = 10) =>
-    apiClient.get(`/vocabulary/test/generate?count=${count}`),
+  generateTest: (count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') =>
+    apiClient.get(`/vocabulary/test/generate?count=${count}&mode=${mode}&inputType=${inputType}`),
 
   submitTest: (testResults: Array<{
     vocabularyId: number;
@@ -110,6 +110,56 @@ export const vocabularyAPI = {
 
   getDifficultWords: (limit = 20) =>
     apiClient.get(`/vocabulary/difficult?limit=${limit}`),
+
+  // Topic-based endpoints
+  getTopics: () =>
+    apiClient.get('/vocabulary/topics'),
+
+  getTopicStats: () =>
+    apiClient.get('/vocabulary/topics/stats'),
+
+  getVocabularyByTopic: (topic: string, page = 1, limit = 20) =>
+    apiClient.get(`/vocabulary/topic/${encodeURIComponent(topic)}?page=${page}&limit=${limit}`),
+
+  getNewWordsByTopic: (topic: string, limit = 10) =>
+    apiClient.get(`/vocabulary/learn/new/topic/${encodeURIComponent(topic)}?limit=${limit}`),
+
+  getReviewWordsByTopic: (topic: string, limit = 20) =>
+    apiClient.get(`/vocabulary/review/topic/${encodeURIComponent(topic)}?limit=${limit}`),
+
+  generateTestByTopic: (topic: string, count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') =>
+    apiClient.get(`/vocabulary/test/topic/${encodeURIComponent(topic)}?count=${count}&mode=${mode}&inputType=${inputType}`),
+
+  getProgressByTopic: (topic: string) =>
+    apiClient.get(`/vocabulary/progress/topic/${encodeURIComponent(topic)}`),
+};
+
+export const aiAPI = {
+  // Check AI availability
+  getStatus: () => apiClient.get('/ai/status'),
+
+  // AI Chat Bot
+  chat: (message: string, conversationHistory: Array<{role: string, content: string}> = []) =>
+    apiClient.post('/ai/chat', { message, conversationHistory }),
+
+  // Generate example sentences
+  generateExamples: (word: string, meaning: string) =>
+    apiClient.post('/ai/generate-examples', { word, meaning }),
+
+  // Assess word difficulty
+  assessDifficulty: (word: string, meaning: string) =>
+    apiClient.post('/ai/assess-difficulty', { word, meaning }),
+
+  // Get pronunciation tips
+  getPronunciationTip: (word: string) =>
+    apiClient.get(`/ai/pronunciation-tip?word=${encodeURIComponent(word)}`),
+
+  // Generate personalized learning path
+  generateLearningPath: (userLevel: string, weakAreas: string[], interests: string[]) =>
+    apiClient.post('/ai/learning-path', { userLevel, weakAreas, interests }),
+
+  // Get study motivation
+  getMotivation: () => apiClient.get('/ai/study-motivation'),
 };
 
 export default apiClient;

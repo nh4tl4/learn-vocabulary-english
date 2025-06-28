@@ -146,6 +146,22 @@ export default function LearningDashboard() {
           color="bg-red-500"
           onClick={() => router.push('/learn/difficult')}
         />
+
+        <ActionCard
+          title="🤖 AI Chat Bot"
+          description="Luyện tập tiếng Anh với AI"
+          count="Trò chuyện thông minh"
+          color="bg-purple-500"
+          onClick={() => router.push('/learn/ai-chat')}
+        />
+
+        <ActionCard
+          title="📚 Học Theo Chủ Đề"
+          description="Học từ vựng theo chủ đề cụ thể"
+          count="15+ chủ đề"
+          color="bg-indigo-500"
+          onClick={() => router.push('/learn/topics')}
+        />
       </div>
 
       {/* Statistics Grid */}

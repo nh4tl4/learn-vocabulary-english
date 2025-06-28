@@ -7,50 +7,38 @@ services:
   # Backend Service
   - type: web
     name: vocabulary-backend
-    runtime: docker
-    dockerfilePath: ./apps/backend/Dockerfile
+    runtime: node
     plan: free
-    region: oregon
-    branch: main
-    healthCheckPath: /api/health
+    buildCommand: |
+      cd apps/backend && 
+      npm install && 
+      npm run build
+    startCommand: cd apps/backend && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DB_HOST
-        fromDatabase:
-          name: vocabulary-postgres
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: vocabulary-postgres
-          property: port
-      - key: DB_USERNAME
-        fromDatabase:
-          name: vocabulary-postgres
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: vocabulary-postgres
-          property: password
-      - key: DB_NAME
-        fromDatabase:
-          name: vocabulary-postgres
-          property: database
+      - key: PORT
+        value: 10000
       - key: JWT_SECRET
         generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:vocabulary.db
+      - key: OPENAI_API_KEY
+        value: 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
+    healthCheckPath: /
 
   # Frontend Service
   - type: web
     name: vocabulary-frontend
-    runtime: docker
-    dockerfilePath: ./apps/frontend/Dockerfile
+    runtime: node
     plan: free
-    region: oregon
-    branch: main
+    buildCommand: |
+      cd apps/frontend && 
+      npm install && 
+      npm run build
+    startCommand: cd apps/frontend && npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
         value: https://vocabulary-backend-lm26.onrender.com/api
-      - key: PORT
-        value: 3000

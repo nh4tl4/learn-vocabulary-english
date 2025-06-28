@@ -127,42 +127,127 @@ export class LearningService {
     return userVocab;
   }
 
-  // Generate test questions
-  async generateTest(userId: number, count: number = 10) {
+  // Generate test questions (with mode and input type selection)
+  async generateTest(userId: number, count: number = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') {
     // Get learned words for test
     const learnedWords = await this.userVocabularyRepository.find({
       where: { userId },
       relations: ['vocabulary'],
-      take: count,
+      take: count * 2, // Get more to have variety
       order: { lastReviewedAt: 'DESC' },
     });
 
+    if (learnedWords.length === 0) {
+      return [];
+    }
+
     const testQuestions = [];
 
-    for (const userVocab of learnedWords) {
+    for (let i = 0; i < Math.min(count, learnedWords.length); i++) {
+      const userVocab = learnedWords[i];
       const word = userVocab.vocabulary;
 
-      // Get 3 random wrong answers
-      const wrongAnswers = await this.vocabularyRepository
-        .createQueryBuilder('v')
-        .where('v.id != :correctId', { correctId: word.id })
-        .orderBy('RANDOM()')
-        .take(3)
-        .getMany();
+      // Determine question type based on mode
+      let questionType: 'en-to-vi' | 'vi-to-en';
+      if (mode === 'mixed') {
+        questionType = Math.random() > 0.5 ? 'en-to-vi' : 'vi-to-en';
+      } else {
+        questionType = mode;
+      }
 
-      const options = [
-        { id: 1, text: word.meaning, isCorrect: true },
-        { id: 2, text: wrongAnswers[0]?.meaning || 'Đáp án sai 1', isCorrect: false },
-        { id: 3, text: wrongAnswers[1]?.meaning || 'Đáp án sai 2', isCorrect: false },
-        { id: 4, text: wrongAnswers[2]?.meaning || 'Đáp án sai 3', isCorrect: false },
-      ].sort(() => Math.random() - 0.5); // Shuffle options
+      // Determine input type
+      let currentInputType: 'multiple-choice' | 'text-input';
+      if (inputType === 'mixed') {
+        currentInputType = Math.random() > 0.5 ? 'multiple-choice' : 'text-input';
+      } else {
+        currentInputType = inputType;
+      }
 
-      testQuestions.push({
-        vocabularyId: word.id,
-        question: `Nghĩa của từ "${word.word}" là gì?`,
-        options,
-        correctAnswerId: options.find(opt => opt.isCorrect)?.id,
-      });
+      if (currentInputType === 'text-input') {
+        // Text input questions
+        if (questionType === 'en-to-vi') {
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'en-to-vi',
+            inputType: 'text-input',
+            question: `Nghĩa của từ "${word.word}" là gì?`,
+            correctAnswer: word.meaning.toLowerCase().trim(),
+            word: word.word,
+            pronunciation: word.pronunciation,
+            hints: [
+              `Từ loại: ${word.partOfSpeech || 'không xác định'}`,
+              `Độ khó: ${word.level || 'trung bình'}`,
+            ]
+          });
+        } else {
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'vi-to-en',
+            inputType: 'text-input',
+            question: `Từ tiếng Anh của "${word.meaning}" là gì?`,
+            correctAnswer: word.word.toLowerCase().trim(),
+            meaning: word.meaning,
+            pronunciation: word.pronunciation,
+            hints: [
+              `Từ loại: ${word.partOfSpeech || 'không xác định'}`,
+              `Độ khó: ${word.level || 'trung bình'}`,
+            ]
+          });
+        }
+      } else {
+        // Multiple choice questions (existing logic)
+        if (questionType === 'en-to-vi') {
+          const wrongAnswers = await this.vocabularyRepository
+            .createQueryBuilder('v')
+            .where('v.id != :correctId', { correctId: word.id })
+            .orderBy('RANDOM()')
+            .take(3)
+            .getMany();
+
+          const options = [
+            { id: 1, text: word.meaning, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.meaning || 'Đáp án sai 1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.meaning || 'Đáp án sai 2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.meaning || 'Đáp án sai 3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'en-to-vi',
+            inputType: 'multiple-choice',
+            question: `Nghĩa của từ "${word.word}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            word: word.word,
+            pronunciation: word.pronunciation,
+          });
+        } else {
+          const wrongAnswers = await this.vocabularyRepository
+            .createQueryBuilder('v')
+            .where('v.id != :correctId', { correctId: word.id })
+            .orderBy('RANDOM()')
+            .take(3)
+            .getMany();
+
+          const options = [
+            { id: 1, text: word.word, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.word || 'wrong1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.word || 'wrong2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.word || 'wrong3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'vi-to-en',
+            inputType: 'multiple-choice',
+            question: `Từ tiếng Anh của "${word.meaning}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            meaning: word.meaning,
+            pronunciation: word.pronunciation,
+          });
+        }
+      }
     }
 
     return testQuestions;
@@ -265,6 +350,93 @@ export class LearningService {
     };
   }
 
+  // Get new words for learning by topic
+  async getNewWordsForLearningByTopic(userId: number, topic: string, limit: number = 10) {
+    // Get words user hasn't learned yet in specific topic
+    const learnedWordIds = await this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .select('uv.vocabularyId')
+      .where('uv.userId = :userId', { userId })
+      .getRawMany();
+
+    const learnedIds = learnedWordIds.map(item => item.uv_vocabularyId);
+
+    const queryBuilder = this.vocabularyRepository
+      .createQueryBuilder('v')
+      .where('v.topic = :topic', { topic })
+      .take(limit)
+      .orderBy('RANDOM()');
+
+    if (learnedIds.length > 0) {
+      queryBuilder.andWhere('v.id NOT IN (:...learnedIds)', { learnedIds });
+    }
+
+    return await queryBuilder.getMany();
+  }
+
+  // Get words for review by topic
+  async getWordsForReviewByTopic(userId: number, topic: string, limit: number = 20) {
+    const now = new Date();
+
+    return await this.userVocabularyRepository.find({
+      where: {
+        userId,
+        nextReviewDate: LessThan(now),
+        status: LearningStatus.LEARNING,
+      },
+      relations: ['vocabulary'],
+      take: limit,
+      order: { nextReviewDate: 'ASC' },
+    }).then(results =>
+      results.filter(uv => uv.vocabulary.topic === topic)
+    );
+  }
+
+  // Generate test by topic
+  async generateTestByTopic(userId: number, topic: string, count: number = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') {
+    // Get learned words for test in specific topic
+    const learnedWords = await this.userVocabularyRepository.find({
+      where: { userId },
+      relations: ['vocabulary'],
+      take: count * 2,
+      order: { lastReviewedAt: 'DESC' },
+    });
+
+    // Filter by topic
+    const topicWords = learnedWords.filter(uv => uv.vocabulary.topic === topic);
+
+    if (topicWords.length === 0) {
+      return [];
+    }
+
+    // Use existing generateTest logic but with filtered words
+    return this.generateTestQuestions(topicWords.slice(0, count), mode, inputType);
+  }
+
+  // Get user progress by topic
+  async getUserProgressByTopic(userId: number, topic: string) {
+    const topicWords = await this.userVocabularyRepository.find({
+      where: { userId },
+      relations: ['vocabulary'],
+    });
+
+    const filteredWords = topicWords.filter(uv => uv.vocabulary.topic === topic);
+
+    const totalLearned = filteredWords.length;
+    const mastered = filteredWords.filter(uv => uv.status === LearningStatus.MASTERED).length;
+    const learning = filteredWords.filter(uv => uv.status === LearningStatus.LEARNING).length;
+    const difficult = filteredWords.filter(uv => uv.status === LearningStatus.DIFFICULT).length;
+
+    return {
+      topic,
+      totalLearned,
+      mastered,
+      learning,
+      difficult,
+      masteryPercentage: totalLearned > 0 ? Math.round((mastered / totalLearned) * 100) : 0,
+    };
+  }
+
   // Helper method to calculate next review date
   private calculateNextReviewDate(quality: number, successCount: number): Date {
     const now = new Date();
@@ -281,5 +453,130 @@ export class LearningService {
 
     now.setDate(now.getDate() + daysToAdd);
     return now;
+  }
+
+  // Helper method to generate test questions (extracted from generateTest)
+  private async generateTestQuestions(userVocabs: any[], mode: string, inputType: string) {
+    const testQuestions = [];
+
+    for (let i = 0; i < userVocabs.length; i++) {
+      const userVocab = userVocabs[i];
+      const word = userVocab.vocabulary;
+
+      // Determine question type based on mode
+      let questionType: 'en-to-vi' | 'vi-to-en';
+      if (mode === 'mixed') {
+        questionType = Math.random() > 0.5 ? 'en-to-vi' : 'vi-to-en';
+      } else {
+        questionType = mode as 'en-to-vi' | 'vi-to-en';
+      }
+
+      // Determine input type
+      let currentInputType: 'multiple-choice' | 'text-input';
+      if (inputType === 'mixed') {
+        currentInputType = Math.random() > 0.5 ? 'multiple-choice' : 'text-input';
+      } else {
+        currentInputType = inputType as 'multiple-choice' | 'text-input';
+      }
+
+      if (currentInputType === 'text-input') {
+        // Text input questions
+        if (questionType === 'en-to-vi') {
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'en-to-vi',
+            inputType: 'text-input',
+            question: `Nghĩa của từ "${word.word}" là gì?`,
+            correctAnswer: word.meaning.toLowerCase().trim(),
+            word: word.word,
+            pronunciation: word.pronunciation,
+            topic: word.topic,
+            hints: [
+              `Chủ đề: ${word.topic || 'không xác định'}`,
+              `Từ loại: ${word.partOfSpeech || 'không xác định'}`,
+              `Độ khó: ${word.level || 'trung bình'}`,
+            ]
+          });
+        } else {
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'vi-to-en',
+            inputType: 'text-input',
+            question: `Từ tiếng Anh của "${word.meaning}" là gì?`,
+            correctAnswer: word.word.toLowerCase().trim(),
+            meaning: word.meaning,
+            pronunciation: word.pronunciation,
+            topic: word.topic,
+            hints: [
+              `Chủ đề: ${word.topic || 'không xác định'}`,
+              `Từ loại: ${word.partOfSpeech || 'không xác định'}`,
+              `Độ khó: ${word.level || 'trung bình'}`,
+            ]
+          });
+        }
+      } else {
+        // Multiple choice questions - get wrong answers from same topic when possible
+        const wrongAnswers = await this.vocabularyRepository
+          .createQueryBuilder('v')
+          .where('v.id != :correctId', { correctId: word.id })
+          .andWhere('v.topic = :topic', { topic: word.topic })
+          .orderBy('RANDOM()')
+          .take(3)
+          .getMany();
+
+        // If not enough wrong answers from same topic, get from any topic
+        if (wrongAnswers.length < 3) {
+          const additionalWrong = await this.vocabularyRepository
+            .createQueryBuilder('v')
+            .where('v.id != :correctId', { correctId: word.id })
+            .orderBy('RANDOM()')
+            .take(3 - wrongAnswers.length)
+            .getMany();
+          wrongAnswers.push(...additionalWrong);
+        }
+
+        if (questionType === 'en-to-vi') {
+          const options = [
+            { id: 1, text: word.meaning, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.meaning || 'Đáp án sai 1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.meaning || 'Đáp án sai 2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.meaning || 'Đáp án sai 3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'en-to-vi',
+            inputType: 'multiple-choice',
+            question: `Nghĩa của từ "${word.word}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            word: word.word,
+            pronunciation: word.pronunciation,
+            topic: word.topic,
+          });
+        } else {
+          const options = [
+            { id: 1, text: word.word, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.word || 'wrong1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.word || 'wrong2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.word || 'wrong3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'vi-to-en',
+            inputType: 'multiple-choice',
+            question: `Từ tiếng Anh của "${word.meaning}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            meaning: word.meaning,
+            pronunciation: word.pronunciation,
+            topic: word.topic,
+          });
+        }
+      }
+    }
+
+    return testQuestions;
   }
 }
