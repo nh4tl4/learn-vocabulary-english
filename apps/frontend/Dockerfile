@@ -1,56 +1,53 @@
-# Multi-stage build for Next.js Frontend
+# Optimized Multi-stage build for Next.js Frontend
 FROM node:18-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# Dependencies stage - cache this layer
+FROM base AS deps
 COPY apps/frontend/package*.json ./
-RUN npm install
+# Use npm cache mount for faster installs
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
 
-# Rebuild the source code only when needed
+# Build stage
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/frontend/ .
 
-# Set environment variables for build
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
+# Ensure public directory exists
+RUN mkdir -p public
 
-# Build the application with error handling
-RUN npm run build || (echo "Build failed, checking logs..." && cat .next/build-error.log 2>/dev/null || echo "No error log found" && exit 1)
+# Build with optimizations
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Production stage - minimal final image
+FROM node:18-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy built application
-COPY --from=builder /app/public ./public
+# Create necessary directories
+RUN mkdir -p public .next && chown -R nextjs:nodejs public .next
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Copy public folder from builder stage
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Copy the built application
+# Copy built application (standalone mode)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
-
 EXPOSE 3000
+ENV PORT=3000 HOSTNAME="0.0.0.0"
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# Start the server
 CMD ["node", "server.js"]
