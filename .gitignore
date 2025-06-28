@@ -240,7 +240,7 @@ docker-compose*.yml
 
 # Kubernetes
 #*.yaml
-*.yml
+#*.yml
 k8s/
 
 # Terraform

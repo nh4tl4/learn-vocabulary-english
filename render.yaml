@@ -1,7 +1,6 @@
 databases:
   - name: vocabulary-postgres
     databaseName: vocabulary_db
-    user: postgres
     plan: free
 
 services:
