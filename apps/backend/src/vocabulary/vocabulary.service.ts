@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Vocabulary } from '../database/entities/vocabulary.entity';
-import { UserVocabulary } from '../database/entities/user-vocabulary.entity';
+import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
 
 @Injectable()
 export class VocabularyService {
@@ -13,7 +13,7 @@ export class VocabularyService {
     private userVocabularyRepository: Repository<UserVocabulary>,
   ) {}
 
-  async getAllVocabularies(page: number = 1, limit: number = 20) {
+  async findAll(page: number = 1, limit: number = 20) {
     const [vocabularies, total] = await this.vocabularyRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
@@ -28,28 +28,41 @@ export class VocabularyService {
     };
   }
 
-  async getVocabularyById(id: number) {
-    return this.vocabularyRepository.findOne({ where: { id } });
+  async findRandom(count: number = 10) {
+    return await this.vocabularyRepository
+      .createQueryBuilder('vocabulary')
+      .orderBy('RANDOM()')
+      .limit(count)
+      .getMany();
   }
 
-  async createVocabulary(vocabularyData: Partial<Vocabulary>) {
+  async findOne(id: number) {
+    return await this.vocabularyRepository.findOne({ where: { id } });
+  }
+
+  async create(vocabularyData: any) {
     const vocabulary = this.vocabularyRepository.create(vocabularyData);
-    return this.vocabularyRepository.save(vocabulary);
+    return await this.vocabularyRepository.save(vocabulary);
   }
 
-  async getUserVocabularyProgress(userId: number) {
-    return this.userVocabularyRepository.find({
+  async getUserProgress(userId: number) {
+    const userVocabularies = await this.userVocabularyRepository.find({
       where: { userId },
       relations: ['vocabulary'],
       order: { lastReviewedAt: 'DESC' },
     });
+
+    return userVocabularies.map(uv => ({
+      vocabulary: uv.vocabulary,
+      status: uv.status,
+      correctCount: uv.correctCount,
+      incorrectCount: uv.incorrectCount,
+      accuracy: uv.accuracy,
+      nextReviewDate: uv.nextReviewDate,
+    }));
   }
 
-  async updateUserVocabularyProgress(
-    userId: number,
-    vocabularyId: number,
-    isCorrect: boolean,
-  ) {
+  async updateProgress(userId: number, vocabularyId: number, isCorrect: boolean) {
     let userVocabulary = await this.userVocabularyRepository.findOne({
       where: { userId, vocabularyId },
     });
@@ -58,39 +71,21 @@ export class VocabularyService {
       userVocabulary = this.userVocabularyRepository.create({
         userId,
         vocabularyId,
-        correctCount: 0,
-        incorrectCount: 0,
+        status: LearningStatus.LEARNING,
+        firstLearnedDate: new Date(),
       });
     }
 
     if (isCorrect) {
       userVocabulary.correctCount++;
-      if (userVocabulary.correctCount >= 3) {
-        userVocabulary.isLearned = true;
-      }
+      userVocabulary.status = LearningStatus.REVIEWING;
     } else {
       userVocabulary.incorrectCount++;
+      userVocabulary.status = LearningStatus.DIFFICULT;
     }
 
     userVocabulary.lastReviewedAt = new Date();
-    return this.userVocabularyRepository.save(userVocabulary);
-  }
 
-  async getRandomVocabularies(userId: number, count: number = 10) {
-    // Get vocabularies that user hasn't mastered yet
-    const unmastered = await this.vocabularyRepository
-      .createQueryBuilder('vocab')
-      .leftJoin(
-        'vocab.userVocabularies',
-        'uv',
-        'uv.vocabularyId = vocab.id AND uv.userId = :userId',
-        { userId },
-      )
-      .where('uv.isLearned IS NULL OR uv.isLearned = false')
-      .orderBy('RANDOM()')
-      .limit(count)
-      .getMany();
-
-    return unmastered;
+    return await this.userVocabularyRepository.save(userVocabulary);
   }
 }

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
-import { UserVocabulary } from '../database/entities/user-vocabulary.entity';
+import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
 
 @Injectable()
 export class UserService {
@@ -26,15 +26,15 @@ export class UserService {
     });
 
     const masteredWords = await this.userVocabularyRepository.count({
-      where: { userId, status: 'mastered' },
+      where: { userId, status: LearningStatus.MASTERED },
     });
 
     const reviewWords = await this.userVocabularyRepository.count({
-      where: { userId, status: 'reviewing' },
+      where: { userId, status: LearningStatus.REVIEWING },
     });
 
     const difficultWords = await this.userVocabularyRepository.count({
-      where: { userId, status: 'difficult' },
+      where: { userId, status: LearningStatus.DIFFICULT },
     });
 
     // Calculate accuracy

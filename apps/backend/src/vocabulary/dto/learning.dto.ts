@@ -1,5 +1,5 @@
 import { IsNumber, IsOptional, IsEnum, Min, Max } from 'class-validator';
-import { LearningStatus } from '../database/entities/user-vocabulary.entity';
+import { LearningStatus } from '../../database/entities/user-vocabulary.entity';
 
 export class SetDailyGoalDto {
   @IsNumber()
