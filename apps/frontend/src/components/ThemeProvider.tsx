@@ -4,19 +4,22 @@ import React, { useEffect } from 'react';
 import { useThemeStore } from '@/store/themeStore';
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // @ts-ignore
   const { theme, initializeTheme } = useThemeStore();
 
   useEffect(() => {
-    initializeTheme();
-  }, [initializeTheme]);
+    if (typeof initializeTheme === 'function') {
+      initializeTheme();
+    }
+  }, []);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+    if (typeof window !== 'undefined') {
+      const root = document.documentElement;
+      if (theme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
     }
   }, [theme]);
 

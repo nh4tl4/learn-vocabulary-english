@@ -30,18 +30,32 @@ function LearnContent() {
 
   const isReviewMode = searchParams?.get('mode') === 'review';
 
+  // Separate loadUser call to avoid dependency issues
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+    const initAuth = async () => {
+      try {
+        await loadUser();
+      } catch (error) {
+        console.error('Error loading user:', error);
+      }
+    };
+    initAuth();
+  }, []); // Empty dependency array
 
+  // Separate effect for authentication check
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/auth');
       return;
     }
-
-    loadVocabularies();
   }, [isAuthenticated, router]);
+
+  // Separate effect for loading vocabularies
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadVocabularies();
+    }
+  }, [isAuthenticated]); // Remove router dependency
 
   const loadVocabularies = async () => {
     try {
@@ -192,7 +206,7 @@ function LearnContent() {
           </div>
 
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {isReviewMode ? 'Ôn tập từ vựng' : 'Học từ vựng'}
+            {isReviewMode ? 'Ôn tập từ vựng' : 'Học t�� vựng'}
           </h1>
 
           <div className="flex items-center gap-4 mb-4">
