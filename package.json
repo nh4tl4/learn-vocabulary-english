@@ -1,0 +1,33 @@
+{
+  "name": "learn-vocabulary-english",
+  "version": "1.0.0",
+  "description": "English vocabulary learning app with NestJS backend and NextJS frontend",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=@vocab/backend",
+    "dev:frontend": "npm run dev --workspace=@vocab/frontend",
+    "build": "npm run build --workspaces",
+    "build:backend": "npm run build --workspace=@vocab/backend",
+    "build:frontend": "npm run build --workspace=@vocab/frontend",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "npm run start:prod --workspace=@vocab/backend",
+    "start:frontend": "npm run start --workspace=@vocab/frontend",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

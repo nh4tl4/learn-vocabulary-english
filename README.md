@@ -1,93 +1,177 @@
-# Learn Vocabulary EngLish
+# Learn English Vocabulary - Monorepo
 
+Ứng dụng học từ vựng tiếng Anh với NestJS backend và NextJS frontend.
 
+## 🚀 Tính năng
 
-## Getting started
+### Backend (NestJS)
+- ✅ Authentication với JWT
+- ✅ Quản lý người dùng
+- ✅ Quản lý từ vựng
+- ✅ Theo dõi tiến độ học tập
+- ✅ API RESTful
+- ✅ PostgreSQL database với TypeORM
+- ✅ Validation và error handling
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### Frontend (NextJS)
+- ✅ Giao diện hiện đại với TailwindCSS
+- ✅ Authentication system
+- ✅ Dashboard với thống kê
+- ✅ Trang học từ vựng tương tác
+- ✅ State management với Zustand
+- ✅ Form validation với React Hook Form
+- ✅ Toast notifications
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## 🛠 Công nghệ sử dụng
 
-## Add your files
+### Backend
+- **NestJS** - Node.js framework
+- **TypeORM** - ORM cho TypeScript
+- **PostgreSQL** - Database
+- **JWT** - Authentication
+- **Passport** - Authentication middleware
+- **Class Validator** - Validation
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+### Frontend
+- **NextJS 14** - React framework
+- **TypeScript** - Type safety
+- **TailwindCSS** - Styling
+- **Zustand** - State management
+- **Axios** - HTTP client
+- **React Hook Form** - Form handling
+- **React Hot Toast** - Notifications
+
+## 🏗 Cấu trúc project
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/nh4tl4/learn-vocabulary-english.git
-git branch -M main
-git push -uf origin main
+learn-vocabulary-english/
+├── apps/
+│   ├── backend/          # NestJS API
+│   └── frontend/         # NextJS app
+├── packages/             # Shared packages (future)
+└── package.json          # Root package.json
 ```
 
-## Integrate with your tools
+## 🚀 Cài đặt và chạy
 
-- [ ] [Set up project integrations](https://gitlab.com/nh4tl4/learn-vocabulary-english/-/settings/integrations)
+### 1. Cài đặt dependencies
 
-## Collaborate with your team
+```bash
+# Cài đặt dependencies cho toàn bộ project
+npm install
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+# Hoặc cài đặt riêng cho từng app
+npm install --workspace=@vocab/backend
+npm install --workspace=@vocab/frontend
+```
 
-## Test and Deploy
+### 2. Cấu hình môi trường
 
-Use the built-in continuous integration in GitLab.
+```bash
+# Copy file cấu hình mẫu
+cp .env.example .env
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+# Chỉnh sửa file .env với thông tin database của bạn
+```
 
-***
+### 3. Cài đặt PostgreSQL
 
-# Editing this README
+```bash
+# macOS với Homebrew
+brew install postgresql
+brew services start postgresql
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+# Tạo database
+createdb vocabulary_db
+```
 
-## Suggestions for a good README
+### 4. Chạy ứng dụng
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```bash
+# Chạy cả backend và frontend cùng lúc
+npm run dev
 
-## Name
-Choose a self-explaining name for your project.
+# Hoặc chạy riêng từng service
+npm run dev:backend  # Backend chạy trên port 3001
+npm run dev:frontend # Frontend chạy trên port 3000
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## 📱 Sử dụng
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+1. **Đăng ký/Đăng nhập**: Truy cập http://localhost:3000
+2. **Dashboard**: Xem thống kê và tiến độ học tập
+3. **Học từ vựng**: Click "Bắt đầu học" để học từ vựng mới
+4. **Ôn tập**: Click "Ôn tập" để ôn lại từ vựng đã học
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## 🗃 Database Schema
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### Users
+- id, email, password, name, role, createdAt, updatedAt
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### Vocabularies  
+- id, word, meaning, pronunciation, example, level, partOfSpeech, createdAt, updatedAt
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### UserVocabularies
+- id, userId, vocabularyId, isLearned, correctCount, incorrectCount, lastReviewedAt, createdAt, updatedAt
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## 📝 API Endpoints
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+### Authentication
+- `POST /api/auth/register` - Đăng ký
+- `POST /api/auth/login` - Đăng nhập
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### User
+- `GET /api/user/profile` - Lấy thông tin profile
+- `GET /api/user/stats` - Lấy thống kê học tập
+- `PUT /api/user/profile` - Cập nhật profile
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### Vocabulary
+- `GET /api/vocabulary` - Lấy danh sách từ vựng
+- `GET /api/vocabulary/random` - Lấy từ vựng ngẫu nhiên
+- `GET /api/vocabulary/progress` - Lấy tiến độ học tập
+- `POST /api/vocabulary/progress` - Cập nhật tiến độ
+- `POST /api/vocabulary` - Tạo từ vựng mới
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## 🔧 Scripts có sẵn
 
-## License
-For open source projects, say how it is licensed.
+```bash
+# Development
+npm run dev                 # Chạy cả backend và frontend
+npm run dev:backend        # Chỉ chạy backend
+npm run dev:frontend       # Chỉ chạy frontend
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+# Build
+npm run build              # Build cả hai apps
+npm run build:backend      # Build backend
+npm run build:frontend     # Build frontend
+
+# Production
+npm start                  # Chạy production
+npm run start:backend      # Chạy backend production
+npm run start:frontend     # Chạy frontend production
+
+# Testing & Linting
+npm run test               # Chạy tests
+npm run lint               # Lint code
+```
+
+## 🎯 Roadmap
+
+- [ ] Thêm audio phát âm từ vựng
+- [ ] Các loại bài tập đa dạng (multiple choice, fill in the blank)
+- [ ] Hệ thống level và achievements
+- [ ] Export/Import từ vựng
+- [ ] PWA support
+- [ ] Mobile app với React Native
+
+## 🤝 Đóng góp
+
+1. Fork project
+2. Tạo branch mới (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add some amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Tạo Pull Request
+
+## 📄 License
+
+MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
