@@ -5,9 +5,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
+  // Enable CORS - Allow all origins in production
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:3000',
     credentials: true,
   });
 
@@ -17,7 +17,9 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  await app.listen(3001);
-  console.log('Backend running on http://localhost:3001');
+  // Use PORT environment variable or default to 3000
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`Backend running on port ${port}`);
 }
 bootstrap();
