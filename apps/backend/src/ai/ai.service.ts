@@ -1,30 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
 
 @Injectable()
 export class AIService {
-  private openai: OpenAI;
   private geminiApiKey: string;
 
   constructor(private configService: ConfigService) {
-    // OpenAI setup (backup)
-    const openaiApiKey = this.configService.get<string>('OPENAI_API_KEY');
-    if (openaiApiKey) {
-      this.openai = new OpenAI({
-        apiKey: openaiApiKey,
-      });
-    }
-
-    // Gemini setup (primary)
-    this.geminiApiKey = this.configService.get<string>('GEMINI_API_KEY');
+    // Gemini setup (primary and only AI provider)
+    this.geminiApiKey = this.configService.get<string>('GEMINI_API_KEY') || 'AIzaSyBkeiHmTNwA0DEBVL4CJ6EYM1aTvDPoPVI';
+    console.log('Gemini API Key available:', !!this.geminiApiKey);
   }
 
   // Check available AI providers
   getAvailableProviders(): string[] {
     const providers = [];
     if (this.geminiApiKey) providers.push('gemini');
-    if (this.openai) providers.push('openai');
     providers.push('fallback');
     return providers;
   }
@@ -33,14 +23,12 @@ export class AIService {
   async chatWithAI(userMessage: string, conversationHistory: Array<{role: string, content: string}>): Promise<string> {
     const providers = this.getAvailableProviders();
 
-    // Try providers in order: Gemini first (free), then others
+    // Try providers in order: Gemini first (free), then fallback
     for (const provider of providers) {
       try {
         switch (provider) {
           case 'gemini':
             return await this.chatWithGemini(userMessage, conversationHistory);
-          case 'openai':
-            return await this.chatWithOpenAI(userMessage, conversationHistory);
           case 'fallback':
             return this.getFallbackResponse(userMessage);
         }
@@ -127,44 +115,6 @@ Teacher:`;
       console.error('Gemini API Error:', error);
       throw error;
     }
-  }
-
-  // OpenAI Chat (BACKUP)
-  private async chatWithOpenAI(userMessage: string, conversationHistory: Array<{role: string, content: string}>): Promise<string> {
-    if (!this.openai) throw new Error('OpenAI not available');
-
-    const validHistory = conversationHistory.slice(-5).map(msg => ({
-      role: (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system')
-        ? msg.role as 'user' | 'assistant' | 'system'
-        : 'user' as const,
-      content: msg.content
-    }));
-
-    const messages = [
-      {
-        role: 'system' as const,
-        content: `You are a friendly and patient English teacher helping Vietnamese students practice English. 
-        - Reply in simple, easy-to-understand English
-        - Gently correct grammar mistakes
-        - Encourage students to continue practicing
-        - If students speak Vietnamese, encourage them to try English
-        - Keep conversations interesting and educational`
-      },
-      ...validHistory,
-      {
-        role: 'user' as const,
-        content: userMessage
-      }
-    ];
-
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: messages,
-      max_tokens: 150,
-      temperature: 0.7,
-    });
-
-    return response.choices[0]?.message?.content || "I'm sorry, I didn't understand. Could you try again?";
   }
 
   // Generate example sentences using Gemini
@@ -276,120 +226,137 @@ Teacher:`;
     }
   }
 
-  // Assess difficulty level of a word
+  // Assess difficulty level of a word using Gemini
   async assessWordDifficulty(word: string, meaning: string): Promise<'beginner' | 'intermediate' | 'advanced'> {
-    if (!this.openai) {
-      return 'intermediate'; // Default fallback
-    }
+    if (this.geminiApiKey) {
+      try {
+        const prompt = `Assess the difficulty level of the English word "${word}" (meaning: ${meaning}) for Vietnamese English learners. Reply with only one word: beginner, intermediate, or advanced.`;
 
-    try {
-      const prompt = `Đánh giá độ khó của t�� tiếng Anh "${word}" (nghĩa: ${meaning}) cho người học tiếng Anh. Trả lời chỉ một từ: beginner, intermediate, hoặc advanced.`;
-
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an English language assessment expert. Classify words by difficulty level for Vietnamese English learners.'
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 10,
-        temperature: 0.3,
-      });
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 10,
+            }
+          })
+        });
 
-      const level = response.choices[0]?.message?.content?.trim().toLowerCase();
-      if (['beginner', 'intermediate', 'advanced'].includes(level)) {
-        return level as 'beginner' | 'intermediate' | 'advanced';
+        if (response.ok) {
+          const data = await response.json();
+          const level = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
+          if (['beginner', 'intermediate', 'advanced'].includes(level)) {
+            return level as 'beginner' | 'intermediate' | 'advanced';
+          }
+        }
+      } catch (error) {
+        console.error('Gemini difficulty assessment error:', error);
       }
-      return 'intermediate';
-    } catch (error) {
-      console.error('AI Difficulty Assessment Error:', error);
-      return 'intermediate';
     }
+
+    return 'intermediate'; // Default fallback
   }
 
-  // Generate pronunciation tip
+  // Generate pronunciation tip using Gemini
   async generatePronunciationTip(word: string): Promise<string> {
-    if (!this.openai) {
-      return `Phát âm: /${word}/`;
-    }
+    if (this.geminiApiKey) {
+      try {
+        const prompt = `Create a pronunciation tip in Vietnamese for the English word "${word}". Help Vietnamese speakers pronounce it correctly. Give short and easy-to-understand advice.`;
 
-    try {
-      const prompt = `Tạo mẹo phát âm tiếng Anh cho từ "${word}" bằng tiếng Việt, giúp người Việt phát âm đúng. Đưa ra lời khuyên ngắn gọn và dễ hiểu.`;
-
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a pronunciation coach helping Vietnamese speakers learn English pronunciation. Give practical tips in Vietnamese.'
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 150,
-        temperature: 0.7,
-      });
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 150,
+            }
+          })
+        });
 
-      return response.choices[0]?.message?.content || `Luyện tập phát âm từ "${word}" thường xuyên.`;
-    } catch (error) {
-      console.error('AI Pronunciation Tip Error:', error);
-      return `Luyện tập phát âm từ "${word}" thường xuyên.`;
+        if (response.ok) {
+          const data = await response.json();
+          const tip = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (tip) {
+            return tip.trim();
+          }
+        }
+      } catch (error) {
+        console.error('Gemini pronunciation tip error:', error);
+      }
     }
+
+    return `Luyện tập phát âm từ "${word}" thường xuyên.`;
   }
 
-  // Generate personalized learning suggestions
+  // Generate personalized learning suggestions using Gemini
   async generateLearningPath(userLevel: string, weakAreas: string[], interests: string[]): Promise<string[]> {
-    if (!this.openai) {
-      return ['Tiếp tục học từ vựng cơ bản', 'Luyện tập ngữ pháp', 'Đọc sách tiếng Anh đơn giản'];
-    }
+    if (this.geminiApiKey) {
+      try {
+        const prompt = `Create 5 personalized learning suggestions in Vietnamese for an English student:
+        - Level: ${userLevel}
+        - Weak areas: ${weakAreas.join(', ')}
+        - Interests: ${interests.join(', ')}
+        
+        Give practical and achievable suggestions. Format as a numbered list.`;
 
-    try {
-      const prompt = `Tạo 5 gợi ý học tập cá nhân hóa cho học sinh tiếng Anh:
-      - Trình độ: ${userLevel}
-      - Điểm yếu: ${weakAreas.join(', ')}
-      - Sở thích: ${interests.join(', ')}
-      
-      Đưa ra các gợi ý thực tế và có thể thực hiện được.`;
-
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an experienced English learning advisor. Create personalized learning recommendations in Vietnamese.'
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 400,
-        temperature: 0.8,
-      });
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.8,
+              maxOutputTokens: 400,
+            }
+          })
+        });
 
-      const content = response.choices[0]?.message?.content || '';
-      return content.split('\n').filter(line => line.trim().length > 0).slice(0, 5);
-    } catch (error) {
-      console.error('AI Learning Path Error:', error);
-      return [
-        'Học 10 từ vựng mới mỗi ngày',
-        'Luyện tập phát âm 15 phút/ngày',
-        'Đọc tin tức tiếng Anh đơn giản',
-        'Xem phim tiếng Anh có phụ đề',
-        'Thực hành speaking với AI chat bot'
-      ];
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const suggestions = content.split('\n').filter(line => line.trim().length > 0).slice(0, 5);
+          if (suggestions.length > 0) {
+            return suggestions;
+          }
+        }
+      } catch (error) {
+        console.error('Gemini learning path error:', error);
+      }
     }
+
+    return [
+      'Học 10 từ vựng mới mỗi ngày',
+      'Luyện tập phát âm 15 phút/ngày',
+      'Đọc tin tức tiếng Anh đơn giản',
+      'Xem phim tiếng Anh có phụ đề',
+      'Thực hành speaking với AI chat bot'
+    ];
   }
 
   // Check if AI is available
   isAIAvailable(): boolean {
-    return !!(this.geminiApiKey || this.openai);
+    return !!this.geminiApiKey;
   }
 }

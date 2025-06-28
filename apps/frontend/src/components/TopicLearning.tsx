@@ -44,12 +44,16 @@ export default function TopicLearning() {
       setTopicStats(statsResponse.data);
 
       // Load progress for each topic
-      const progressPromises = topicsResponse.data.map(async (topic: string) => {
+      const progressPromises = topicsResponse.data.map(async (topicObj: any) => {
+        // Fix: Extract topic name from object
+        const topicName = typeof topicObj === 'string' ? topicObj : topicObj.name;
+
         try {
-          const progressResponse = await vocabularyAPI.getProgressByTopic(topic);
-          return { topic, progress: progressResponse.data };
+          const progressResponse = await vocabularyAPI.getProgressByTopic(topicName);
+          return { topic: topicName, progress: progressResponse.data };
         } catch (error) {
-          return { topic, progress: null };
+          console.error(`Failed to load progress for topic ${topicName}:`, error);
+          return { topic: topicName, progress: null };
         }
       });
 
