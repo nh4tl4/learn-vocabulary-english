@@ -109,13 +109,13 @@ export default function TopicLearning() {
   const startTopicLearning = (topic: string, mode: 'learn' | 'review' | 'test') => {
     switch (mode) {
       case 'learn':
-        router.push(`/learn/topic/${encodeURIComponent(topic)}/new`);
+        router.push(`/learn/new?topic=${topic}`);
         break;
       case 'review':
-        router.push(`/learn/topic/${encodeURIComponent(topic)}/review`);
+        router.push(`/learn/review?topic=${topic}`);
         break;
       case 'test':
-        router.push(`/learn/topic/${encodeURIComponent(topic)}/test`);
+        router.push(`/learn/test?topic=${topic}`);
         break;
     }
   };

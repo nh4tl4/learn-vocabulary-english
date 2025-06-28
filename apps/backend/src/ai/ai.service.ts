@@ -11,6 +11,11 @@ export class AIService {
     console.log('Gemini API Key available:', !!this.geminiApiKey);
   }
 
+  // Add missing isAIAvailable method
+  isAIAvailable(): boolean {
+    return !!this.geminiApiKey;
+  }
+
   // Check available AI providers
   getAvailableProviders(): string[] {
     const providers = [];
@@ -20,24 +25,17 @@ export class AIService {
   }
 
   // Main chat function - tries Gemini first, then fallback
-  async chatWithAI(userMessage: string, conversationHistory: Array<{role: string, content: string}>): Promise<string> {
-    const providers = this.getAvailableProviders();
-
-    // Try providers in order: Gemini first (free), then fallback
-    for (const provider of providers) {
-      try {
-        switch (provider) {
-          case 'gemini':
-            return await this.chatWithGemini(userMessage, conversationHistory);
-          case 'fallback':
-            return this.getFallbackResponse(userMessage);
-        }
-      } catch (error) {
-        console.error(`${provider} failed:`, error.message);
-        continue; // Try next provider
+  async chatWithAI(userMessage: string, conversationHistory: Array<{role: string, content: string}> = []): Promise<string> {
+    try {
+      // Try Gemini first if available
+      if (this.geminiApiKey) {
+        return await this.chatWithGemini(userMessage, conversationHistory);
       }
+    } catch (error) {
+      console.error('Gemini failed, using fallback:', error.message);
     }
 
+    // Always fallback to smart responses
     return this.getFallbackResponse(userMessage);
   }
 
@@ -353,10 +351,5 @@ Teacher:`;
       'Xem phim tiếng Anh có phụ đề',
       'Thực hành speaking với AI chat bot'
     ];
-  }
-
-  // Check if AI is available
-  isAIAvailable(): boolean {
-    return !!this.geminiApiKey;
   }
 }
