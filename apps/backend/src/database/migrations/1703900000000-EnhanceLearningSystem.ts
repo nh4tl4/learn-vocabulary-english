@@ -4,7 +4,7 @@ export class EnhanceLearningSystem1703900000000 implements MigrationInterface {
   name = 'EnhanceLearningSystem1703900000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add new columns to user table (not users!)
+    // Add new columns to user table
     await queryRunner.query(`
       ALTER TABLE "user" 
       ADD COLUMN IF NOT EXISTS "dailyGoal" integer DEFAULT 10,
@@ -16,10 +16,18 @@ export class EnhanceLearningSystem1703900000000 implements MigrationInterface {
       ADD COLUMN IF NOT EXISTS "averageTestScore" integer DEFAULT 0
     `);
 
-    // Add new columns to user_vocabulary table for spaced repetition
+    // Create enum type for status first
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TYPE learning_status_enum AS ENUM ('new', 'learning', 'reviewing', 'mastered', 'difficult');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+
+    // Add new columns to user_vocabulary table with proper types
     await queryRunner.query(`
       ALTER TABLE "user_vocabulary"
-      ADD COLUMN IF NOT EXISTS "status" varchar DEFAULT 'new',
       ADD COLUMN IF NOT EXISTS "correctCount" integer DEFAULT 0,
       ADD COLUMN IF NOT EXISTS "incorrectCount" integer DEFAULT 0,
       ADD COLUMN IF NOT EXISTS "reviewCount" integer DEFAULT 0,
@@ -30,22 +38,13 @@ export class EnhanceLearningSystem1703900000000 implements MigrationInterface {
       ADD COLUMN IF NOT EXISTS "firstLearnedDate" timestamp
     `);
 
-    // Create enum type for status if it doesn't exist
+    // Add status column with enum type directly
     await queryRunner.query(`
-      DO $$ BEGIN
-        CREATE TYPE learning_status_enum AS ENUM ('new', 'learning', 'reviewing', 'mastered', 'difficult');
-      EXCEPTION
-        WHEN duplicate_object THEN null;
-      END $$;
+      ALTER TABLE "user_vocabulary"
+      ADD COLUMN IF NOT EXISTS "status" learning_status_enum DEFAULT 'new'
     `);
 
-    // Update status column to use enum
-    await queryRunner.query(`
-      ALTER TABLE "user_vocabulary" 
-      ALTER COLUMN "status" TYPE learning_status_enum USING "status"::learning_status_enum
-    `);
-
-    // Create index for efficient queries
+    // Create indexes for efficient queries
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS "IDX_user_vocabulary_next_review" 
       ON "user_vocabulary" ("userId", "nextReviewDate")
@@ -76,7 +75,7 @@ export class EnhanceLearningSystem1703900000000 implements MigrationInterface {
       DROP COLUMN IF EXISTS "firstLearnedDate"
     `);
 
-    // Remove columns from user (not users!)
+    // Remove columns from user table
     await queryRunner.query(`
       ALTER TABLE "user"
       DROP COLUMN IF EXISTS "dailyGoal",
