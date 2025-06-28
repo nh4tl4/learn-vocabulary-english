@@ -86,22 +86,23 @@ function LearnContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 dark:border-blue-400"></div>
       </div>
     );
   }
 
   if (vocabularies.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Không có từ vựng nào để học
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Không có từ vựng</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Không thể tải từ vựng. Vui lòng thử lại sau.
+          </p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
           >
             Quay lại Dashboard
           </button>
@@ -113,108 +114,109 @@ function LearnContent() {
   const currentVocab = vocabularies[currentIndex];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {isReviewMode ? 'Ôn tập từ vựng' : 'Học từ vựng mới'}
-              </h1>
-              <p className="text-gray-600">
-                Câu {currentIndex + 1} / {vocabularies.length}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Điểm: {score.correct}/{score.total}
-              </div>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                Thoát
-              </button>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Quay lại
+            </button>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {currentIndex + 1} / {vocabularies.length}
             </div>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="bg-gray-200 rounded-full h-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            {isReviewMode ? 'Ôn tập từ vựng' : 'Học từ vựng'}
+          </h1>
+
+          <div className="flex items-center gap-4 mb-4">
+            <div className="text-sm text-green-600 dark:text-green-400">
+              Đúng: {score.correct}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Tổng: {score.total}
+            </div>
+            {score.total > 0 && (
+              <div className="text-sm text-blue-600 dark:text-blue-400">
+                Tỷ lệ: {Math.round((score.correct / score.total) * 100)}%
+              </div>
+            )}
+          </div>
+
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
-              className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${((currentIndex + 1) / vocabularies.length) * 100}%` }}
             ></div>
           </div>
         </div>
 
-        {/* Vocabulary Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="mb-8">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
+          <div className="text-center">
+            <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
               {currentVocab.word}
             </h2>
+
             {currentVocab.pronunciation && (
-              <p className="text-lg text-gray-600 mb-2">
+              <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
                 /{currentVocab.pronunciation}/
               </p>
             )}
-            <span className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
-              {currentVocab.partOfSpeech}
-            </span>
-          </div>
 
-          {!showAnswer ? (
-            <div>
-              <p className="text-gray-600 mb-8">
-                Bạn có bi��t nghĩa của từ này không?
-              </p>
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => setShowAnswer(true)}
-                  className="bg-primary-600 text-white px-8 py-3 rounded-md hover:bg-primary-700 text-lg"
-                >
-                  Xem đáp án
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="mb-8 p-6 bg-gray-50 rounded-lg">
-                <p className="text-xl text-gray-900 mb-4">
-                  <strong>Nghĩa:</strong> {currentVocab.meaning}
-                </p>
+            {currentVocab.partOfSpeech && (
+              <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm px-3 py-1 rounded-full mb-6">
+                {currentVocab.partOfSpeech}
+              </span>
+            )}
+
+            {!showAnswer ? (
+              <button
+                onClick={() => setShowAnswer(true)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors"
+              >
+                Hiển thị nghĩa
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <h3 className="text-lg font-semibold text-green-800 dark:text-green-400 mb-2">Nghĩa:</h3>
+                  <p className="text-xl text-green-700 dark:text-green-300">{currentVocab.meaning}</p>
+                </div>
+
                 {currentVocab.example && (
-                  <p className="text-gray-700">
-                    <strong>Ví dụ:</strong> {currentVocab.example}
-                  </p>
+                  <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-400 mb-2">Ví dụ:</h3>
+                    <p className="text-lg text-blue-700 dark:text-blue-300 italic">{currentVocab.example}</p>
+                  </div>
                 )}
-              </div>
 
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => handleAnswer(false)}
-                  className="bg-red-500 text-white px-8 py-3 rounded-md hover:bg-red-600 text-lg"
-                >
-                  Chưa biết 😅
-                </button>
-                <button
-                  onClick={() => handleAnswer(true)}
-                  className="bg-green-500 text-white px-8 py-3 rounded-md hover:bg-green-600 text-lg"
-                >
-                  Đã biết 🎉
-                </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                  <button
+                    onClick={() => handleAnswer(false)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                  >
+                    😓 Khó
+                  </button>
+                  <button
+                    onClick={() => handleAnswer(true)}
+                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                  >
+                    😊 Dễ
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Navigation */}
-        <div className="mt-8 flex justify-between">
+        <div className="flex justify-between items-center">
           <button
             onClick={() => {
               if (currentIndex > 0) {
@@ -223,25 +225,13 @@ function LearnContent() {
               }
             }}
             disabled={currentIndex === 0}
-            className="px-6 py-3 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+            className="flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            ← Câu trước
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Trước
           </button>
-
-          <div className="flex space-x-2">
-            {vocabularies.map((_, index) => (
-              <div
-                key={index}
-                className={`w-3 h-3 rounded-full ${
-                  index === currentIndex 
-                    ? 'bg-primary-600' 
-                    : index < currentIndex 
-                    ? 'bg-green-500' 
-                    : 'bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
 
           <button
             onClick={() => {
@@ -251,12 +241,15 @@ function LearnContent() {
               }
             }}
             disabled={currentIndex === vocabularies.length - 1}
-            className="px-6 py-3 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+            className="flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
-            Câu sau →
+            Tiếp theo
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
