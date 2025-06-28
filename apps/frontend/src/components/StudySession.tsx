@@ -22,6 +22,7 @@ export default function StudySession() {
   const [wordStartTime, setWordStartTime] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [learnedCount, setLearnedCount] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -52,6 +53,8 @@ export default function StudySession() {
         responseTime,
       });
 
+      setLearnedCount(learnedCount + 1);
+
       if (currentIndex < words.length - 1) {
         setCurrentIndex(currentIndex + 1);
         setShowMeaning(false);
@@ -67,21 +70,24 @@ export default function StudySession() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
 
   if (words.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
-        <h2 className="text-2xl font-bold mb-4">No New Words</h2>
-        <p className="text-gray-600 mb-6">You've completed your daily goal for new words!</p>
+      <div className="max-w-2xl mx-auto p-4 sm:p-6 text-center">
+        <div className="text-4xl sm:text-6xl mb-4">🎉</div>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4">Không có từ mới!</h2>
+        <p className="text-gray-600 mb-6 text-sm sm:text-base">
+          Bạn đã hoàn thành mục tiêu học tập hôm nay. Tuyệt vời!
+        </p>
         <button
           onClick={() => router.push('/dashboard')}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-blue-700 text-sm sm:text-base"
         >
-          Back to Dashboard
+          Về Trang Chủ
         </button>
       </div>
     );
@@ -89,148 +95,131 @@ export default function StudySession() {
 
   if (sessionComplete) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
+      <div className="max-w-2xl mx-auto p-4 sm:p-6 text-center">
         <div className="mb-6">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold mb-2">Session Complete!</h2>
-          <p className="text-gray-600">You've learned {words.length} new words</p>
-        </div>
-
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <div className="text-sm text-gray-500 mb-1">Session Time</div>
-          <div className="text-xl font-semibold">
-            {Math.round((Date.now() - sessionStartTime) / 60000)} minutes
+          <div className="text-4xl sm:text-6xl mb-4">✅</div>
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">Hoàn thành phiên học!</h2>
+          <p className="text-gray-600 mb-6 text-sm sm:text-base">
+            Bạn đã học <strong>{learnedCount}</strong> từ mới. Tuyệt vời!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-blue-700 text-sm sm:text-base"
+            >
+              Về Trang Chủ
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-green-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-green-700 text-sm sm:text-base"
+            >
+              Học Thêm
+            </button>
           </div>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            onClick={() => router.push('/learn/review')}
-            className="flex-1 bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600"
-          >
-            Review Words
-          </button>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-          >
-            Dashboard
-          </button>
         </div>
       </div>
     );
   }
 
   const currentWord = words[currentIndex];
-  const progress = ((currentIndex + 1) / words.length) * 100;
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      {/* Progress Bar */}
-      <div className="mb-6">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Word {currentIndex + 1} of {words.length}</span>
-          <span>{Math.round(progress)}%</span>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-0">Học Từ Mới</h1>
+          <div className="text-sm sm:text-base text-gray-600">
+            {currentIndex + 1} / {words.length}
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
           <div
-            className="bg-blue-600 rounded-full h-2 transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="bg-green-600 h-2 sm:h-3 rounded-full transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / words.length) * 100}%` }}
           ></div>
         </div>
       </div>
 
       {/* Word Card */}
-      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">{currentWord.word}</h1>
+      <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 mb-6 sm:mb-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
+            {currentWord.word}
+          </h2>
           {currentWord.pronunciation && (
-            <p className="text-lg text-gray-500">/{currentWord.pronunciation}/</p>
+            <p className="text-gray-500 text-lg sm:text-xl mb-2">
+              /{currentWord.pronunciation}/
+            </p>
           )}
           {currentWord.partOfSpeech && (
-            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm mt-2">
+            <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
               {currentWord.partOfSpeech}
+            </span>
+          )}
+          {currentWord.level && (
+            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm ml-2">
+              {currentWord.level}
             </span>
           )}
         </div>
 
-        {!showMeaning ? (
-          <div>
-            <p className="text-gray-600 mb-6">Try to recall the meaning, then reveal the answer</p>
-            <button
-              onClick={() => setShowMeaning(true)}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 text-lg"
-            >
-              Show Meaning
-            </button>
-          </div>
-        ) : (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-3">{currentWord.meaning}</h2>
-              {currentWord.example && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-700 italic">"{currentWord.example}"</p>
-                </div>
-              )}
+        {showMeaning && (
+          <div className="border-t pt-6 sm:pt-8">
+            <div className="mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Nghĩa:</h3>
+              <p className="text-gray-700 text-base sm:text-lg">{currentWord.meaning}</p>
             </div>
 
-            <div>
-              <p className="text-gray-600 mb-4">How well did you know this word?</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <QualityButton
-                  quality={1}
-                  label="Didn't know"
-                  color="bg-red-500 hover:bg-red-600"
-                  onClick={() => handleQualityRating(1)}
-                />
-                <QualityButton
-                  quality={2}
-                  label="Vague idea"
-                  color="bg-orange-500 hover:bg-orange-600"
-                  onClick={() => handleQualityRating(2)}
-                />
-                <QualityButton
-                  quality={4}
-                  label="Knew it"
-                  color="bg-green-500 hover:bg-green-600"
-                  onClick={() => handleQualityRating(4)}
-                />
-                <QualityButton
-                  quality={5}
-                  label="Easy"
-                  color="bg-blue-500 hover:bg-blue-600"
-                  onClick={() => handleQualityRating(5)}
-                />
+            {currentWord.example && (
+              <div className="mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2">Ví dụ:</h3>
+                <p className="text-gray-700 italic text-base sm:text-lg">{currentWord.example}</p>
               </div>
+            )}
+
+            {/* Quality Rating Buttons */}
+            <div className="space-y-3 sm:space-y-0 sm:space-x-4 sm:flex">
+              <button
+                onClick={() => handleQualityRating(1)}
+                className="w-full sm:flex-1 bg-red-500 text-white px-4 py-3 rounded-lg hover:bg-red-600 text-sm sm:text-base"
+              >
+                Khó nhớ 😰
+              </button>
+              <button
+                onClick={() => handleQualityRating(3)}
+                className="w-full sm:flex-1 bg-yellow-500 text-white px-4 py-3 rounded-lg hover:bg-yellow-600 text-sm sm:text-base"
+              >
+                Bình thường 😐
+              </button>
+              <button
+                onClick={() => handleQualityRating(5)}
+                className="w-full sm:flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 text-sm sm:text-base"
+              >
+                Dễ nhớ 😊
+              </button>
             </div>
+          </div>
+        )}
+
+        {!showMeaning && (
+          <div className="text-center">
+            <button
+              onClick={() => setShowMeaning(true)}
+              className="bg-green-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:bg-green-700 text-base sm:text-lg"
+            >
+              Hiển thị nghĩa
+            </button>
           </div>
         )}
       </div>
 
-      {/* Tips */}
-      <div className="mt-6 bg-blue-50 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-800 mb-2">💡 Learning Tip</h3>
-        <p className="text-blue-700 text-sm">
-          Try to use the word in your own sentence to better remember it. The spaced repetition system will schedule reviews based on how well you know each word.
-        </p>
+      {/* Help Text */}
+      <div className="text-center text-gray-500 text-xs sm:text-sm">
+        Đánh giá mức độ dễ nhớ của từ này để cải thiện quá trình học tập
       </div>
     </div>
-  );
-}
-
-function QualityButton({ quality, label, color, onClick }: {
-  quality: number;
-  label: string;
-  color: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`${color} text-white px-4 py-3 rounded-lg text-sm font-medium transition-colors`}
-    >
-      {label}
-    </button>
   );
 }
