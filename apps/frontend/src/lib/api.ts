@@ -1,8 +1,15 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// Use production backend URL from Render or fallback to localhost
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vocabulary-backend.onrender.com/api';
+// Debug environment variables
+console.log('Environment check:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+
+// Use production backend URL from Render environment or fallback to localhost for development
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+console.log('Final API_URL:', API_URL);
 
 const apiClient = axios.create({
   baseURL: API_URL,

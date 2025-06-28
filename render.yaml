@@ -51,9 +51,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: vocabulary-backend
-          property: host
+        value: https://vocabulary-backend-lm26.onrender.com/api
       - key: PORT
         value: 3000
