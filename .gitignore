@@ -235,7 +235,6 @@ find-duplicates.js
 
 # Docker
 .dockerignore
-Dockerfile*
 docker-compose*.yml
 .docker/
 

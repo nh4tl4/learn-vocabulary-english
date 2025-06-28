@@ -8,13 +8,13 @@ WORKDIR /app
 
 # Copy package files
 COPY apps/backend/package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY apps/backend/package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY apps/backend/ .
