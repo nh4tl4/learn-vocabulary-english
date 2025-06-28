@@ -4,9 +4,9 @@ export class EnhanceLearningSystem1703900000000 implements MigrationInterface {
   name = 'EnhanceLearningSystem1703900000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add new columns to users table
+    // Add new columns to user table (not users!)
     await queryRunner.query(`
-      ALTER TABLE "users" 
+      ALTER TABLE "user" 
       ADD COLUMN IF NOT EXISTS "dailyGoal" integer DEFAULT 10,
       ADD COLUMN IF NOT EXISTS "currentStreak" integer DEFAULT 0,
       ADD COLUMN IF NOT EXISTS "longestStreak" integer DEFAULT 0,
@@ -26,7 +26,7 @@ export class EnhanceLearningSystem1703900000000 implements MigrationInterface {
       ADD COLUMN IF NOT EXISTS "easeFactor" decimal(3,2) DEFAULT 1.0,
       ADD COLUMN IF NOT EXISTS "interval" integer DEFAULT 1,
       ADD COLUMN IF NOT EXISTS "nextReviewDate" timestamp,
-      ADD COLUMN IF NOT EXISTS "lastReviewDate" timestamp,
+      ADD COLUMN IF NOT EXISTS "lastReviewedAt" timestamp,
       ADD COLUMN IF NOT EXISTS "firstLearnedDate" timestamp
     `);
 
@@ -72,13 +72,13 @@ export class EnhanceLearningSystem1703900000000 implements MigrationInterface {
       DROP COLUMN IF EXISTS "easeFactor",
       DROP COLUMN IF EXISTS "interval",
       DROP COLUMN IF EXISTS "nextReviewDate",
-      DROP COLUMN IF EXISTS "lastReviewDate",
+      DROP COLUMN IF EXISTS "lastReviewedAt",
       DROP COLUMN IF EXISTS "firstLearnedDate"
     `);
 
-    // Remove columns from users
+    // Remove columns from user (not users!)
     await queryRunner.query(`
-      ALTER TABLE "users"
+      ALTER TABLE "user"
       DROP COLUMN IF EXISTS "dailyGoal",
       DROP COLUMN IF EXISTS "currentStreak",
       DROP COLUMN IF EXISTS "longestStreak",
