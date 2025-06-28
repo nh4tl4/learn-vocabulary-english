@@ -90,24 +90,29 @@ export class VocabularyService {
   }
 
   // Get all available topics
-  async getTopics(): Promise<string[]> {
-    const result = await this.vocabularyRepository
+  async getTopics() {
+    const topics = await this.vocabularyRepository
       .createQueryBuilder('vocabulary')
-      .select('DISTINCT vocabulary.topic', 'topic')
+      .select('vocabulary.topic', 'topic')
+      .addSelect('COUNT(*)', 'count')
       .where('vocabulary.topic IS NOT NULL')
-      .orderBy('vocabulary.topic', 'ASC')
+      .groupBy('vocabulary.topic')
+      .orderBy('COUNT(*)', 'DESC')
       .getRawMany();
 
-    return result.map(item => item.topic);
+    return topics.map(topic => ({
+      name: topic.topic,
+      count: parseInt(topic.count, 10)
+    }));
   }
 
   // Get vocabulary by topic
   async findByTopic(topic: string, page: number = 1, limit: number = 20) {
     const [vocabularies, total] = await this.vocabularyRepository.findAndCount({
       where: { topic },
-      take: limit,
       skip: (page - 1) * limit,
-      order: { word: 'ASC' },
+      take: limit,
+      order: { createdAt: 'DESC' },
     });
 
     return {
@@ -119,20 +124,32 @@ export class VocabularyService {
     };
   }
 
-  // Get vocabulary count by topic
+  // Get topic statistics
   async getTopicStats() {
-    const result = await this.vocabularyRepository
+    const stats = await this.vocabularyRepository
       .createQueryBuilder('vocabulary')
       .select('vocabulary.topic', 'topic')
-      .addSelect('COUNT(*)', 'count')
+      .addSelect('COUNT(*)', 'totalWords')
+      .addSelect('vocabulary.level', 'level')
       .where('vocabulary.topic IS NOT NULL')
-      .groupBy('vocabulary.topic')
-      .orderBy('COUNT(*)', 'DESC')
+      .groupBy('vocabulary.topic, vocabulary.level')
+      .orderBy('vocabulary.topic, vocabulary.level')
       .getRawMany();
 
-    return result.map(item => ({
-      topic: item.topic,
-      count: parseInt(item.count),
-    }));
+    // Group by topic
+    const topicStats = {};
+    stats.forEach(stat => {
+      if (!topicStats[stat.topic]) {
+        topicStats[stat.topic] = {
+          topic: stat.topic,
+          levels: {},
+          totalWords: 0
+        };
+      }
+      topicStats[stat.topic].levels[stat.level || 'unknown'] = parseInt(stat.totalWords, 10);
+      topicStats[stat.topic].totalWords += parseInt(stat.totalWords, 10);
+    });
+
+    return Object.values(topicStats);
   }
 }
