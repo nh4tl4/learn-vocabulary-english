@@ -32,11 +32,8 @@ build:backend:
     - docker push $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG
     - docker tag $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG $CI_REGISTRY_IMAGE/backend:latest
     - docker push $CI_REGISTRY_IMAGE/backend:latest
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-    - changes:
-        - apps/backend/**/*
-        - .gitlab-ci.yml
+  only:
+    - main
 
 build:frontend:
   stage: build
@@ -58,11 +55,8 @@ build:frontend:
     - docker push $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG
     - docker tag $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG $CI_REGISTRY_IMAGE/frontend:latest
     - docker push $CI_REGISTRY_IMAGE/frontend:latest
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-    - changes:
-        - apps/frontend/**/*
-        - .gitlab-ci.yml
+  only:
+    - main
 
 # ============================================
 # DEPLOY STAGE
@@ -74,10 +68,10 @@ deploy:production:
     - apk add --no-cache openssh-client curl
   script:
     - echo "Production deployment would go here"
-    - echo "Backend image: $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG"
-    - echo "Frontend image: $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG"
+    - echo "Backend image:" $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG
+    - echo "Frontend image:" $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG
   environment:
     name: production
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+  only:
+    - main
   when: manual
