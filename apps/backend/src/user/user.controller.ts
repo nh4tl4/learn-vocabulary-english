@@ -1,7 +1,7 @@
 import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
 import { UserService } from './user.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { SetDailyGoalDto } from '@/vocabulary/dto/learning.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { SetDailyGoalDto } from '../vocabulary/dto/learning.dto';
 import { IsString, IsOptional } from 'class-validator';
 
 class UpdateProfileDto {
