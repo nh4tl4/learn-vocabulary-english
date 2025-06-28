@@ -59,6 +59,8 @@ export const userAPI = {
   getStats: () => apiClient.get('/user/stats'),
   updateProfile: (data: { name?: string }) =>
     apiClient.put('/user/profile', data),
+  setDailyGoal: (dailyGoal: number) =>
+    apiClient.put('/user/daily-goal', { dailyGoal }),
 };
 
 export const vocabularyAPI = {
@@ -71,9 +73,6 @@ export const vocabularyAPI = {
   getProgress: () =>
     apiClient.get('/vocabulary/progress'),
 
-  updateProgress: (vocabularyId: number, isCorrect: boolean) =>
-    apiClient.post('/vocabulary/progress', { vocabularyId, isCorrect }),
-
   create: (vocabulary: {
     word: string;
     meaning: string;
@@ -82,6 +81,35 @@ export const vocabularyAPI = {
     level?: string;
     partOfSpeech?: string;
   }) => apiClient.post('/vocabulary', vocabulary),
+
+  // New Learning System endpoints
+  getDashboard: () =>
+    apiClient.get('/vocabulary/dashboard/stats'),
+
+  getNewWords: (limit = 10) =>
+    apiClient.get(`/vocabulary/learn/new?limit=${limit}`),
+
+  getWordsForReview: (limit = 20) =>
+    apiClient.get(`/vocabulary/review/due?limit=${limit}`),
+
+  processStudySession: (sessionData: {
+    vocabularyId: number;
+    quality: number;
+    responseTime: number;
+  }) => apiClient.post('/vocabulary/learn/session', sessionData),
+
+  generateTest: (count = 10) =>
+    apiClient.get(`/vocabulary/test/generate?count=${count}`),
+
+  submitTest: (results: Array<{
+    vocabularyId: number;
+    selectedOptionId: number;
+    correctOptionId: number;
+    timeSpent: number;
+  }>) => apiClient.post('/vocabulary/test/submit', results),
+
+  getTodayProgress: () =>
+    apiClient.get('/vocabulary/progress/today'),
 };
 
 export default apiClient;

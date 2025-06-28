@@ -1,8 +1,25 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 import { User } from './user.entity';
 import { Vocabulary } from './vocabulary.entity';
 
-@Entity()
+export enum LearningStatus {
+  NEW = 'new',
+  LEARNING = 'learning',
+  REVIEWING = 'reviewing',
+  MASTERED = 'mastered',
+  DIFFICULT = 'difficult',
+}
+
+@Entity('user_vocabulary')
+@Index(['userId', 'vocabularyId'], { unique: true })
 export class UserVocabulary {
   @PrimaryGeneratedColumn()
   id: number;
@@ -13,8 +30,12 @@ export class UserVocabulary {
   @Column()
   vocabularyId: number;
 
-  @Column({ default: false })
-  isLearned: boolean;
+  @Column({
+    type: 'enum',
+    enum: LearningStatus,
+    default: LearningStatus.NEW,
+  })
+  status: LearningStatus;
 
   @Column({ default: 0 })
   correctCount: number;
@@ -22,8 +43,23 @@ export class UserVocabulary {
   @Column({ default: 0 })
   incorrectCount: number;
 
-  @Column({ nullable: true })
-  lastReviewedAt: Date;
+  @Column({ default: 0 })
+  reviewCount: number;
+
+  @Column({ default: 1.0 })
+  easeFactor: number; // For spaced repetition
+
+  @Column({ default: 1 })
+  interval: number; // Days until next review
+
+  @Column({ type: 'timestamp', nullable: true })
+  nextReviewDate: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastReviewDate: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  firstLearnedDate: Date;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -31,11 +67,21 @@ export class UserVocabulary {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => User, user => user.userVocabularies)
-  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => User, (user) => user.userVocabularies)
   user: User;
 
-  @ManyToOne(() => Vocabulary, vocabulary => vocabulary.userVocabularies)
-  @JoinColumn({ name: 'vocabularyId' })
+  @ManyToOne(() => Vocabulary, (vocabulary) => vocabulary.userVocabularies)
   vocabulary: Vocabulary;
+
+  // Calculate accuracy percentage
+  get accuracy(): number {
+    const total = this.correctCount + this.incorrectCount;
+    return total > 0 ? Math.round((this.correctCount / total) * 100) : 0;
+  }
+
+  // Check if word needs review
+  get needsReview(): boolean {
+    if (!this.nextReviewDate) return false;
+    return new Date() >= this.nextReviewDate;
+  }
 }

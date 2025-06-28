@@ -2,57 +2,80 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
+import { UserVocabulary } from '../database/entities/user-vocabulary.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(UserVocabulary)
+    private userVocabularyRepository: Repository<UserVocabulary>,
   ) {}
 
-  async findById(id: number): Promise<User | null> {
+  async findOne(id: number): Promise<User> {
     return this.userRepository.findOne({ where: { id } });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email } });
-  }
+  async getUserStats(userId: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
 
-  async updateProfile(id: number, updateData: Partial<User>): Promise<User> {
-    await this.userRepository.update(id, updateData);
-    return this.findById(id);
-  }
+    // Get vocabulary statistics
+    const totalWords = await this.userVocabularyRepository.count({
+      where: { userId },
+    });
 
-  async getUserStats(id: number) {
-    const user = await this.userRepository
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.userVocabularies', 'uv')
-      .where('user.id = :id', { id })
-      .getOne();
+    const masteredWords = await this.userVocabularyRepository.count({
+      where: { userId, status: 'mastered' },
+    });
 
-    if (!user) return null;
+    const reviewWords = await this.userVocabularyRepository.count({
+      where: { userId, status: 'reviewing' },
+    });
 
-    const totalLearned = user.userVocabularies?.filter(uv => uv.isLearned).length || 0;
-    const totalReviewed = user.userVocabularies?.length || 0;
-    const correctAnswers = user.userVocabularies?.reduce((sum, uv) => sum + uv.correctCount, 0) || 0;
-    const incorrectAnswers = user.userVocabularies?.reduce((sum, uv) => sum + uv.incorrectCount, 0) || 0;
+    const difficultWords = await this.userVocabularyRepository.count({
+      where: { userId, status: 'difficult' },
+    });
+
+    // Calculate accuracy
+    const vocabularyStats = await this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .select('SUM(uv.correctCount)', 'totalCorrect')
+      .addSelect('SUM(uv.incorrectCount)', 'totalIncorrect')
+      .where('uv.userId = :userId', { userId })
+      .getRawOne();
+
+    const totalAttempts = (vocabularyStats.totalCorrect || 0) + (vocabularyStats.totalIncorrect || 0);
+    const accuracy = totalAttempts > 0 ? Math.round((vocabularyStats.totalCorrect / totalAttempts) * 100) : 0;
 
     return {
       user: {
-        id: user.id,
-        email: user.email,
         name: user.name,
-        createdAt: user.createdAt,
+        email: user.email,
+        dailyGoal: user.dailyGoal,
+        currentStreak: user.currentStreak,
+        longestStreak: user.longestStreak,
+        totalWordsLearned: user.totalWordsLearned,
+        totalTestsTaken: user.totalTestsTaken,
+        averageTestScore: user.averageTestScore,
       },
-      stats: {
-        totalLearned,
-        totalReviewed,
-        correctAnswers,
-        incorrectAnswers,
-        accuracy: correctAnswers + incorrectAnswers > 0
-          ? Math.round((correctAnswers / (correctAnswers + incorrectAnswers)) * 100)
-          : 0,
+      vocabulary: {
+        totalWords,
+        masteredWords,
+        reviewWords,
+        difficultWords,
+        accuracy,
       },
     };
+  }
+
+  async updateProfile(userId: number, updateData: { name?: string }) {
+    await this.userRepository.update(userId, updateData);
+    return this.findOne(userId);
+  }
+
+  async setDailyGoal(userId: number, dailyGoal: number) {
+    await this.userRepository.update(userId, { dailyGoal });
+    return this.findOne(userId);
   }
 }
