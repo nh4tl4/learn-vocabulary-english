@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 
 // Use production backend URL from Render or fallback to localhost for development
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vocabulary-backend-lm26.onrender.com/api';
-
+console.log(API_URL)
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
