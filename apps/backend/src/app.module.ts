@@ -16,14 +16,32 @@ import { AIModule } from './ai/ai.module';
       isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
-        type: 'sqlite',
-        database: 'vocabulary.db',
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false,
-        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
-        migrationsRun: true,
-      }),
+      useFactory: () => {
+        const databaseUrl = process.env.DATABASE_URL;
+
+        if (databaseUrl) {
+          // Production: Use PostgreSQL from Render
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            ssl: { rejectUnauthorized: false },
+            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            synchronize: false,
+            migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+            migrationsRun: true,
+          };
+        } else {
+          // Development: Use SQLite for local development
+          return {
+            type: 'sqlite',
+            database: 'vocabulary.db',
+            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            synchronize: false,
+            migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+            migrationsRun: true,
+          };
+        }
+      },
     }),
     AuthModule,
     UserModule,

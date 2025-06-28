@@ -1,0 +1,65 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Detect changes
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+              - 'package.json'
+              - 'render.yaml'
+            frontend:
+              - 'apps/frontend/**'
+              - 'package.json'
+              - 'render.yaml'
+
+  # Deploy Backend
+  deploy-backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Backend to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_BACKEND_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+
+  # Deploy Frontend
+  deploy-frontend:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Frontend to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_FRONTEND_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+
+  # Notification
+  notify:
+    needs: [changes, deploy-backend, deploy-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend deployed: ${{ needs.changes.outputs.backend }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend deployed: ${{ needs.changes.outputs.frontend }}" >> $GITHUB_STEP_SUMMARY

@@ -9,11 +9,14 @@ services:
     name: vocabulary-backend
     runtime: node
     plan: free
+    rootDir: apps/backend
+    buildFilter:
+      paths:
+        - apps/backend/**
     buildCommand: |
-      cd apps/backend && 
       npm ci --only=production --include=dev &&
       npm run build
-    startCommand: cd apps/backend && npm run start:prod
+    startCommand: npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
@@ -34,11 +37,14 @@ services:
     name: vocabulary-frontend
     runtime: node
     plan: free
+    rootDir: apps/frontend
+    buildFilter:
+      paths:
+        - apps/frontend/**
     buildCommand: |
-      cd apps/frontend && 
       npm ci &&
       npm run build
-    startCommand: cd apps/frontend && npm start
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
