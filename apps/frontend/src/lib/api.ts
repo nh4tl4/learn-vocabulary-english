@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 // Use production backend URL from Render or fallback to localhost for development
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vocabulary-backend-lm26.onrender.com/api';
@@ -16,9 +15,10 @@ const apiClient = axios.create({
   timeout: 10000, // 10 second timeout for production
 });
 
-// Add auth token to requests
+// Add auth token to requests from localStorage
 apiClient.interceptors.request.use((config) => {
-  const token = Cookies.get('auth_token');
+  // Get token from localStorage instead of cookies
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -30,7 +30,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      Cookies.remove('auth_token');
+      localStorage.removeItem('auth_token');
       window.location.href = '/auth';
     }
 
@@ -132,6 +132,13 @@ export const vocabularyAPI = {
 
   getProgressByTopic: (topic: string) =>
     apiClient.get(`/vocabulary/progress/topic/${encodeURIComponent(topic)}`),
+
+  // Search words by topic
+  searchWordsByTopic: (topic: string, word: string, limit = 10) =>
+    apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/search?word=${encodeURIComponent(word)}&limit=${limit}`),
+
+  findWordByTopic: (topic: string, word: string) =>
+    apiClient.get(`/vocabulary/search/topic?topic=${encodeURIComponent(topic)}&word=${encodeURIComponent(word)}`),
 };
 
 export const aiAPI = {

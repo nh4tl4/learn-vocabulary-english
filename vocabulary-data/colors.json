@@ -1,0 +1,183 @@
+[
+  {
+    "word": "red",
+    "meaning": "màu đỏ",
+    "pronunciation": "/red/",
+    "example": "The rose is red and beautiful.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "blue",
+    "meaning": "màu xanh dương",
+    "pronunciation": "/bluː/",
+    "example": "The sky is blue today.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "green",
+    "meaning": "màu xanh lá",
+    "pronunciation": "/ɡriːn/",
+    "example": "Grass is green in spring.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "yellow",
+    "meaning": "màu vàng",
+    "pronunciation": "/ˈjeloʊ/",
+    "example": "The sun looks yellow.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "orange",
+    "meaning": "màu cam",
+    "pronunciation": "/ˈɔːrɪndʒ/",
+    "example": "The sunset is orange and pink.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "purple",
+    "meaning": "màu tím",
+    "pronunciation": "/ˈpɜːrpl/",
+    "example": "Grapes are purple when ripe.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "pink",
+    "meaning": "màu hồng",
+    "pronunciation": "/pɪŋk/",
+    "example": "Cherry blossoms are pink.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "black",
+    "meaning": "màu đen",
+    "pronunciation": "/blæk/",
+    "example": "The cat has black fur.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "white",
+    "meaning": "màu trắng",
+    "pronunciation": "/waɪt/",
+    "example": "Snow is white and pure.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "gray",
+    "meaning": "màu xám",
+    "pronunciation": "/ɡreɪ/",
+    "example": "The clouds are gray before rain.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "brown",
+    "meaning": "màu nâu",
+    "pronunciation": "/braʊn/",
+    "example": "The tree trunk is brown.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "silver",
+    "meaning": "màu bạc",
+    "pronunciation": "/ˈsɪlvər/",
+    "example": "The jewelry is made of silver.",
+    "partOfSpeech": "adjective",
+    "level": "intermediate",
+    "topic": "colors"
+  },
+  {
+    "word": "gold",
+    "meaning": "màu vàng kim",
+    "pronunciation": "/ɡoʊld/",
+    "example": "The ring is made of gold.",
+    "partOfSpeech": "adjective",
+    "level": "intermediate",
+    "topic": "colors"
+  },
+  {
+    "word": "bright",
+    "meaning": "sáng, tươi",
+    "pronunciation": "/braɪt/",
+    "example": "The bright colors caught my attention.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "dark",
+    "meaning": "tối, đậm",
+    "pronunciation": "/dɑːrk/",
+    "example": "She prefers dark colors.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "light",
+    "meaning": "nhạt, sáng",
+    "pronunciation": "/laɪt/",
+    "example": "Light blue is a calming color.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "colors"
+  },
+  {
+    "word": "colorful",
+    "meaning": "đầy màu sắc",
+    "pronunciation": "/ˈkʌlərfəl/",
+    "example": "The garden is very colorful.",
+    "partOfSpeech": "adjective",
+    "level": "intermediate",
+    "topic": "colors"
+  },
+  {
+    "word": "pale",
+    "meaning": "nhạt màu",
+    "pronunciation": "/peɪl/",
+    "example": "She looked pale after being sick.",
+    "partOfSpeech": "adjective",
+    "level": "intermediate",
+    "topic": "colors"
+  },
+  {
+    "word": "vivid",
+    "meaning": "sống động, rực rỡ",
+    "pronunciation": "/ˈvɪvɪd/",
+    "example": "The painting has vivid colors.",
+    "partOfSpeech": "adjective",
+    "level": "advanced",
+    "topic": "colors"
+  },
+  {
+    "word": "transparent",
+    "meaning": "trong suốt",
+    "pronunciation": "/trænsˈperənt/",
+    "example": "Glass is transparent.",
+    "partOfSpeech": "adjective",
+    "level": "intermediate",
+    "topic": "colors"
+  }
+]
+

@@ -1,0 +1,228 @@
+[
+  {
+    "word": "apple",
+    "meaning": "táo",
+    "pronunciation": "/ˈæpl/",
+    "example": "I eat an apple every day.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "banana",
+    "meaning": "chuối",
+    "pronunciation": "/bəˈnænə/",
+    "example": "Bananas are rich in potassium.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "orange",
+    "meaning": "cam",
+    "pronunciation": "/ˈɔːrɪndʒ/",
+    "example": "Fresh orange juice is delicious.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "strawberry",
+    "meaning": "dâu tây",
+    "pronunciation": "/ˈstrɔːberi/",
+    "example": "Strawberries are sweet and juicy.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "grape",
+    "meaning": "nho",
+    "pronunciation": "/ɡreɪp/",
+    "example": "Grapes are used to make wine.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "watermelon",
+    "meaning": "dưa hấu",
+    "pronunciation": "/ˈwɔːtərmelən/",
+    "example": "Watermelon is perfect for summer.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "pineapple",
+    "meaning": "dứa, khóm",
+    "pronunciation": "/ˈpaɪnæpl/",
+    "example": "Pineapple is tropical fruit.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "mango",
+    "meaning": "xoài",
+    "pronunciation": "/ˈmæŋɡoʊ/",
+    "example": "Mango is my favorite tropical fruit.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "peach",
+    "meaning": "đào",
+    "pronunciation": "/piːtʃ/",
+    "example": "The peach was perfectly ripe.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "pear",
+    "meaning": "lê",
+    "pronunciation": "/per/",
+    "example": "Pears are sweet when ripe.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "cherry",
+    "meaning": "anh đào",
+    "pronunciation": "/ˈtʃeri/",
+    "example": "Cherries are small and red.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "lemon",
+    "meaning": "chanh vàng",
+    "pronunciation": "/ˈlemən/",
+    "example": "Lemon juice is very sour.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "lime",
+    "meaning": "chanh xanh",
+    "pronunciation": "/laɪm/",
+    "example": "Add lime to the cocktail.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "coconut",
+    "meaning": "dừa",
+    "pronunciation": "/ˈkoʊkənʌt/",
+    "example": "Coconut water is refreshing.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "kiwi",
+    "meaning": "kiwi",
+    "pronunciation": "/ˈkiːwi/",
+    "example": "Kiwi has a fuzzy brown skin.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "avocado",
+    "meaning": "bơ",
+    "pronunciation": "/ˌævəˈkɑːdoʊ/",
+    "example": "Avocado is great in salads.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "papaya",
+    "meaning": "đu đủ",
+    "pronunciation": "/pəˈpaɪə/",
+    "example": "Papaya is rich in vitamins.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "pomegranate",
+    "meaning": "lựu",
+    "pronunciation": "/ˈpɑːmɪɡrænɪt/",
+    "example": "Pomegranate seeds are nutritious.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "blueberry",
+    "meaning": "quả việt quất",
+    "pronunciation": "/ˈbluːberi/",
+    "example": "Blueberries are antioxidant-rich.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "blackberry",
+    "meaning": "dâu đen",
+    "pronunciation": "/ˈblækberi/",
+    "example": "Blackberries grow on thorny bushes.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "raspberry",
+    "meaning": "mâm xôi",
+    "pronunciation": "/ˈræzberi/",
+    "example": "Raspberries are delicate berries.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "cranberry",
+    "meaning": "nam việt quất",
+    "pronunciation": "/ˈkrænberi/",
+    "example": "Cranberries are tart and red.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "plum",
+    "meaning": "mận",
+    "pronunciation": "/plʌm/",
+    "example": "The plum was sweet and juicy.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "fruits"
+  },
+  {
+    "word": "apricot",
+    "meaning": "mơ",
+    "pronunciation": "/ˈeɪprɪkɑːt/",
+    "example": "Apricots are orange and fuzzy.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  },
+  {
+    "word": "fig",
+    "meaning": "sung",
+    "pronunciation": "/fɪɡ/",
+    "example": "Fresh figs are sweet and chewy.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "fruits"
+  }
+]
+

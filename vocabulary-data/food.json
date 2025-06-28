@@ -1,0 +1,273 @@
+[
+  {
+    "word": "rice",
+    "meaning": "cơm, gạo",
+    "pronunciation": "/raɪs/",
+    "example": "Rice is a staple food in Asia.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "bread",
+    "meaning": "bánh mì",
+    "pronunciation": "/bred/",
+    "example": "Fresh bread smells wonderful.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "meat",
+    "meaning": "thịt",
+    "pronunciation": "/miːt/",
+    "example": "This restaurant serves fresh meat.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "vegetables",
+    "meaning": "rau củ",
+    "pronunciation": "/ˈvedʒtəbəlz/",
+    "example": "Eating vegetables is good for health.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "milk",
+    "meaning": "sữa",
+    "pronunciation": "/mɪlk/",
+    "example": "Children need milk for strong bones.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "cheese",
+    "meaning": "phô mai",
+    "pronunciation": "/tʃiːz/",
+    "example": "Pizza is topped with melted cheese.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "egg",
+    "meaning": "trứng",
+    "pronunciation": "/eɡ/",
+    "example": "I had scrambled eggs for breakfast.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "butter",
+    "meaning": "bơ",
+    "pronunciation": "/ˈbʌtər/",
+    "example": "Spread butter on the toast.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "salt",
+    "meaning": "muối",
+    "pronunciation": "/sɔːlt/",
+    "example": "Add a pinch of salt to taste.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "sugar",
+    "meaning": "đường",
+    "pronunciation": "/ˈʃʊɡər/",
+    "example": "Too much sugar is bad for teeth.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "pepper",
+    "meaning": "tiêu",
+    "pronunciation": "/ˈpepər/",
+    "example": "Black pepper adds flavor to food.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "garlic",
+    "meaning": "tỏi",
+    "pronunciation": "/ˈɡɑːrlɪk/",
+    "example": "Garlic makes food taste better.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "onion",
+    "meaning": "hành tây",
+    "pronunciation": "/ˈʌnjən/",
+    "example": "Cutting onions makes me cry.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "tomato",
+    "meaning": "cà chua",
+    "pronunciation": "/təˈmeɪtoʊ/",
+    "example": "Tomatoes are used in many dishes.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "potato",
+    "meaning": "khoai tây",
+    "pronunciation": "/pəˈteɪtoʊ/",
+    "example": "French fries are made from potatoes.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "carrot",
+    "meaning": "cà rốt",
+    "pronunciation": "/ˈkærət/",
+    "example": "Carrots are good for your eyes.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "broccoli",
+    "meaning": "súp lơ xanh",
+    "pronunciation": "/ˈbrɑːkəli/",
+    "example": "Broccoli is rich in vitamins.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "food"
+  },
+  {
+    "word": "spinach",
+    "meaning": "rau bina",
+    "pronunciation": "/ˈspɪnɪtʃ/",
+    "example": "Spinach is high in iron.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "food"
+  },
+  {
+    "word": "pasta",
+    "meaning": "mì ống",
+    "pronunciation": "/ˈpɑːstə/",
+    "example": "Italian pasta comes in many shapes.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "pizza",
+    "meaning": "pizza",
+    "pronunciation": "/ˈpiːtsə/",
+    "example": "Pizza is popular around the world.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "sandwich",
+    "meaning": "bánh mì sandwich",
+    "pronunciation": "/ˈsænwɪtʃ/",
+    "example": "I made a ham and cheese sandwich.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "soup",
+    "meaning": "canh, súp",
+    "pronunciation": "/suːp/",
+    "example": "Chicken soup is good when you're sick.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "salad",
+    "meaning": "xa lát",
+    "pronunciation": "/ˈsæləd/",
+    "example": "Caesar salad is my favorite.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "dessert",
+    "meaning": "món tráng miệng",
+    "pronunciation": "/dɪˈzɜːrt/",
+    "example": "Ice cream is a popular dessert.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "recipe",
+    "meaning": "công thức nấu ăn",
+    "pronunciation": "/ˈresəpi/",
+    "example": "This recipe is easy to follow.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "food"
+  },
+  {
+    "word": "ingredient",
+    "meaning": "nguyên liệu",
+    "pronunciation": "/ɪnˈɡriːdiənt/",
+    "example": "Fresh ingredients make better food.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "food"
+  },
+  {
+    "word": "delicious",
+    "meaning": "ngon",
+    "pronunciation": "/dɪˈlɪʃəs/",
+    "example": "This cake is absolutely delicious.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "spicy",
+    "meaning": "cay",
+    "pronunciation": "/ˈspaɪsi/",
+    "example": "Thai food is often spicy.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "sweet",
+    "meaning": "ngọt",
+    "pronunciation": "/swiːt/",
+    "example": "Chocolate is sweet and rich.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "food"
+  },
+  {
+    "word": "sour",
+    "meaning": "chua",
+    "pronunciation": "/saʊr/",
+    "example": "Lemons taste very sour.",
+    "partOfSpeech": "adjective",
+    "level": "beginner",
+    "topic": "food"
+  }
+]
+

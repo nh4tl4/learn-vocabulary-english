@@ -1,0 +1,228 @@
+[
+  {
+    "word": "shirt",
+    "meaning": "áo sơ mi",
+    "pronunciation": "/ʃɜːrt/",
+    "example": "He wore a white shirt to work.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "pants",
+    "meaning": "quần dài",
+    "pronunciation": "/pænts/",
+    "example": "These pants are too tight.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "dress",
+    "meaning": "váy",
+    "pronunciation": "/dres/",
+    "example": "She wore a beautiful red dress.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "skirt",
+    "meaning": "chân váy",
+    "pronunciation": "/skɜːrt/",
+    "example": "The skirt matches her blouse perfectly.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "jacket",
+    "meaning": "áo khoác",
+    "pronunciation": "/ˈdʒækɪt/",
+    "example": "It's cold, so wear your jacket.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "coat",
+    "meaning": "áo choàng",
+    "pronunciation": "/koʊt/",
+    "example": "He hung his coat on the rack.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "shoes",
+    "meaning": "giày",
+    "pronunciation": "/ʃuːz/",
+    "example": "These shoes are very comfortable.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "socks",
+    "meaning": "tất",
+    "pronunciation": "/sɑːks/",
+    "example": "He put on clean socks every morning.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "hat",
+    "meaning": "mũ",
+    "pronunciation": "/hæt/",
+    "example": "She wore a hat to protect from the sun.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "gloves",
+    "meaning": "găng tay",
+    "pronunciation": "/ɡlʌvz/",
+    "example": "Wear gloves to keep your hands warm.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "scarf",
+    "meaning": "khăn quàng",
+    "pronunciation": "/skɑːrf/",
+    "example": "The scarf kept her neck warm.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "sweater",
+    "meaning": "áo len",
+    "pronunciation": "/ˈswetər/",
+    "example": "The wool sweater is very warm.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "jeans",
+    "meaning": "quần jean",
+    "pronunciation": "/dʒiːnz/",
+    "example": "Blue jeans are popular worldwide.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "t-shirt",
+    "meaning": "áo thun",
+    "pronunciation": "/ˈtiː ʃɜːrt/",
+    "example": "He wore a casual t-shirt.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "underwear",
+    "meaning": "đồ lót",
+    "pronunciation": "/ˈʌndərwer/",
+    "example": "Change your underwear daily.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "belt",
+    "meaning": "thắt lưng",
+    "pronunciation": "/belt/",
+    "example": "He tightened his belt after losing weight.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "tie",
+    "meaning": "cà vạt",
+    "pronunciation": "/taɪ/",
+    "example": "He wore a silk tie to the meeting.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "suit",
+    "meaning": "bộ vest",
+    "pronunciation": "/suːt/",
+    "example": "He looks professional in his suit.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "uniform",
+    "meaning": "đồng phục",
+    "pronunciation": "/ˈjuːnɪfɔːrm/",
+    "example": "Students wear uniforms to school.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "pajamas",
+    "meaning": "đồ ngủ",
+    "pronunciation": "/pəˈdʒɑːməz/",
+    "example": "She changed into her pajamas.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "sandals",
+    "meaning": "dép",
+    "pronunciation": "/ˈsændlz/",
+    "example": "Sandals are perfect for summer.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "boots",
+    "meaning": "ủng, bốt",
+    "pronunciation": "/buːts/",
+    "example": "He wore boots for hiking.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  },
+  {
+    "word": "pocket",
+    "meaning": "túi (áo, quần)",
+    "pronunciation": "/ˈpɑːkɪt/",
+    "example": "He kept his keys in his pocket.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "button",
+    "meaning": "cúc áo",
+    "pronunciation": "/ˈbʌtn/",
+    "example": "The button fell off his shirt.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "clothing"
+  },
+  {
+    "word": "zipper",
+    "meaning": "khóa kéo",
+    "pronunciation": "/ˈzɪpər/",
+    "example": "The zipper on his jacket is broken.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "clothing"
+  }
+]
+

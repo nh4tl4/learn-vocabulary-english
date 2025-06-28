@@ -1,0 +1,453 @@
+[
+  {
+    "word": "job",
+    "meaning": "công việc",
+    "pronunciation": "/dʒɑːb/",
+    "example": "She found a new job at a tech company.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "work",
+    "meaning": "làm việc",
+    "pronunciation": "/wɜːrk/",
+    "example": "I work from 9 AM to 5 PM.",
+    "partOfSpeech": "verb",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "office",
+    "meaning": "văn phòng",
+    "pronunciation": "/ˈɔːfɪs/",
+    "example": "The office has modern equipment.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "employee",
+    "meaning": "nhân viên",
+    "pronunciation": "/ɪmˈplɔɪiː/",
+    "example": "The company has 500 employees.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "employer",
+    "meaning": "chủ lao động",
+    "pronunciation": "/ɪmˈplɔɪər/",
+    "example": "My employer provides health insurance.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "manager",
+    "meaning": "quản lý",
+    "pronunciation": "/ˈmænɪdʒər/",
+    "example": "The manager will review your proposal.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "boss",
+    "meaning": "sếp",
+    "pronunciation": "/bɔːs/",
+    "example": "My boss is very understanding.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "salary",
+    "meaning": "lương",
+    "pronunciation": "/ˈsæləri/",
+    "example": "He negotiated a higher salary.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "meeting",
+    "meaning": "cuộc họp",
+    "pronunciation": "/ˈmiːtɪŋ/",
+    "example": "We have a meeting at 2 PM.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "conference",
+    "meaning": "hội nghị",
+    "pronunciation": "/ˈkɑːnfərəns/",
+    "example": "The annual conference is next month.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "presentation",
+    "meaning": "bài thuyết trình",
+    "pronunciation": "/ˌpriːzənˈteɪʃən/",
+    "example": "She gave an excellent presentation.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "project",
+    "meaning": "dự án",
+    "pronunciation": "/ˈprɑːdʒekt/",
+    "example": "The project deadline is approaching.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "deadline",
+    "meaning": "hạn chót",
+    "pronunciation": "/ˈdedlaɪn/",
+    "example": "We must meet the deadline tomorrow.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "budget",
+    "meaning": "ngân sách",
+    "pronunciation": "/ˈbʌdʒɪt/",
+    "example": "The marketing budget was increased.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "profit",
+    "meaning": "lợi nhuận",
+    "pronunciation": "/ˈprɑːfɪt/",
+    "example": "The company made a good profit.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "loss",
+    "meaning": "lỗ",
+    "pronunciation": "/lɔːs/",
+    "example": "The business suffered a financial loss.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "revenue",
+    "meaning": "doanh thu",
+    "pronunciation": "/ˈrevənuː/",
+    "example": "Company revenue increased by 20%.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "business"
+  },
+  {
+    "word": "investment",
+    "meaning": "đầu tư",
+    "pronunciation": "/ɪnˈvestmənt/",
+    "example": "The investment paid off well.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "customer",
+    "meaning": "khách hàng",
+    "pronunciation": "/ˈkʌstəmər/",
+    "example": "Customer satisfaction is our priority.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "client",
+    "meaning": "khách hàng (doanh nghiệp)",
+    "pronunciation": "/ˈklaɪənt/",
+    "example": "We have a new client from Japan.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "sales",
+    "meaning": "bán hàng",
+    "pronunciation": "/seɪlz/",
+    "example": "Our sales team is very effective.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "marketing",
+    "meaning": "tiếp thị",
+    "pronunciation": "/ˈmɑːrkɪtɪŋ/",
+    "example": "The marketing campaign was successful.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "advertisement",
+    "meaning": "quảng cáo",
+    "pronunciation": "/ˈædvərtaɪzmənt/",
+    "example": "The advertisement attracted many customers.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "brand",
+    "meaning": "thương hiệu",
+    "pronunciation": "/brænd/",
+    "example": "Apple is a well-known brand.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "product",
+    "meaning": "sản phẩm",
+    "pronunciation": "/ˈprɑːdʌkt/",
+    "example": "They launched a new product.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "service",
+    "meaning": "dịch vụ",
+    "pronunciation": "/ˈsɜːrvɪs/",
+    "example": "The hotel provides excellent service.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "quality",
+    "meaning": "chất lượng",
+    "pronunciation": "/ˈkwɑːləti/",
+    "example": "High quality products cost more.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "competition",
+    "meaning": "cạnh tranh",
+    "pronunciation": "/ˌkɑːmpəˈtɪʃən/",
+    "example": "Competition in the market is fierce.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "competitor",
+    "meaning": "đối thủ cạnh tranh",
+    "pronunciation": "/kəmˈpetɪtər/",
+    "example": "Our main competitor lowered prices.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "strategy",
+    "meaning": "chiến lược",
+    "pronunciation": "/ˈstrætədʒi/",
+    "example": "The company's strategy is working.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "business"
+  },
+  {
+    "word": "goal",
+    "meaning": "mục tiêu",
+    "pronunciation": "/ɡoʊl/",
+    "example": "Our goal is to increase sales.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "business"
+  },
+  {
+    "word": "target",
+    "meaning": "mục tiêu",
+    "pronunciation": "/ˈtɑːrɡɪt/",
+    "example": "We reached our sales target.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "contract",
+    "meaning": "hợp đồng",
+    "pronunciation": "/ˈkɑːntrækt/",
+    "example": "Sign the contract before starting work.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "agreement",
+    "meaning": "thỏa thuận",
+    "pronunciation": "/əˈɡriːmənt/",
+    "example": "We reached an agreement yesterday.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "negotiation",
+    "meaning": "đàm phán",
+    "pronunciation": "/nɪˌɡoʊʃiˈeɪʃən/",
+    "example": "The negotiation lasted three hours.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "business"
+  },
+  {
+    "word": "deal",
+    "meaning": "thỏa thuận, giao dịch",
+    "pronunciation": "/diːl/",
+    "example": "We closed a big deal today.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "partnership",
+    "meaning": "quan hệ đối tác",
+    "pronunciation": "/ˈpɑːrtnərʃɪp/",
+    "example": "The partnership benefits both companies.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "teamwork",
+    "meaning": "làm việc nhóm",
+    "pronunciation": "/ˈtiːmwɜːrk/",
+    "example": "Good teamwork leads to success.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "leadership",
+    "meaning": "khả năng lãnh đạo",
+    "pronunciation": "/ˈliːdərʃɪp/",
+    "example": "Strong leadership is essential.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "business"
+  },
+  {
+    "word": "promotion",
+    "meaning": "thăng chức",
+    "pronunciation": "/prəˈmoʊʃən/",
+    "example": "She got a promotion to manager.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "interview",
+    "meaning": "phỏng vấn",
+    "pronunciation": "/ˈɪntərvjuː/",
+    "example": "The job interview went well.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "resume",
+    "meaning": "sơ yếu lý lịch",
+    "pronunciation": "/rəˈzuːm/",
+    "example": "Update your resume before applying.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "application",
+    "meaning": "đơn xin việc",
+    "pronunciation": "/ˌæplɪˈkeɪʃən/",
+    "example": "Submit your application online.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "training",
+    "meaning": "đào tạo",
+    "pronunciation": "/ˈtreɪnɪŋ/",
+    "example": "New employees receive training.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "experience",
+    "meaning": "kinh nghiệm",
+    "pronunciation": "/ɪkˈspɪriəns/",
+    "example": "She has five years of experience.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "skill",
+    "meaning": "kỹ năng",
+    "pronunciation": "/skɪl/",
+    "example": "Communication skills are important.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "qualification",
+    "meaning": "trình độ chuyên môn",
+    "pronunciation": "/ˌkwɑːlɪfɪˈkeɪʃən/",
+    "example": "The job requires specific qualifications.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "business"
+  },
+  {
+    "word": "performance",
+    "meaning": "hiệu suất",
+    "pronunciation": "/pərˈfɔːrməns/",
+    "example": "Employee performance is evaluated yearly.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "business"
+  },
+  {
+    "word": "productivity",
+    "meaning": "năng suất",
+    "pronunciation": "/ˌproʊdʌkˈtɪvəti/",
+    "example": "Technology improves productivity.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "business"
+  },
+  {
+    "word": "efficiency",
+    "meaning": "hiệu quả",
+    "pronunciation": "/ɪˈfɪʃənsi/",
+    "example": "We need to improve efficiency.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "business"
+  }
+]
+

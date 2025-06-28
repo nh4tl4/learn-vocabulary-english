@@ -79,6 +79,16 @@ export class VocabularyController {
     return this.learningService.getUserProgressByTopic(req.user.userId, topic);
   }
 
+  @Get('topics/:topic/search')
+  async searchWordsByTopic(@Param('topic') topic: string, @Query('word') word: string, @Query('limit') limit: number = 10) {
+    return this.vocabularyService.searchWordsByTopic(topic, word, limit);
+  }
+
+  @Get('search/topic')
+  async searchByTopicAndWord(@Query('topic') topic: string, @Query('word') word: string) {
+    return this.vocabularyService.findByTopicAndWord(topic, word);
+  }
+
   // Move :id route to the END to avoid conflicts
   @Get(':id')
   async getById(@Param('id') id: string) {

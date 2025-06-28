@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import Cookies from 'js-cookie';
 import { User, AuthResponse } from '@/types';
 import { authAPI, userAPI } from '@/lib/api';
 
@@ -13,6 +12,8 @@ interface AuthState {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
+  getToken: () => string | null;
+  setToken: (token: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,13 +24,31 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       isInitialized: false,
 
+      // Get token from localStorage
+      getToken: () => {
+        if (typeof window !== 'undefined') {
+          return localStorage.getItem('auth_token');
+        }
+        return null;
+      },
+
+      // Set token to localStorage
+      setToken: (token: string) => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', token);
+        }
+      },
+
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
           const response = await authAPI.login(email, password);
           const { access_token, user }: AuthResponse = response.data;
 
-          Cookies.set('auth_token', access_token, { expires: 7, secure: true, sameSite: 'strict' });
+          // Use localStorage instead of cookies
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('auth_token', access_token);
+          }
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
@@ -43,7 +62,10 @@ export const useAuthStore = create<AuthState>()(
           const response = await authAPI.register(email, password, name);
           const { access_token, user }: AuthResponse = response.data;
 
-          Cookies.set('auth_token', access_token, { expires: 7, secure: true, sameSite: 'strict' });
+          // Use localStorage instead of cookies
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('auth_token', access_token);
+          }
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
@@ -52,14 +74,17 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        Cookies.remove('auth_token');
+        // Remove token from localStorage instead of cookies
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+        }
         set({ user: null, isAuthenticated: false, isInitialized: true });
       },
 
       loadUser: async () => {
         if (get().isInitialized) return;
 
-        const token = Cookies.get('auth_token');
+        const token = get().getToken();
         if (!token) {
           set({ isAuthenticated: false, user: null, isInitialized: true });
           return;
@@ -76,7 +101,9 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           // Token không hợp lệ hoặc đã hết hạn
-          Cookies.remove('auth_token');
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('auth_token');
+          }
           set({
             user: null,
             isAuthenticated: false,
@@ -88,14 +115,13 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // Chỉ persist user data, không persist isLoading và isInitialized
+      // Persist user data but not token (token is in localStorage)
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated
       }),
-      // Đơn giản hóa rehydration
+      // Reset initialization on rehydration
       onRehydrateStorage: () => (state) => {
-        // Reset isInitialized để loadUser() có thể chạy lại
         if (state) {
           state.isInitialized = false;
           state.isLoading = false;

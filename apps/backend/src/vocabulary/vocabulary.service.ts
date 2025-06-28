@@ -152,4 +152,24 @@ export class VocabularyService {
 
     return Object.values(topicStats);
   }
+
+  // Search words by topic and word pattern
+  async searchWordsByTopic(topic: string, word: string, limit: number = 10) {
+    return await this.vocabularyRepository
+      .createQueryBuilder('vocabulary')
+      .where('vocabulary.topic = :topic', { topic })
+      .andWhere('vocabulary.word ILIKE :word', { word: `%${word}%` })
+      .take(limit)
+      .getMany();
+  }
+
+  // Find specific word by topic and word
+  async findByTopicAndWord(topic: string, word: string) {
+    return await this.vocabularyRepository.findOne({
+      where: {
+        topic,
+        word: word.toLowerCase()
+      }
+    });
+  }
 }

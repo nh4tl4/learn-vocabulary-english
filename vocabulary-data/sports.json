@@ -1,0 +1,453 @@
+[
+  {
+    "word": "sport",
+    "meaning": "thể thao",
+    "pronunciation": "/spɔːrt/",
+    "example": "Soccer is my favorite sport.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "football",
+    "meaning": "bóng đá",
+    "pronunciation": "/ˈfʊtbɔːl/",
+    "example": "Football is popular worldwide.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "basketball",
+    "meaning": "bóng rổ",
+    "pronunciation": "/ˈbæskɪtbɔːl/",
+    "example": "He plays basketball every weekend.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "tennis",
+    "meaning": "quần vợt",
+    "pronunciation": "/ˈtenɪs/",
+    "example": "Tennis requires good hand-eye coordination.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "swimming",
+    "meaning": "bơi lội",
+    "pronunciation": "/ˈswɪmɪŋ/",
+    "example": "Swimming is excellent exercise.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "running",
+    "meaning": "chạy bộ",
+    "pronunciation": "/ˈrʌnɪŋ/",
+    "example": "Running helps improve cardiovascular health.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "cycling",
+    "meaning": "đạp xe",
+    "pronunciation": "/ˈsaɪklɪŋ/",
+    "example": "Cycling is environmentally friendly.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "golf",
+    "meaning": "chơi golf",
+    "pronunciation": "/ɡɑːlf/",
+    "example": "Golf requires precision and patience.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "baseball",
+    "meaning": "bóng chày",
+    "pronunciation": "/ˈbeɪsbɔːl/",
+    "example": "Baseball is America's pastime.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "volleyball",
+    "meaning": "bóng chuyền",
+    "pronunciation": "/ˈvɑːlibɔːl/",
+    "example": "Volleyball is played on sand or court.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "hockey",
+    "meaning": "khúc côn cầu",
+    "pronunciation": "/ˈhɑːki/",
+    "example": "Ice hockey is fast and exciting.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "boxing",
+    "meaning": "quyền anh",
+    "pronunciation": "/ˈbɑːksɪŋ/",
+    "example": "Boxing requires strength and strategy.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "wrestling",
+    "meaning": "đấu vật",
+    "pronunciation": "/ˈreslɪŋ/",
+    "example": "Wrestling is an Olympic sport.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "gymnastics",
+    "meaning": "thể dục dụng cụ",
+    "pronunciation": "/dʒɪmˈnæstɪks/",
+    "example": "Gymnastics requires flexibility and strength.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "athletics",
+    "meaning": "điền kinh",
+    "pronunciation": "/æθˈletɪks/",
+    "example": "Athletics includes running and jumping events.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "badminton",
+    "meaning": "cầu lông",
+    "pronunciation": "/ˈbædmɪntən/",
+    "example": "Badminton is popular in Asia.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "skiing",
+    "meaning": "trượt tuyết",
+    "pronunciation": "/ˈskiːɪŋ/",
+    "example": "Skiing is a winter sport.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "snowboarding",
+    "meaning": "trượt ván tuyết",
+    "pronunciation": "/ˈsnoʊbɔːrdɪŋ/",
+    "example": "Snowboarding is exciting but challenging.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "surfing",
+    "meaning": "lướt sóng",
+    "pronunciation": "/ˈsɜːrfɪŋ/",
+    "example": "Surfing requires balance and courage.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "diving",
+    "meaning": "lặn",
+    "pronunciation": "/ˈdaɪvɪŋ/",
+    "example": "Scuba diving reveals underwater worlds.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "fishing",
+    "meaning": "câu cá",
+    "pronunciation": "/ˈfɪʃɪŋ/",
+    "example": "Fishing is a relaxing hobby.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "hiking",
+    "meaning": "đi bộ đường dài",
+    "pronunciation": "/ˈhaɪkɪŋ/",
+    "example": "Hiking in mountains is refreshing.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "camping",
+    "meaning": "cắm trại",
+    "pronunciation": "/ˈkæmpɪŋ/",
+    "example": "Camping connects us with nature.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "climbing",
+    "meaning": "leo núi",
+    "pronunciation": "/ˈklaɪmɪŋ/",
+    "example": "Rock climbing requires special equipment.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "team",
+    "meaning": "đội",
+    "pronunciation": "/tiːm/",
+    "example": "Our team won the championship.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "player",
+    "meaning": "cầu thủ",
+    "pronunciation": "/ˈpleɪər/",
+    "example": "The player scored a goal.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "coach",
+    "meaning": "huấn luyện viên",
+    "pronunciation": "/koʊtʃ/",
+    "example": "The coach trains the team daily.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "referee",
+    "meaning": "trọng tài",
+    "pronunciation": "/ˌrefəˈriː/",
+    "example": "The referee made a fair decision.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "stadium",
+    "meaning": "sân vận động",
+    "pronunciation": "/ˈsteɪdiəm/",
+    "example": "The stadium holds 50,000 spectators.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "field",
+    "meaning": "sân",
+    "pronunciation": "/fiːld/",
+    "example": "The football field is well-maintained.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "court",
+    "meaning": "sân (tennis, bóng rổ)",
+    "pronunciation": "/kɔːrt/",
+    "example": "The basketball court needs new flooring.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "pool",
+    "meaning": "hồ bơi",
+    "pronunciation": "/puːl/",
+    "example": "The swimming pool is heated.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "gym",
+    "meaning": "phòng tập",
+    "pronunciation": "/dʒɪm/",
+    "example": "I go to the gym three times a week.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "exercise",
+    "meaning": "tập thể dục",
+    "pronunciation": "/ˈeksərsaɪz/",
+    "example": "Regular exercise keeps you fit.",
+    "partOfSpeech": "noun/verb",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "fitness",
+    "meaning": "thể lực",
+    "pronunciation": "/ˈfɪtnəs/",
+    "example": "Physical fitness is important for health.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "training",
+    "meaning": "tập luyện",
+    "pronunciation": "/ˈtreɪnɪŋ/",
+    "example": "Athletes need intensive training.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "competition",
+    "meaning": "cuộc thi",
+    "pronunciation": "/ˌkɑːmpəˈtɪʃən/",
+    "example": "The competition was very close.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "championship",
+    "meaning": "chức vô địch",
+    "pronunciation": "/ˈtʃæmpiənʃɪp/",
+    "example": "They won the world championship.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "tournament",
+    "meaning": "giải đấu",
+    "pronunciation": "/ˈtʊrnəmənt/",
+    "example": "The tennis tournament starts tomorrow.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "medal",
+    "meaning": "huy chương",
+    "pronunciation": "/ˈmedl/",
+    "example": "She won a gold medal.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "trophy",
+    "meaning": "cúp",
+    "pronunciation": "/ˈtroʊfi/",
+    "example": "The trophy was presented to the winners.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "victory",
+    "meaning": "chiến thắng",
+    "pronunciation": "/ˈvɪktəri/",
+    "example": "Victory requires hard work and dedication.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "defeat",
+    "meaning": "thất bại",
+    "pronunciation": "/dɪˈfiːt/",
+    "example": "They accepted defeat gracefully.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  },
+  {
+    "word": "score",
+    "meaning": "tỷ số",
+    "pronunciation": "/skɔːr/",
+    "example": "The final score was 3-2.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "goal",
+    "meaning": "bàn thắng",
+    "pronunciation": "/ɡoʊl/",
+    "example": "He scored the winning goal.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "point",
+    "meaning": "điểm",
+    "pronunciation": "/pɔɪnt/",
+    "example": "Each basket is worth two points.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "match",
+    "meaning": "trận đấu",
+    "pronunciation": "/mætʃ/",
+    "example": "The match was very exciting.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "game",
+    "meaning": "trò chơi, trận đấu",
+    "pronunciation": "/ɡeɪm/",
+    "example": "The game ended in a tie.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "race",
+    "meaning": "cuộc đua",
+    "pronunciation": "/reɪs/",
+    "example": "The race was very close.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "sports"
+  },
+  {
+    "word": "record",
+    "meaning": "kỷ lục",
+    "pronunciation": "/ˈrekərd/",
+    "example": "She broke the world record.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "sports"
+  }
+]
+

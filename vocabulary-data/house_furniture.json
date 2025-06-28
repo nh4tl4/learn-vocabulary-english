@@ -1,0 +1,228 @@
+[
+  {
+    "word": "house",
+    "meaning": "nhà",
+    "pronunciation": "/haʊs/",
+    "example": "They bought a new house last year.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "room",
+    "meaning": "phòng",
+    "pronunciation": "/ruːm/",
+    "example": "This room is very spacious.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "bedroom",
+    "meaning": "phòng ngủ",
+    "pronunciation": "/ˈbedruːm/",
+    "example": "The bedroom has a large window.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "kitchen",
+    "meaning": "nhà bếp",
+    "pronunciation": "/ˈkɪtʃɪn/",
+    "example": "She cooks dinner in the kitchen.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "bathroom",
+    "meaning": "phòng tắm",
+    "pronunciation": "/ˈbæθruːm/",
+    "example": "The bathroom needs cleaning.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "living room",
+    "meaning": "phòng khách",
+    "pronunciation": "/ˈlɪvɪŋ ruːm/",
+    "example": "We watch TV in the living room.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "dining room",
+    "meaning": "phòng ăn",
+    "pronunciation": "/ˈdaɪnɪŋ ruːm/",
+    "example": "The family eats together in the dining room.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "door",
+    "meaning": "cửa",
+    "pronunciation": "/dɔːr/",
+    "example": "Please close the door behind you.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "window",
+    "meaning": "cửa sổ",
+    "pronunciation": "/ˈwɪndoʊ/",
+    "example": "Open the window for fresh air.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "chair",
+    "meaning": "ghế",
+    "pronunciation": "/tʃer/",
+    "example": "Sit on this comfortable chair.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "table",
+    "meaning": "bàn",
+    "pronunciation": "/ˈteɪbl/",
+    "example": "Put the books on the table.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "bed",
+    "meaning": "giường",
+    "pronunciation": "/bed/",
+    "example": "I sleep on a comfortable bed.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "sofa",
+    "meaning": "ghế sofa",
+    "pronunciation": "/ˈsoʊfə/",
+    "example": "The family sits on the sofa to watch movies.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "desk",
+    "meaning": "bàn làm việc",
+    "pronunciation": "/desk/",
+    "example": "He does homework at his desk.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "lamp",
+    "meaning": "đèn",
+    "pronunciation": "/læmp/",
+    "example": "Turn on the lamp, it's getting dark.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "mirror",
+    "meaning": "gương",
+    "pronunciation": "/ˈmɪrər/",
+    "example": "She looked at herself in the mirror.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "refrigerator",
+    "meaning": "tủ lạnh",
+    "pronunciation": "/rɪˈfrɪdʒəreɪtər/",
+    "example": "Keep the milk in the refrigerator.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "stove",
+    "meaning": "bếp",
+    "pronunciation": "/stoʊv/",
+    "example": "Cook the soup on the stove.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "microwave",
+    "meaning": "lò vi sóng",
+    "pronunciation": "/ˈmaɪkrəweɪv/",
+    "example": "Heat the food in the microwave.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "television",
+    "meaning": "tivi",
+    "pronunciation": "/ˈtelɪvɪʒn/",
+    "example": "We watch the news on television.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "carpet",
+    "meaning": "thảm",
+    "pronunciation": "/ˈkɑːrpɪt/",
+    "example": "The carpet is soft under our feet.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "curtain",
+    "meaning": "rèm cửa",
+    "pronunciation": "/ˈkɜːrtn/",
+    "example": "Close the curtains for privacy.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "pillow",
+    "meaning": "gối",
+    "pronunciation": "/ˈpɪloʊ/",
+    "example": "The pillow is soft and comfortable.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "blanket",
+    "meaning": "chăn",
+    "pronunciation": "/ˈblæŋkɪt/",
+    "example": "Cover yourself with a warm blanket.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "house_furniture"
+  },
+  {
+    "word": "closet",
+    "meaning": "tủ quần áo",
+    "pronunciation": "/ˈklɑːzɪt/",
+    "example": "Hang your clothes in the closet.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "house_furniture"
+  }
+]
+

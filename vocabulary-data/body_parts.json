@@ -1,0 +1,228 @@
+[
+  {
+    "word": "head",
+    "meaning": "đầu",
+    "pronunciation": "/hed/",
+    "example": "He has a headache in his head.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "face",
+    "meaning": "mặt",
+    "pronunciation": "/feɪs/",
+    "example": "She has a beautiful face.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "eye",
+    "meaning": "mắt",
+    "pronunciation": "/aɪ/",
+    "example": "Her eyes are blue like the ocean.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "nose",
+    "meaning": "mũi",
+    "pronunciation": "/noʊz/",
+    "example": "He broke his nose playing football.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "mouth",
+    "meaning": "miệng",
+    "pronunciation": "/maʊθ/",
+    "example": "Open your mouth and say 'ah'.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "ear",
+    "meaning": "tai",
+    "pronunciation": "/ɪr/",
+    "example": "She whispered in my ear.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "hair",
+    "meaning": "tóc",
+    "pronunciation": "/her/",
+    "example": "Her hair is long and curly.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "neck",
+    "meaning": "cổ",
+    "pronunciation": "/nek/",
+    "example": "She wore a necklace around her neck.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "shoulder",
+    "meaning": "vai",
+    "pronunciation": "/ˈʃoʊldər/",
+    "example": "He carried the bag on his shoulder.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "arm",
+    "meaning": "cánh tay",
+    "pronunciation": "/ɑːrm/",
+    "example": "He broke his arm in the accident.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "hand",
+    "meaning": "bàn tay",
+    "pronunciation": "/hænd/",
+    "example": "Wash your hands before eating.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "finger",
+    "meaning": "ngón tay",
+    "pronunciation": "/ˈfɪŋɡər/",
+    "example": "She pointed with her finger.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "thumb",
+    "meaning": "ngón cái",
+    "pronunciation": "/θʌm/",
+    "example": "He gave a thumbs up sign.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "chest",
+    "meaning": "ngực",
+    "pronunciation": "/tʃest/",
+    "example": "He felt pain in his chest.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "back",
+    "meaning": "lưng",
+    "pronunciation": "/bæk/",
+    "example": "My back hurts from sitting too long.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "stomach",
+    "meaning": "bụng, dạ dày",
+    "pronunciation": "/ˈstʌmək/",
+    "example": "I have a stomach ache.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "leg",
+    "meaning": "chân",
+    "pronunciation": "/leɡ/",
+    "example": "She broke her leg skiing.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "knee",
+    "meaning": "đầu gối",
+    "pronunciation": "/niː/",
+    "example": "He fell and hurt his knee.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "foot",
+    "meaning": "bàn chân",
+    "pronunciation": "/fʊt/",
+    "example": "My foot is sore from walking.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "toe",
+    "meaning": "ngón chân",
+    "pronunciation": "/toʊ/",
+    "example": "She stubbed her toe on the table.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "heart",
+    "meaning": "tim",
+    "pronunciation": "/hɑːrt/",
+    "example": "Exercise is good for your heart.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "brain",
+    "meaning": "não",
+    "pronunciation": "/breɪn/",
+    "example": "The brain controls all body functions.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "teeth",
+    "meaning": "răng",
+    "pronunciation": "/tiːθ/",
+    "example": "Brush your teeth twice a day.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "tongue",
+    "meaning": "lưỡi",
+    "pronunciation": "/tʌŋ/",
+    "example": "The tongue helps us taste food.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  },
+  {
+    "word": "skin",
+    "meaning": "da",
+    "pronunciation": "/skɪn/",
+    "example": "Protect your skin from the sun.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "body_parts"
+  }
+]
+

@@ -1,0 +1,363 @@
+[
+  {
+    "word": "computer",
+    "meaning": "máy tính",
+    "pronunciation": "/kəmˈpjuːtər/",
+    "example": "I use my computer for work and entertainment.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "smartphone",
+    "meaning": "điện thoại thông minh",
+    "pronunciation": "/ˈsmɑːrtfoʊn/",
+    "example": "Smartphones have changed how we communicate.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "internet",
+    "meaning": "mạng internet",
+    "pronunciation": "/ˈɪntərnet/",
+    "example": "The internet connects people worldwide.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "website",
+    "meaning": "trang web",
+    "pronunciation": "/ˈwebsaɪt/",
+    "example": "Visit our website for more information.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "email",
+    "meaning": "thư điện tử",
+    "pronunciation": "/ˈiːmeɪl/",
+    "example": "Send me an email with the details.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "password",
+    "meaning": "mật khẩu",
+    "pronunciation": "/ˈpæswɜːrd/",
+    "example": "Choose a strong password for security.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "software",
+    "meaning": "phần mềm",
+    "pronunciation": "/ˈsɔːftwer/",
+    "example": "Install the latest software updates.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "hardware",
+    "meaning": "phần cứng",
+    "pronunciation": "/ˈhɑːrdwer/",
+    "example": "The computer hardware needs upgrading.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "keyboard",
+    "meaning": "bàn phím",
+    "pronunciation": "/ˈkiːbɔːrd/",
+    "example": "Type on the keyboard to enter text.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "mouse",
+    "meaning": "chuột máy tính",
+    "pronunciation": "/maʊs/",
+    "example": "Click the mouse to select items.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "screen",
+    "meaning": "màn hình",
+    "pronunciation": "/skriːn/",
+    "example": "The screen displays clear images.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "laptop",
+    "meaning": "máy tính xách tay",
+    "pronunciation": "/ˈlæptɑːp/",
+    "example": "I carry my laptop everywhere.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "tablet",
+    "meaning": "máy tính bảng",
+    "pronunciation": "/ˈtæblət/",
+    "example": "She reads books on her tablet.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "printer",
+    "meaning": "máy in",
+    "pronunciation": "/ˈprɪntər/",
+    "example": "The printer ran out of ink.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "scanner",
+    "meaning": "máy quét",
+    "pronunciation": "/ˈskænər/",
+    "example": "Use the scanner to digitize documents.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "camera",
+    "meaning": "máy ảnh",
+    "pronunciation": "/ˈkæmərə/",
+    "example": "Take a photo with your camera.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "video",
+    "meaning": "video",
+    "pronunciation": "/ˈvɪdioʊ/",
+    "example": "Watch the video tutorial online.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "battery",
+    "meaning": "pin, ắc quy",
+    "pronunciation": "/ˈbætəri/",
+    "example": "The phone battery needs charging.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "charger",
+    "meaning": "bộ sạc",
+    "pronunciation": "/ˈtʃɑːrdʒər/",
+    "example": "Don't forget to bring your charger.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "headphones",
+    "meaning": "tai nghe",
+    "pronunciation": "/ˈhedfoʊnz/",
+    "example": "I listen to music with headphones.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "speaker",
+    "meaning": "loa",
+    "pronunciation": "/ˈspiːkər/",
+    "example": "The speaker produces clear sound.",
+    "partOfSpeech": "noun",
+    "level": "beginner",
+    "topic": "technology"
+  },
+  {
+    "word": "microphone",
+    "meaning": "micro",
+    "pronunciation": "/ˈmaɪkrəfoʊn/",
+    "example": "Speak into the microphone clearly.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "wifi",
+    "meaning": "wifi",
+    "pronunciation": "/ˈwaɪfaɪ/",
+    "example": "Connect to the wifi network.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "bluetooth",
+    "meaning": "bluetooth",
+    "pronunciation": "/ˈbluːtuːθ/",
+    "example": "Pair your phone via Bluetooth.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "app",
+    "meaning": "ứng dụng",
+    "pronunciation": "/æp/",
+    "example": "Download the app from the store.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "update",
+    "meaning": "cập nhật",
+    "pronunciation": "/ˈʌpdeɪt/",
+    "example": "Update your software regularly.",
+    "partOfSpeech": "verb",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "download",
+    "meaning": "tải xuống",
+    "pronunciation": "/ˈdaʊnloʊd/",
+    "example": "Download the file to your computer.",
+    "partOfSpeech": "verb",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "upload",
+    "meaning": "tải lên",
+    "pronunciation": "/ˈʌploʊd/",
+    "example": "Upload your photos to the cloud.",
+    "partOfSpeech": "verb",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "cloud",
+    "meaning": "đám mây (lưu trữ)",
+    "pronunciation": "/klaʊd/",
+    "example": "Store your files in the cloud.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  },
+  {
+    "word": "backup",
+    "meaning": "sao lưu",
+    "pronunciation": "/ˈbækʌp/",
+    "example": "Create a backup of important files.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "virus",
+    "meaning": "virus (máy tính)",
+    "pronunciation": "/ˈvaɪrəs/",
+    "example": "Install antivirus software for protection.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "artificial intelligence",
+    "meaning": "trí tuệ nhân tạo",
+    "pronunciation": "/ˌɑːrtɪˈfɪʃl ɪnˈtelɪdʒəns/",
+    "example": "AI is transforming many industries.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  },
+  {
+    "word": "robot",
+    "meaning": "robot",
+    "pronunciation": "/ˈroʊbɑːt/",
+    "example": "Robots can perform repetitive tasks.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "social media",
+    "meaning": "mạng xã hội",
+    "pronunciation": "/ˈsoʊʃl ˈmiːdiə/",
+    "example": "Many people use social media daily.",
+    "partOfSpeech": "noun",
+    "level": "intermediate",
+    "topic": "technology"
+  },
+  {
+    "word": "streaming",
+    "meaning": "phát trực tuyến",
+    "pronunciation": "/ˈstriːmɪŋ/",
+    "example": "I enjoy streaming movies online.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  },
+  {
+    "word": "virtual reality",
+    "meaning": "thực tế ảo",
+    "pronunciation": "/ˈvɜːrtʃuəl riˈæləti/",
+    "example": "VR technology creates immersive experiences.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  },
+  {
+    "word": "cybersecurity",
+    "meaning": "an ninh mạng",
+    "pronunciation": "/ˈsaɪbərsɪˌkjʊrəti/",
+    "example": "Cybersecurity is crucial for businesses.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  },
+  {
+    "word": "cryptocurrency",
+    "meaning": "tiền điện tử",
+    "pronunciation": "/ˈkrɪptoʊˌkɜːrənsi/",
+    "example": "Bitcoin is a popular cryptocurrency.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  },
+  {
+    "word": "blockchain",
+    "meaning": "chuỗi khối",
+    "pronunciation": "/ˈblɑːktʃeɪn/",
+    "example": "Blockchain technology ensures security.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  },
+  {
+    "word": "algorithm",
+    "meaning": "thuật toán",
+    "pronunciation": "/ˈælɡəˌrɪðəm/",
+    "example": "The algorithm sorts data efficiently.",
+    "partOfSpeech": "noun",
+    "level": "advanced",
+    "topic": "technology"
+  }
+]
+
