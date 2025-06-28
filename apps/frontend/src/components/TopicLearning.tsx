@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { vocabularyAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useLearningSettingsStore } from '@/store/learningSettingsStore';
+import LearningSettingsModal from './LearningSettingsModal';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 interface TopicStat {
   topic: string;
@@ -23,37 +26,58 @@ export default function TopicLearning() {
   const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
   const [topicProgress, setTopicProgress] = useState<Record<string, TopicProgress>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsTopic, setSettingsTopic] = useState<string | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalTopics, setTotalTopics] = useState(0);
+
   const router = useRouter();
+  const { getTopicSettings } = useLearningSettingsStore();
 
   useEffect(() => {
     loadTopicsData();
   }, []);
 
-  const loadTopicsData = async () => {
+  const loadTopicsData = async (page = 1, append = false) => {
     try {
-      setLoading(true);
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
 
-      // Load topics and stats
+      // Load topics and stats with pagination
       const [topicsResponse, statsResponse] = await Promise.all([
-        vocabularyAPI.getTopics(),
-        vocabularyAPI.getTopicStats(),
+        vocabularyAPI.getTopics(page, 12), // Load 12 topics per page
+        vocabularyAPI.getTopicStats(page, 12),
       ]);
 
-      setTopics(topicsResponse.data);
-      setTopicStats(statsResponse.data);
+      const newTopics = topicsResponse.data.topics || [];
+      const newStats = statsResponse.data.topics || [];
 
-      // Load progress for each topic
-      const progressPromises = topicsResponse.data.map(async (topicObj: any) => {
-        // Fix: Extract topic name from object
-        const topicName = typeof topicObj === 'string' ? topicObj : topicObj.name;
+      if (append) {
+        setTopics(prev => [...prev, ...newTopics.map((t: any) => t.topic)]);
+        setTopicStats(prev => [...prev, ...newStats]);
+      } else {
+        setTopics(newTopics.map((t: any) => t.topic));
+        setTopicStats(newStats);
+      }
 
+      setHasMore(topicsResponse.data.hasMore || false);
+      setTotalTopics(topicsResponse.data.total || 0);
+      setCurrentPage(page);
+
+      // Load progress for new topics only
+      const progressPromises = newStats.map(async (topicStat: TopicStat) => {
         try {
-          const progressResponse = await vocabularyAPI.getProgressByTopic(topicName);
-          return { topic: topicName, progress: progressResponse.data };
+          const progressResponse = await vocabularyAPI.getProgressByTopic(topicStat.topic);
+          return { topic: topicStat.topic, progress: progressResponse.data };
         } catch (error) {
-          console.error(`Failed to load progress for topic ${topicName}:`, error);
-          return { topic: topicName, progress: null };
+          console.error(`Failed to load progress for topic ${topicStat.topic}:`, error);
+          return { topic: topicStat.topic, progress: null };
         }
       });
 
@@ -66,11 +90,22 @@ export default function TopicLearning() {
         }
       });
 
-      setTopicProgress(progressMap);
+      if (append) {
+        setTopicProgress(prev => ({ ...prev, ...progressMap }));
+      } else {
+        setTopicProgress(progressMap);
+      }
     } catch (error) {
       console.error('Failed to load topics data:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreTopics = () => {
+    if (hasMore && !loadingMore) {
+      loadTopicsData(currentPage + 1, true);
     }
   };
 
@@ -107,17 +142,34 @@ export default function TopicLearning() {
   };
 
   const startTopicLearning = (topic: string, mode: 'learn' | 'review' | 'test') => {
+    const settings = getTopicSettings(topic);
+    let limit: number;
+
     switch (mode) {
       case 'learn':
-        router.push(`/learn/new?topic=${topic}`);
+        limit = settings.newWordsPerSession;
+        router.push(`/learn/new?topic=${topic}&limit=${limit}`);
         break;
       case 'review':
-        router.push(`/learn/review?topic=${topic}`);
+        limit = settings.reviewWordsPerSession;
+        router.push(`/learn/review?topic=${topic}&limit=${limit}`);
         break;
       case 'test':
-        router.push(`/learn/test?topic=${topic}`);
+        limit = settings.testWordsPerSession;
+        router.push(`/learn/test?topic=${topic}&limit=${limit}`);
         break;
     }
+  };
+
+  const openTopicSettings = (topic: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering topic learning
+    setSettingsTopic(topic);
+    setShowSettings(true);
+  };
+
+  const openGeneralSettings = () => {
+    setSettingsTopic(undefined);
+    setShowSettings(true);
   };
 
   if (loading) {
@@ -130,12 +182,26 @@ export default function TopicLearning() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6">
-      {/* Header */}
+      {/* Header with Settings */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Học Theo Chủ Đề</h1>
-        <p className="text-gray-600 text-sm sm:text-base">
-          Chọn chủ đề bạn muốn tập trung học và luyện tập
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2">
+              Học Theo Chủ Đề
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+              Chọn chủ đề bạn muốn tập trung học và luyện tập
+            </p>
+          </div>
+          <button
+            onClick={openGeneralSettings}
+            className="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Cấu hình học tập"
+          >
+            <Cog6ToothIcon className="h-5 w-5 mr-1" />
+            Cấu hình
+          </button>
+        </div>
       </div>
 
       {/* Topic Grid */}
@@ -143,16 +209,26 @@ export default function TopicLearning() {
         {topicStats.map((topicStat) => {
           const progress = topicProgress[topicStat.topic];
           const masteryPercentage = progress?.masteryPercentage || 0;
+          const settings = getTopicSettings(topicStat.topic);
 
           return (
-            <div key={topicStat.topic} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+            <div key={topicStat.topic} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               {/* Topic Header */}
               <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">{getTopicIcon(topicStat.topic)}</span>
-                  <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                    {topicStat.count} từ
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                      {topicStat.count} từ
+                    </span>
+                    <button
+                      onClick={(e) => openTopicSettings(topicStat.topic, e)}
+                      className="p-1 hover:bg-white/20 rounded transition-colors"
+                      title="Cấu hình cho topic này"
+                    >
+                      <Cog6ToothIcon className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <h3 className="font-semibold text-sm sm:text-base line-clamp-2">
                   {topicStat.topic}
@@ -163,51 +239,60 @@ export default function TopicLearning() {
               <div className="p-4">
                 {progress ? (
                   <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                       <span>Tiến độ</span>
                       <span>{masteryPercentage}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(masteryPercentage)}`}
                         style={{ width: `${masteryPercentage}%` }}
                       ></div>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                       <span>Đã học: {progress.totalLearned}</span>
                       <span>Thành thạo: {progress.mastered}</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-4 text-center text-gray-500 text-sm">
+                  <div className="mb-4 text-center text-gray-500 dark:text-gray-400 text-sm">
                     Chưa bắt đầu học
                   </div>
                 )}
+
+                {/* Settings Preview */}
+                <div className="mb-4 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                  <div className="flex justify-between">
+                    <span>Học: {settings.newWordsPerSession}</span>
+                    <span>Ôn: {settings.reviewWordsPerSession}</span>
+                    <span>Test: {settings.testWordsPerSession}</span>
+                  </div>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="space-y-2">
                   <button
                     onClick={() => startTopicLearning(topicStat.topic, 'learn')}
-                    className="w-full bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
                   >
-                    📚 Học từ mới
+                    📚 Học từ mới ({settings.newWordsPerSession})
                   </button>
 
                   {progress && progress.learning > 0 && (
                     <button
                       onClick={() => startTopicLearning(topicStat.topic, 'review')}
-                      className="w-full bg-yellow-500 text-white py-2 px-3 rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium"
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
                     >
-                      🔄 Ôn tập ({progress.learning})
+                      🔄 Ôn tập ({settings.reviewWordsPerSession})
                     </button>
                   )}
 
                   {progress && progress.totalLearned >= 5 && (
                     <button
                       onClick={() => startTopicLearning(topicStat.topic, 'test')}
-                      className="w-full bg-purple-500 text-white py-2 px-3 rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                      className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
                     >
-                      📝 Kiểm tra
+                      📝 Kiểm tra ({settings.testWordsPerSession})
                     </button>
                   )}
                 </div>
@@ -216,6 +301,25 @@ export default function TopicLearning() {
           );
         })}
       </div>
+
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={loadMoreTopics}
+            className="flex items-center justify-center mx-auto bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors text-sm font-medium"
+          >
+            {loadingMore ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Đang tải thêm...
+              </>
+            ) : (
+              'Tải thêm chủ đề'
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Quick Stats */}
       <div className="mt-8 bg-white rounded-lg p-4 sm:p-6 shadow-lg">
@@ -255,6 +359,13 @@ export default function TopicLearning() {
           ← Quay về Dashboard
         </button>
       </div>
+
+      {/* Settings Modal */}
+      <LearningSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        topic={settingsTopic}
+      />
     </div>
   );
 }

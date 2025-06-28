@@ -46,23 +46,29 @@ export class LearningService {
   }
 
   // Get words that need review today
-  async getWordsForReview(userId: number, limit: number = 20) {
+  async getWordsForReview(userId: number, limit: number = 20, level?: string) {
     const now = new Date();
 
-    return await this.userVocabularyRepository.find({
-      where: {
-        userId,
-        nextReviewDate: LessThan(now),
-        status: LearningStatus.LEARNING,
-      },
-      relations: ['vocabulary'],
-      take: limit,
-      order: { nextReviewDate: 'ASC' },
-    });
+    let query = this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .leftJoinAndSelect('uv.vocabulary', 'v')
+      .where('uv.userId = :userId', { userId })
+      .andWhere('uv.nextReviewDate < :now', { now })
+      .andWhere('uv.status = :status', { status: LearningStatus.LEARNING });
+
+    // Add level filter if provided
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
+
+    return await query
+      .orderBy('uv.nextReviewDate', 'ASC')
+      .take(limit)
+      .getMany();
   }
 
   // Get new words for learning
-  async getNewWordsForLearning(userId: number, limit: number = 10) {
+  async getNewWordsForLearning(userId: number, limit: number = 10, level?: string) {
     try {
       // Get words user hasn't learned yet
       const learnedWordIds = await this.userVocabularyRepository
@@ -79,6 +85,15 @@ export class LearningService {
 
       if (learnedIds.length > 0) {
         queryBuilder = queryBuilder.where('v.id NOT IN (:...learnedIds)', { learnedIds });
+      }
+
+      // Add level filter if provided
+      if (level) {
+        if (learnedIds.length > 0) {
+          queryBuilder = queryBuilder.andWhere('v.level = :level', { level });
+        } else {
+          queryBuilder = queryBuilder.where('v.level = :level', { level });
+        }
       }
 
       // Use ORDER BY id ASC instead of RANDOM() for SQLite compatibility
@@ -296,35 +311,42 @@ export class LearningService {
   }
 
   // Get difficult words
-  async getDifficultWords(userId: number, limit: number = 20) {
-    return await this.userVocabularyRepository.find({
-      where: {
-        userId,
-        status: LearningStatus.DIFFICULT,
-      },
-      relations: ['vocabulary'],
-      take: limit,
-      order: { incorrectCount: 'DESC' },
-    });
+  async getDifficultWords(userId: number, limit: number = 20, level?: string) {
+    let query = this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .leftJoinAndSelect('uv.vocabulary', 'v')
+      .where('uv.userId = :userId', { userId })
+      .andWhere('uv.status = :status', { status: LearningStatus.DIFFICULT });
+
+    // Add level filter if provided
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
+
+    return await query
+      .orderBy('uv.incorrectCount', 'DESC')
+      .take(limit)
+      .getMany();
   }
 
   // Get user progress
-  async getUserProgress(userId: number) {
-    const totalLearned = await this.userVocabularyRepository.count({
-      where: { userId },
-    });
+  async getUserProgress(userId: number, level?: string) {
+    let query = this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .leftJoinAndSelect('uv.vocabulary', 'v')
+      .where('uv.userId = :userId', { userId });
 
-    const mastered = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.MASTERED },
-    });
+    // Add level filter if provided
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
 
-    const learning = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.LEARNING },
-    });
+    const allUserVocabs = await query.getMany();
 
-    const difficult = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.DIFFICULT },
-    });
+    const totalLearned = allUserVocabs.length;
+    const mastered = allUserVocabs.filter(uv => uv.status === LearningStatus.MASTERED).length;
+    const learning = allUserVocabs.filter(uv => uv.status === LearningStatus.LEARNING).length;
+    const difficult = allUserVocabs.filter(uv => uv.status === LearningStatus.DIFFICULT).length;
 
     return {
       totalLearned,
@@ -332,6 +354,7 @@ export class LearningService {
       learning,
       difficult,
       masteryPercentage: totalLearned > 0 ? Math.round((mastered / totalLearned) * 100) : 0,
+      level
     };
   }
 
@@ -370,7 +393,7 @@ export class LearningService {
   }
 
   // Get new words for learning by topic
-  async getNewWordsForLearningByTopic(userId: number, topic: string, limit: number = 10) {
+  async getNewWordsForLearningByTopic(userId: number, topic: string, limit: number = 10, level?: string) {
     // Get words user hasn't learned yet in specific topic
     const learnedWordIds = await this.userVocabularyRepository
       .createQueryBuilder('uv')
@@ -380,35 +403,45 @@ export class LearningService {
 
     const learnedIds = learnedWordIds.map(item => item.uv_vocabularyId);
 
-    const queryBuilder = this.vocabularyRepository
+    let queryBuilder = this.vocabularyRepository
       .createQueryBuilder('v')
       .where('v.topic = :topic', { topic })
       .take(limit)
       .orderBy('RANDOM()');
 
     if (learnedIds.length > 0) {
-      queryBuilder.andWhere('v.id NOT IN (:...learnedIds)', { learnedIds });
+      queryBuilder = queryBuilder.andWhere('v.id NOT IN (:...learnedIds)', { learnedIds });
+    }
+
+    // Add level filter if provided
+    if (level) {
+      queryBuilder = queryBuilder.andWhere('v.level = :level', { level });
     }
 
     return await queryBuilder.getMany();
   }
 
   // Get words for review by topic
-  async getWordsForReviewByTopic(userId: number, topic: string, limit: number = 20) {
+  async getWordsForReviewByTopic(userId: number, topic: string, limit: number = 20, level?: string) {
     const now = new Date();
 
-    return await this.userVocabularyRepository.find({
-      where: {
-        userId,
-        nextReviewDate: LessThan(now),
-        status: LearningStatus.LEARNING,
-      },
-      relations: ['vocabulary'],
-      take: limit,
-      order: { nextReviewDate: 'ASC' },
-    }).then(results =>
-      results.filter(uv => uv.vocabulary.topic === topic)
-    );
+    let query = this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .leftJoinAndSelect('uv.vocabulary', 'v')
+      .where('uv.userId = :userId', { userId })
+      .andWhere('uv.nextReviewDate < :now', { now })
+      .andWhere('uv.status = :status', { status: LearningStatus.LEARNING })
+      .andWhere('v.topic = :topic', { topic });
+
+    // Add level filter if provided
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
+
+    return await query
+      .orderBy('uv.nextReviewDate', 'ASC')
+      .take(limit)
+      .getMany();
   }
 
   // Generate test by topic
@@ -433,13 +466,19 @@ export class LearningService {
   }
 
   // Get user progress by topic
-  async getUserProgressByTopic(userId: number, topic: string) {
-    const topicWords = await this.userVocabularyRepository.find({
-      where: { userId },
-      relations: ['vocabulary'],
-    });
+  async getUserProgressByTopic(userId: number, topic: string, level?: string) {
+    let query = this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .leftJoinAndSelect('uv.vocabulary', 'v')
+      .where('uv.userId = :userId', { userId })
+      .andWhere('v.topic = :topic', { topic });
 
-    const filteredWords = topicWords.filter(uv => uv.vocabulary.topic === topic);
+    // Add level filter if provided
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
+
+    const filteredWords = await query.getMany();
 
     const totalLearned = filteredWords.length;
     const mastered = filteredWords.filter(uv => uv.status === LearningStatus.MASTERED).length;
@@ -453,6 +492,7 @@ export class LearningService {
       learning,
       difficult,
       masteryPercentage: totalLearned > 0 ? Math.round((mastered / totalLearned) * 100) : 0,
+      level
     };
   }
 

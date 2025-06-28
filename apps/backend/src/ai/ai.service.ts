@@ -66,7 +66,8 @@ ${conversationText}
 Student: ${userMessage}
 Teacher:`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+      // Use the new gemini-1.5-flash model instead of deprecated gemini-pro
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +127,8 @@ Teacher:`;
         
         Make them suitable for Vietnamese English learners at beginner to intermediate level.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+        // Use the new gemini-1.5-flash model
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -165,7 +167,7 @@ Teacher:`;
       ],
       'house': [
         "My house has a beautiful garden. - Ngôi nhà của tôi có một khu vườn đẹp.",
-        "They built a new house last year. - Họ đã xây một ngôi nhà mới năm ngoái."
+        "They built a new house last year. - Họ đã xây một ngôi nhà mới năm ngo��i."
       ],
       'car': [
         "His car is very fast and comfortable. - Chiếc xe của anh ấy rất nhanh và thoải mái.",
@@ -230,7 +232,8 @@ Teacher:`;
       try {
         const prompt = `Assess the difficulty level of the English word "${word}" (meaning: ${meaning}) for Vietnamese English learners. Reply with only one word: beginner, intermediate, or advanced.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+        // Use the new gemini-1.5-flash model
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -269,7 +272,8 @@ Teacher:`;
       try {
         const prompt = `Create a pronunciation tip in Vietnamese for the English word "${word}". Help Vietnamese speakers pronounce it correctly. Give short and easy-to-understand advice.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+        // Use the new gemini-1.5-flash model
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -313,7 +317,8 @@ Teacher:`;
         
         Give practical and achievable suggestions. Format as a numbered list.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+        // Use the new gemini-1.5-flash model
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

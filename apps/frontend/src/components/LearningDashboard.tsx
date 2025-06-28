@@ -113,6 +113,27 @@ export default function LearningDashboard() {
         </div>
       </div>
 
+      {/* New Feature Highlight - Learning Roadmap */}
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-6 text-white mb-6 border-2 border-yellow-400 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="text-4xl">🎯</div>
+            <div>
+              <h3 className="text-xl font-bold mb-1">✨ Tính năng mới: Lộ trình học tập</h3>
+              <p className="text-sm opacity-90">
+                Học từ vựng một cách có hệ thống từ cơ bản đến nâng cao
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/learn/roadmap')}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-lg"
+          >
+            Khám phá ngay
+          </button>
+        </div>
+      </div>
+
       {/* Action Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <ActionCard

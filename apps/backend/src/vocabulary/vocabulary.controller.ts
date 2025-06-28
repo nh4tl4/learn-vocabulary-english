@@ -11,7 +11,7 @@ import {
 import { VocabularyService } from './vocabulary.service';
 import { LearningService } from './learning.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { StudySessionDto, ReviewFilterDto, SetDailyGoalDto, TestResultDto } from './dto/learning.dto';
+import { StudySessionDto, TestResultDto } from './dto/learning.dto';
 
 @Controller('vocabulary')
 @UseGuards(JwtAuthGuard)
@@ -40,53 +40,53 @@ export class VocabularyController {
   }
 
   @Get('learn/new')
-  async getNewWords(@Request() req, @Query('limit') limit: number = 10) {
-    return this.learningService.getNewWordsForLearning(req.user.userId, limit);
+  async getNewWords(@Request() req, @Query('limit') limit: number = 10, @Query('level') level?: string) {
+    return this.learningService.getNewWordsForLearning(req.user.userId, limit, level);
   }
 
   @Get('learn/review')
-  async getReviewWords(@Request() req, @Query('limit') limit: number = 20) {
-    return this.learningService.getWordsForReview(req.user.userId, limit);
+  async getReviewWords(@Request() req, @Query('limit') limit: number = 20, @Query('level') level?: string) {
+    return this.learningService.getWordsForReview(req.user.userId, limit, level);
   }
 
   @Get('learn/difficult')
-  async getDifficultWords(@Request() req, @Query('limit') limit: number = 20) {
-    return this.learningService.getDifficultWords(req.user.userId, limit);
+  async getDifficultWords(@Request() req, @Query('limit') limit: number = 20, @Query('level') level?: string) {
+    return this.learningService.getDifficultWords(req.user.userId, limit, level);
   }
 
   @Get('progress')
-  async getUserProgress(@Request() req) {
-    return this.learningService.getUserProgress(req.user.userId);
+  async getUserProgress(@Request() req, @Query('level') level?: string) {
+    return this.learningService.getUserProgress(req.user.userId, level);
   }
 
   @Get('topics')
-  async getTopics() {
-    return this.vocabularyService.getTopics();
+  async getTopics(@Query('page') page: number = 1, @Query('limit') limit: number = 20, @Query('level') level?: string) {
+    return this.vocabularyService.getTopics(page, limit, level);
   }
 
   @Get('topics/:topic/new')
-  async getNewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 10) {
-    return this.learningService.getNewWordsForLearningByTopic(req.user.userId, topic, limit);
+  async getNewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 10, @Query('level') level?: string) {
+    return this.learningService.getNewWordsForLearningByTopic(req.user.userId, topic, limit, level);
   }
 
   @Get('topics/:topic/review')
-  async getReviewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 20) {
-    return this.learningService.getWordsForReviewByTopic(req.user.userId, topic, limit);
+  async getReviewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 20, @Query('level') level?: string) {
+    return this.learningService.getWordsForReviewByTopic(req.user.userId, topic, limit, level);
   }
 
   @Get('topics/:topic/progress')
-  async getProgressByTopic(@Request() req, @Param('topic') topic: string) {
-    return this.learningService.getUserProgressByTopic(req.user.userId, topic);
+  async getProgressByTopic(@Request() req, @Param('topic') topic: string, @Query('level') level?: string) {
+    return this.learningService.getUserProgressByTopic(req.user.userId, topic, level);
   }
 
   @Get('topics/:topic/search')
-  async searchWordsByTopic(@Param('topic') topic: string, @Query('word') word: string, @Query('limit') limit: number = 10) {
-    return this.vocabularyService.searchWordsByTopic(topic, word, limit);
+  async searchWordsByTopic(@Param('topic') topic: string, @Query('word') word: string, @Query('limit') limit: number = 10, @Query('level') level?: string) {
+    return this.vocabularyService.searchWordsByTopic(topic, word, limit, level);
   }
 
   @Get('search/topic')
-  async searchByTopicAndWord(@Query('topic') topic: string, @Query('word') word: string) {
-    return this.vocabularyService.findByTopicAndWord(topic, word);
+  async searchByTopicAndWord(@Query('topic') topic: string, @Query('word') word: string, @Query('level') level?: string) {
+    return this.vocabularyService.findByTopicAndWord(topic, word, level);
   }
 
   // Move :id route to the END to avoid conflicts
@@ -127,12 +127,16 @@ export class VocabularyController {
 
   // Topic-based endpoints
   @Get('topics/stats')
-  async getTopicStats() {
-    return this.vocabularyService.getTopicStats();
+  async getTopicStats(@Query('page') page: number = 1, @Query('limit') limit: number = 20) {
+    return this.vocabularyService.getTopicStats(page, limit);
   }
 
   @Get('topic/:topic')
-  async getVocabularyByTopic(@Param('topic') topic: string, @Query('page') page: number = 1, @Query('limit') limit: number = 20) {
+  async getVocabularyByTopic(
+    @Param('topic') topic: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20
+  ) {
     return this.vocabularyService.findByTopic(topic, page, limit);
   }
 }
