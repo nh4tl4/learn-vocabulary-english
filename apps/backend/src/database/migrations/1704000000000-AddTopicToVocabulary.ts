@@ -57,7 +57,7 @@ export class AddTopicToVocabulary1704000000000 implements MigrationInterface {
     for (const topicGroup of topicUpdates) {
       for (const word of topicGroup.words) {
         await queryRunner.query(
-          `UPDATE vocabulary SET topic = ? WHERE word = ?`,
+          `UPDATE vocabulary SET topic = $1 WHERE word = $2`,
           [topicGroup.topic, word]
         );
       }
@@ -116,7 +116,9 @@ export class AddTopicToVocabulary1704000000000 implements MigrationInterface {
 
     for (const vocab of newVocabulary) {
       await queryRunner.query(
-        `INSERT OR IGNORE INTO vocabulary (word, meaning, topic, level, createdAt, updatedAt) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        `INSERT INTO vocabulary (word, meaning, topic, level, "createdAt", "updatedAt") 
+         VALUES ($1, $2, $3, $4, NOW(), NOW()) 
+         ON CONFLICT (word) DO NOTHING`,
         [vocab.word, vocab.meaning, vocab.topic, vocab.level]
       );
     }
