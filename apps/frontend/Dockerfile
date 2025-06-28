@@ -16,9 +16,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/frontend/ .
 
-# Build the application
+# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED 1
-RUN npm run build
+ENV NODE_ENV production
+
+# Build the application with error handling
+RUN npm run build || (echo "Build failed, checking logs..." && cat .next/build-error.log 2>/dev/null || echo "No error log found" && exit 1)
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -38,8 +41,7 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+# Copy the built application
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
