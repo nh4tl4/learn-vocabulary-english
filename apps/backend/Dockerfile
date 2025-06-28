@@ -21,10 +21,14 @@ ENV NODE_ENV=production
 
 # Create a startup script that runs migrations then starts the app
 RUN echo '#!/bin/sh' > start.sh && \
-    echo 'echo "Starting application..."' >> start.sh && \
-    echo 'echo "Running database migrations..."' >> start.sh && \
-    echo 'npm run migration:run || echo "Migration failed, continuing..."' >> start.sh && \
-    echo 'echo "Starting NestJS application..."' >> start.sh && \
+    echo 'set -e' >> start.sh && \
+    echo 'echo "=== Starting Vocabulary Backend ==="' >> start.sh && \
+    echo 'echo "Environment: $NODE_ENV"' >> start.sh && \
+    echo 'echo "Database Host: $DB_HOST"' >> start.sh && \
+    echo 'echo "=== Running Database Migrations ==="' >> start.sh && \
+    echo 'npx typeorm-ts-node-commonjs -d data-source.ts migration:run' >> start.sh && \
+    echo 'echo "=== Migrations Complete ==="' >> start.sh && \
+    echo 'echo "=== Starting NestJS Application ==="' >> start.sh && \
     echo 'npm run start:prod' >> start.sh && \
     chmod +x start.sh
 
