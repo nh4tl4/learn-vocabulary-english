@@ -55,17 +55,25 @@ export class AIService {
     }
 
     try {
+      // Filter and type cast conversation history to match OpenAI API requirements
+      const validHistory = conversationHistory.slice(-5).map(msg => ({
+        role: (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system')
+          ? msg.role as 'user' | 'assistant' | 'system'
+          : 'user' as const,
+        content: msg.content
+      }));
+
       const messages = [
         {
           role: 'system' as const,
-          content: `Bạn là một giáo viên tiếng Anh thân thiện và kiên nhẫn, giúp học sinh Việt Nam luyện tập tiếng Anh. 
+          content: `Bạn là một giáo viên tiếng Anh thân thiện và kiên nhẫn, giúp học sinh Việt Nam luy��n tập tiếng Anh. 
           - Trả lời bằng tiếng Anh đơn giản, dễ hiểu
           - Sửa lỗi ngữ pháp một cách nhẹ nhàng
           - Khuyến khích học sinh tiếp tục thực hành
           - Nếu học sinh nói tiếng Việt, hãy khuyến khích họ thử nói tiếng Anh
           - Giữ cuộc trò chuyện thú vị và có tính giáo dục`
         },
-        ...conversationHistory.slice(-5), // Keep last 5 messages for context
+        ...validHistory,
         {
           role: 'user' as const,
           content: userMessage

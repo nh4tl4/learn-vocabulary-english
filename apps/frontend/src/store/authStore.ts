@@ -88,21 +88,22 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated
       }),
       // Khôi phục state và kiểm tra token khi load
-      onRehydrate: async (state) => {
+      onRehydrateStorage: () => (state) => {
         if (state) {
           const token = Cookies.get('auth_token');
           if (token && state.isAuthenticated) {
-            // Có token và state cho biết đã đăng nhập, verify lại
-            try {
-              const response = await userAPI.getProfile();
-              state.user = response.data;
-              state.isAuthenticated = true;
-            } catch (error) {
-              // Token không hợp lệ
-              Cookies.remove('auth_token');
-              state.user = null;
-              state.isAuthenticated = false;
-            }
+            // Có token và state cho biết đã đăng nhập, verify lại token
+            userAPI.getProfile()
+              .then((response) => {
+                state.user = response.data;
+                state.isAuthenticated = true;
+              })
+              .catch(() => {
+                // Token không hợp lệ
+                Cookies.remove('auth_token');
+                state.user = null;
+                state.isAuthenticated = false;
+              });
           } else {
             // Không có token hoặc state chưa đăng nhập
             state.user = null;
