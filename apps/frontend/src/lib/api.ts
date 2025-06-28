@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+<<<<<<< HEAD
 // Debug environment variables
 console.log('Environment check:');
 console.log('NODE_ENV:', process.env.NODE_ENV);
@@ -10,13 +11,15 @@ console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 console.log('Final API_URL:', API_URL);
+=======
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+>>>>>>> e4811492d3f7cf358c745e80475adfa7e2c91da9
 
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout for production
 });
 
 // Add auth token to requests
@@ -28,7 +31,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors and network issues
+// Handle auth errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -36,15 +39,6 @@ apiClient.interceptors.response.use(
       Cookies.remove('auth_token');
       window.location.href = '/auth';
     }
-
-    // Log API errors for debugging
-    console.error('API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message
-    });
-
     return Promise.reject(error);
   }
 );
