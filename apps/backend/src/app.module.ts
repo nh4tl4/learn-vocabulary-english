@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { VocabularyModule } from './vocabulary/vocabulary.module';
@@ -28,5 +29,6 @@ import { UserVocabulary } from './database/entities/user-vocabulary.entity';
     UserModule,
     VocabularyModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

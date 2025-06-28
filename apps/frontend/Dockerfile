@@ -3,14 +3,12 @@ FROM node:18-alpine AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Dependencies stage - cache this layer
+# Dependencies stage
 FROM base AS deps
 COPY apps/frontend/package*.json ./
-# Use npm cache mount for faster installs
-RUN --mount=type=cache,target=/root/.npm \
-    npm install
+RUN npm ci || npm install
 
-# Build stage
+# Builder stage
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -22,8 +20,7 @@ RUN mkdir -p public
 # Build with optimizations
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-RUN --mount=type=cache,target=/app/.next/cache \
-    npm run build
+RUN npm run build
 
 # Production stage - minimal final image
 FROM node:18-alpine AS runner
@@ -48,6 +45,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000
-ENV PORT=3000 HOSTNAME="0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]

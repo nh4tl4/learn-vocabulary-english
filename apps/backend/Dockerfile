@@ -1,48 +1,41 @@
-# Multi-stage build for NestJS Backend
+# Optimized Multi-stage build for NestJS Backend
 FROM node:18-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# Dependencies stage - cache this layer
+FROM base AS deps
 COPY apps/backend/package*.json ./
-RUN npm install --only=production
+# Use npm cache mount for faster installs (fallback for Render)
+RUN npm ci --only=production || npm install --only=production
 
-# Rebuild the source code only when needed
+# Build stage - cache dependencies separately
 FROM base AS builder
-WORKDIR /app
 COPY apps/backend/package*.json ./
-RUN npm install
+RUN npm ci || npm install
 
-# Copy source code
+# Copy source code (this layer changes most often)
 COPY apps/backend/ .
 
-# Build the application
+# Build application
 RUN npm run build
 
-# Production image, copy all the files and run nest
-FROM base AS runner
+# Production stage - minimal final image
+FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
 
-# Copy built application
+# Copy only necessary files
+COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
 
-# Copy data-source configuration
-COPY --from=builder --chown=nestjs:nodejs /app/data-source.ts ./
-
 USER nestjs
-
 EXPOSE 3000
+ENV NODE_ENV=production
+ENV PORT=3000
 
-ENV NODE_ENV production
-
-# Start the server using the production build
 CMD ["node", "dist/main.js"]

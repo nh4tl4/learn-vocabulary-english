@@ -1,17 +1,26 @@
-# GitLab CI/CD Pipeline for Learn Vocabulary English
+# Optimized GitLab CI/CD Pipeline for Faster Builds
 stages:
   - build
-  - deploy
 
 variables:
   DOCKER_REGISTRY: $CI_REGISTRY
   DOCKER_IMAGE_TAG: $CI_COMMIT_SHA
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
+  # Enable BuildKit for faster builds
+  DOCKER_BUILDKIT: 1
 
-# ============================================
-# BUILD STAGE
-# ============================================
+# Global cache configuration
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - apps/backend/node_modules/
+    - apps/frontend/node_modules/
+    - apps/backend/dist/
+    - apps/frontend/.next/
+  policy: pull-push
+
+# Build jobs in parallel for speed
 build:backend:
   stage: build
   image: docker:24-dind
@@ -22,18 +31,28 @@ build:backend:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    # Enable BuildKit features
+    BUILDKIT_INLINE_CACHE: 1
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - echo "Building backend image..."
-    - ls -la apps/backend/
-    - cat apps/backend/Dockerfile
-    - docker build -f apps/backend/Dockerfile -t $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG .
+    - echo "Building backend with cache optimization..."
+    # Use registry cache for faster builds
+    - |
+      docker build \
+        --cache-from $CI_REGISTRY_IMAGE/backend:latest \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        -f apps/backend/Dockerfile \
+        -t $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG \
+        -t $CI_REGISTRY_IMAGE/backend:latest \
+        .
     - docker push $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG
-    - docker tag $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG $CI_REGISTRY_IMAGE/backend:latest
     - docker push $CI_REGISTRY_IMAGE/backend:latest
   only:
     - main
+  parallel:
+    matrix:
+      - SERVICE: backend
 
 build:frontend:
   stage: build
@@ -45,33 +64,24 @@ build:frontend:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    BUILDKIT_INLINE_CACHE: 1
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - echo "Building frontend image..."
-    - ls -la apps/frontend/
-    - cat apps/frontend/Dockerfile
-    - docker build -f apps/frontend/Dockerfile -t $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG .
+    - echo "Building frontend with cache optimization..."
+    # Use registry cache for faster builds
+    - |
+      docker build \
+        --cache-from $CI_REGISTRY_IMAGE/frontend:latest \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        -f apps/frontend/Dockerfile \
+        -t $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG \
+        -t $CI_REGISTRY_IMAGE/frontend:latest \
+        .
     - docker push $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG
-    - docker tag $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG $CI_REGISTRY_IMAGE/frontend:latest
     - docker push $CI_REGISTRY_IMAGE/frontend:latest
   only:
     - main
-
-# ============================================
-# DEPLOY STAGE
-# ============================================
-deploy:production:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openssh-client curl
-  script:
-    - echo "Production deployment would go here"
-    - echo "Backend image:" $CI_REGISTRY_IMAGE/backend:$DOCKER_IMAGE_TAG
-    - echo "Frontend image:" $CI_REGISTRY_IMAGE/frontend:$DOCKER_IMAGE_TAG
-  environment:
-    name: production
-  only:
-    - main
-  when: manual
+  parallel:
+    matrix:
+      - SERVICE: frontend
