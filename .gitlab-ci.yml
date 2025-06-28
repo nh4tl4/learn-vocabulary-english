@@ -35,8 +35,8 @@ build:backend:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - changes:
-      - apps/backend/**/*
-      - .gitlab-ci.yml
+        - apps/backend/**/*
+        - .gitlab-ci.yml
 
 build:frontend:
   stage: build
@@ -61,8 +61,8 @@ build:frontend:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - changes:
-      - apps/frontend/**/*
-      - .gitlab-ci.yml
+        - apps/frontend/**/*
+        - .gitlab-ci.yml
 
 # ============================================
 # DEPLOY STAGE
