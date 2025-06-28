@@ -46,7 +46,15 @@ function LearnContent() {
     const currentVocab = vocabularies[currentIndex];
 
     try {
-      await vocabularyAPI.updateProgress(currentVocab.id, isCorrect);
+      // Use new learning system API
+      const quality = isCorrect ? 4 : 1; // 4 = good, 1 = poor
+      const responseTime = 5; // Default response time
+
+      await vocabularyAPI.processStudySession({
+        vocabularyId: currentVocab.id,
+        quality,
+        responseTime,
+      });
 
       setScore(prev => ({
         correct: prev.correct + (isCorrect ? 1 : 0),
@@ -163,7 +171,7 @@ function LearnContent() {
           {!showAnswer ? (
             <div>
               <p className="text-gray-600 mb-8">
-                Bạn có biết nghĩa của từ này không?
+                Bạn có bi��t nghĩa của từ này không?
               </p>
               <div className="flex justify-center space-x-4">
                 <button
