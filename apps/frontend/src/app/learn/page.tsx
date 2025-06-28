@@ -4,14 +4,24 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { vocabularyAPI } from '@/lib/api';
-import { Vocabulary } from '@/types';
 import { toast } from 'react-hot-toast';
+
+interface Vocabulary {
+  id: number;
+  word: string;
+  meaning: string;
+  pronunciation?: string;
+  example?: string;
+  partOfSpeech?: string;
+  level?: string;
+  topic?: string;
+}
 
 // Component that uses useSearchParams wrapped in Suspense
 function LearnContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, loadUser } = useAuthStore();
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -19,6 +29,10 @@ function LearnContent() {
   const [score, setScore] = useState({ correct: 0, total: 0 });
 
   const isReviewMode = searchParams?.get('mode') === 'review';
+
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -31,24 +45,33 @@ function LearnContent() {
 
   const loadVocabularies = async () => {
     try {
+      setLoading(true);
       const response = await vocabularyAPI.getRandom(10);
-      setVocabularies(response.data);
+
+      if (response?.data && Array.isArray(response.data)) {
+        setVocabularies(response.data);
+      } else {
+        setVocabularies([]);
+        toast.error('Không thể tải từ vựng');
+      }
     } catch (error) {
+      console.error('Error loading vocabularies:', error);
       toast.error('Không thể tải từ vựng');
+      setVocabularies([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleAnswer = async (isCorrect: boolean) => {
-    if (vocabularies.length === 0) return;
+    if (!vocabularies || vocabularies.length === 0 || !vocabularies[currentIndex]) return;
 
     const currentVocab = vocabularies[currentIndex];
 
     try {
       // Use new learning system API
       const quality = isCorrect ? 4 : 1; // 4 = good, 1 = poor
-      const responseTime = 5; // Default response time
+      const responseTime = 5000; // Default response time in ms
 
       await vocabularyAPI.processStudySession({
         vocabularyId: currentVocab.id,
@@ -74,13 +97,30 @@ function LearnContent() {
           setShowAnswer(false);
         } else {
           // End of quiz
-          const accuracy = Math.round((score.correct + (isCorrect ? 1 : 0)) / (score.total + 1) * 100);
+          const newCorrect = score.correct + (isCorrect ? 1 : 0);
+          const newTotal = score.total + 1;
+          const accuracy = Math.round((newCorrect / newTotal) * 100);
           toast.success(`Hoàn thành! Độ chính xác: ${accuracy}%`);
           router.push('/dashboard');
         }
       }, 1500);
     } catch (error) {
+      console.error('Error processing study session:', error);
       toast.error('Có lỗi xảy ra');
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+      setShowAnswer(false);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < vocabularies.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setShowAnswer(false);
     }
   };
 
@@ -92,7 +132,7 @@ function LearnContent() {
     );
   }
 
-  if (vocabularies.length === 0) {
+  if (!vocabularies || vocabularies.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
@@ -112,6 +152,25 @@ function LearnContent() {
   }
 
   const currentVocab = vocabularies[currentIndex];
+
+  if (!currentVocab) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Lỗi dữ liệu</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Không thể tải từ vựng hiện tại.
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Quay lại Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -218,12 +277,7 @@ function LearnContent() {
 
         <div className="flex justify-between items-center">
           <button
-            onClick={() => {
-              if (currentIndex > 0) {
-                setCurrentIndex(prev => prev - 1);
-                setShowAnswer(false);
-              }
-            }}
+            onClick={handlePrevious}
             disabled={currentIndex === 0}
             className="flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
@@ -234,12 +288,7 @@ function LearnContent() {
           </button>
 
           <button
-            onClick={() => {
-              if (currentIndex < vocabularies.length - 1) {
-                setCurrentIndex(prev => prev + 1);
-                setShowAnswer(false);
-              }
-            }}
+            onClick={handleNext}
             disabled={currentIndex === vocabularies.length - 1}
             className="flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
