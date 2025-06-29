@@ -6,6 +6,7 @@ databases:
   # Redis Cache
   - name: vocabulary-redis
     plan: free
+    engine: redis
 
 services:
   # Backend API Service
@@ -25,8 +26,7 @@ services:
           name: vocabulary-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
+        fromDatabase:
           name: vocabulary-redis
           property: connectionString
 
