@@ -74,17 +74,40 @@ export class RedisService {
   }
 
   // Generic cache methods
-  async get(key: string): Promise<any> {
-    console.log('🔍 Getting from cache, key:', key);
-    const result = await this.cacheManager.get(key);
-    console.log('🔍 Cache result for', key, ':', result ? 'HIT' : 'MISS');
-    return result;
+  async set(key: string, value: any, ttl?: number): Promise<void> {
+    try {
+      console.log('💾 Setting to cache, key:', key, 'TTL:', ttl);
+      console.log('💾 Value to cache:', JSON.stringify(value));
+
+      await this.cacheManager.set(key, value, ttl);
+
+      // Verify data was actually set
+      const verification = await this.cacheManager.get(key);
+      if (verification) {
+        console.log('✅ Cached successfully and verified, key:', key);
+        console.log('✅ Verified data:', JSON.stringify(verification));
+      } else {
+        console.log('❌ Cache set but verification failed, key:', key);
+      }
+    } catch (error) {
+      console.error('❌ Cache set error:', error);
+      throw error;
+    }
   }
 
-  async set(key: string, value: any, ttl?: number): Promise<void> {
-    console.log('💾 Setting to cache, key:', key, 'TTL:', ttl);
-    await this.cacheManager.set(key, value, ttl);
-    console.log('💾 Cached successfully, key:', key);
+  async get(key: string): Promise<any> {
+    try {
+      console.log('🔍 Getting from cache, key:', key);
+      const result = await this.cacheManager.get(key);
+      console.log('🔍 Cache result for', key, ':', result ? 'HIT' : 'MISS');
+      if (result) {
+        console.log('🔍 Cache data:', JSON.stringify(result));
+      }
+      return result;
+    } catch (error) {
+      console.error('❌ Cache get error:', error);
+      return null;
+    }
   }
 
   async del(key: string): Promise<void> {

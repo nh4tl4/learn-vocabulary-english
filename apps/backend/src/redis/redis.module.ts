@@ -12,27 +12,39 @@ import { RedisController } from './redis.controller';
         const redisUrl = process.env.REDIS_URL || 'redis://:emddi2024@svc.emddi.net:6379/12';
         console.log('🔴 Redis URL:', redisUrl);
 
-        // Parse Redis URL for connection options
-        const url = new URL(redisUrl);
+        try {
+          // Parse Redis URL for connection options
+          const url = new URL(redisUrl);
 
-        const config = {
-          store: redisStore as any,
-          host: url.hostname,
-          port: parseInt(url.port) || 6379,
-          password: url.password || undefined,
-          db: parseInt(url.pathname.slice(1)) || 0, // Extract DB number from path
-          ttl: 300, // Default TTL 5 minutes
-          max: 1000, // Maximum number of items in cache
-        };
+          const config = {
+            store: redisStore as any,
+            host: url.hostname,
+            port: parseInt(url.port) || 6379,
+            password: url.password || undefined,
+            db: parseInt(url.pathname.slice(1)) || 0,
+            ttl: 300,
+            max: 1000,
+          };
 
-        console.log('🔴 Redis Config:', {
-          host: config.host,
-          port: config.port,
-          db: config.db,
-          hasPassword: !!config.password
-        });
+          console.log('🔴 Redis Config:', {
+            host: config.host,
+            port: config.port,
+            db: config.db,
+            hasPassword: !!config.password
+          });
 
-        return config;
+          // Test connection
+          console.log('🔄 Attempting to connect to Redis...');
+          return config;
+
+        } catch (error) {
+          console.error('❌ Redis configuration error:', error);
+          console.log('📢 Falling back to memory store');
+          return {
+            ttl: 300,
+            max: 1000,
+          };
+        }
       },
     }),
   ],
