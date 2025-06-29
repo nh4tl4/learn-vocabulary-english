@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { UserVocabulary } from './user-vocabulary.entity';
+import { UserTopicHistory } from './user-topic-history.entity';
 
 @Entity('user')
 export class User {
@@ -44,6 +45,9 @@ export class User {
 
   @OneToMany(() => UserVocabulary, userVocabulary => userVocabulary.user)
   userVocabularies: UserVocabulary[];
+
+  @OneToMany(() => UserTopicHistory, topicHistory => topicHistory.user)
+  topicHistory: UserTopicHistory[];
 
   // Calculate today's progress
   get todayProgress(): number {

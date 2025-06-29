@@ -1,14 +1,6 @@
-import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
-import { UserService } from './user.service';
+import { Controller, Get, Post, Put, Body, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { SetDailyGoalDto } from '../vocabulary/dto/learning.dto';
-import { IsString, IsOptional } from 'class-validator';
-
-class UpdateProfileDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-}
+import { UserService } from './user.service';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
@@ -26,12 +18,38 @@ export class UserController {
   }
 
   @Put('profile')
-  async updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.userService.updateProfile(req.user.userId, updateProfileDto);
+  async updateProfile(@Request() req, @Body() updateData: { name?: string }) {
+    return this.userService.updateProfile(req.user.userId, updateData);
   }
 
   @Put('daily-goal')
-  async setDailyGoal(@Request() req, @Body() goalData: SetDailyGoalDto) {
-    return this.userService.setDailyGoal(req.user.userId, goalData.dailyGoal);
+  async setDailyGoal(@Request() req, @Body() body: { dailyGoal: number }) {
+    return this.userService.setDailyGoal(req.user.userId, body.dailyGoal);
+  }
+
+  // API endpoints cho topic history
+  @Post('topic-selection')
+  async saveTopicSelection(@Request() req, @Body() body: { topic: string | null }) {
+    await this.userService.saveTopicSelection(req.user.userId, body.topic);
+    return { success: true, message: 'Topic selection saved' };
+  }
+
+  @Get('topic-history')
+  async getTopicHistory(@Request() req) {
+    return this.userService.getUserTopicHistory(req.user.userId);
+  }
+
+  @Get('last-selected-topic')
+  async getLastSelectedTopic(@Request() req) {
+    return this.userService.getLastSelectedTopic(req.user.userId);
+  }
+
+  @Post('topic-words-learned')
+  async updateTopicWordsLearned(
+    @Request() req,
+    @Body() body: { topic: string | null; wordsCount: number }
+  ) {
+    await this.userService.updateTopicWordsLearned(req.user.userId, body.topic, body.wordsCount);
+    return { success: true, message: 'Topic words count updated' };
   }
 }

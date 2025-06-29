@@ -1,0 +1,32 @@
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { User } from './user.entity';
+
+@Entity('user_topic_history')
+@Index(['userId', 'topic']) // Index để query nhanh
+@Index(['userId', 'createdAt']) // Index theo thời gian
+export class UserTopicHistory {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  userId: number;
+
+  @Column({ nullable: true }) // null = "Tất cả chủ đề"
+  topic: string;
+
+  @Column({ default: 1 })
+  sessionCount: number; // Số lần chọn chủ đề này
+
+  @Column({ default: 0 })
+  wordsLearned: number; // Số từ đã học trong chủ đề này
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  lastSelectedAt: Date; // Lần cuối chọn chủ đề này
+
+  @ManyToOne(() => User, user => user.topicHistory)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+}

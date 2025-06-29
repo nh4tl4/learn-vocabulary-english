@@ -61,6 +61,16 @@ export const userAPI = {
     apiClient.put('/user/profile', data),
   setDailyGoal: (dailyGoal: number) =>
     apiClient.put('/user/daily-goal', { dailyGoal }),
+
+  // Topic history APIs
+  saveTopicSelection: (topic: string | null) =>
+    apiClient.post('/user/topic-selection', { topic }),
+  getTopicHistory: () =>
+    apiClient.get('/user/topic-history'),
+  getLastSelectedTopic: () =>
+    apiClient.get('/user/last-selected-topic'),
+  updateTopicWordsLearned: (topic: string | null, wordsCount: number) =>
+    apiClient.post('/user/topic-words-learned', { topic, wordsCount }),
 };
 
 export const vocabularyAPI = {
@@ -103,22 +113,46 @@ export const vocabularyAPI = {
     return apiClient.get(`/vocabulary/learn/review?${params}`);
   },
 
-  processStudySession: (sessionData: {
-    vocabularyId: number;
-    quality: number;
-    responseTime: number;
-  }) => apiClient.post('/vocabulary/learn/session', sessionData),
+  // New Review by Period endpoints
+  getReviewStats: () =>
+    apiClient.get('/vocabulary/review/stats'),
 
+  getWordsForReviewByPeriod: (period: string = 'today', limit = 20, level?: string) => {
+    const params = new URLSearchParams({
+      period,
+      limit: limit.toString()
+    });
+    if (level) params.append('level', level);
+    return apiClient.get(`/vocabulary/review/by-period?${params}`);
+  },
+
+  getReviewWordsByTopic: (topic: string, limit = 20, period?: string, level?: string) => {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (period) params.append('period', period);
+    if (level) params.append('level', level);
+    return apiClient.get(`/vocabulary/topics/${topic}/review/by-period?${params}`);
+  },
+
+  recordReviewResult: (wordId: number, isCorrect: boolean, difficulty?: number) =>
+    apiClient.post('/vocabulary/review/result', { wordId, isCorrect, difficulty }),
+
+  // Process study session
+  processStudySession: (sessionData: { vocabularyId: number; quality: number; responseTime: number }) =>
+    apiClient.post('/vocabulary/learn/session', sessionData),
+
+  // Generate test
   generateTest: (count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') =>
     apiClient.get(`/vocabulary/test/generate?count=${count}&mode=${mode}&inputType=${inputType}`),
 
-  submitTest: (testResults: Array<{
-    vocabularyId: number;
-    selectedOptionId: number;
-    correctOptionId: number;
-    timeSpent: number;
-  }>) => apiClient.post('/vocabulary/test/submit', testResults),
+  // Submit test results
+  submitTestResults: (testResults: any[]) =>
+    apiClient.post('/vocabulary/test/submit', testResults),
 
+  // Alias for submitTestResults
+  submitTest: (testResults: any[]) =>
+    apiClient.post('/vocabulary/test/submit', testResults),
+
+  // Difficult words endpoints
   getDifficultWords: (limit = 20, level?: string) => {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (level) params.append('level', level);
@@ -148,12 +182,6 @@ export const vocabularyAPI = {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (level) params.append('level', level);
     return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/new?${params}`);
-  },
-
-  getReviewWordsByTopic: (topic: string, limit = 20, level?: string) => {
-    const params = new URLSearchParams({ limit: limit.toString() });
-    if (level) params.append('level', level);
-    return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/review?${params}`);
   },
 
   generateTestByTopic: (topic: string, count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') =>

@@ -49,9 +49,31 @@ export class VocabularyController {
     return this.learningService.getWordsForReview(req.user.userId, limit, level);
   }
 
-  @Get('learn/difficult')
-  async getDifficultWords(@Request() req, @Query('limit') limit: number = 20, @Query('level') level?: string) {
-    return this.learningService.getDifficultWords(req.user.userId, limit, level);
+  // New Review by Period endpoints
+  @Get('review/stats')
+  async getReviewStats(@Request() req) {
+    return this.learningService.getReviewStats(req.user.userId);
+  }
+
+  @Get('review/by-period')
+  async getReviewWordsByPeriod(
+    @Request() req,
+    @Query('period') period: string = 'today',
+    @Query('limit') limit: number = 20,
+    @Query('level') level?: string
+  ) {
+    return this.learningService.getWordsForReviewByPeriod(req.user.userId, period, limit, level);
+  }
+
+  @Get('topics/:topic/review/by-period')
+  async getReviewWordsByTopicAndPeriod(
+    @Request() req,
+    @Param('topic') topic: string,
+    @Query('period') period: string = 'today',
+    @Query('limit') limit: number = 20,
+    @Query('level') level?: string
+  ) {
+    return this.learningService.getReviewWordsByTopicAndPeriod(req.user.userId, topic, period, limit, level);
   }
 
   @Get('progress')

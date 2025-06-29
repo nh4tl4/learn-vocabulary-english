@@ -1,0 +1,156 @@
+// Utility functions for topic formatting
+
+export const formatTopicDisplay = (topic?: string, topicVi?: string): string => {
+  if (!topic && !topicVi) return 'Không xác định';
+
+  if (topicVi && topic) {
+    return `${topicVi} - ${topic}`;
+  }
+
+  if (topicVi) return topicVi;
+  if (topic) return getVietnameseTopicName(topic);
+
+  return 'Không xác định';
+};
+
+export const getVietnameseTopicName = (englishTopic: string): string => {
+  const topicMapping: Record<string, string> = {
+    'actions': 'Hành động',
+    'animals': 'Động vật',
+    'architecture': 'Kiến trúc',
+    'art': 'Nghệ thuật',
+    'astronomy': 'Thiên văn học',
+    'body': 'Cơ thể',
+    'body_parts': 'Bộ phận cơ thể',
+    'books': 'Sách',
+    'business': 'Kinh doanh',
+    'clothing': 'Trang phục',
+    'colors': 'Màu sắc',
+    'communication': 'Giao tiếp',
+    'conflict': 'Xung đột',
+    'crime': 'Tội phạm',
+    'death': 'Cái chết',
+    'disasters': 'Thảm họa',
+    'education': 'Giáo dục',
+    'entertainment': 'Giải trí',
+    'environment': 'Môi trường',
+    'family': 'Gia đình',
+    'feelings': 'Cảm xúc',
+    'food': 'Ẩm thực',
+    'fruits': 'Trái cây',
+    'games': 'Trò chơi',
+    'general': 'Tổng quát',
+    'geography': 'Địa lý',
+    'government': 'Chính phủ',
+    'groups': 'Nhóm',
+    'growth': 'Phát triển',
+    'health': 'Sức khỏe',
+    'health_medical': 'Y tế',
+    'history': 'Lịch sử',
+    'home': 'Gia đình',
+    'house_furniture': 'Nội thất',
+    'knowledge': 'Kiến thức',
+    'language': 'Ngôn ngữ',
+    'law': 'Luật pháp',
+    'life': 'Cuộc sống',
+    'media': 'Truyền thông',
+    'meetings': 'Cuộc họp',
+    'money': 'Tiền bạc',
+    'names': 'Tên',
+    'nature': 'Thiên nhiên',
+    'objects': 'Đồ vật',
+    'personality': 'Tính cách',
+    'philosophy': 'Triết học',
+    'places': 'Địa điểm',
+    'politics': 'Chính trị',
+    'power': 'Quyền lực',
+    'problems': 'Vấn đề',
+    'relationships': 'Mối quan hệ',
+    'religion': 'Tôn giáo',
+    'science': 'Khoa học',
+    'senses': 'Giác quan',
+    'skills': 'Kỹ năng',
+    'society': 'Xã hội',
+    'sports': 'Thể thao',
+    'success': 'Thành công',
+    'supernatural': 'Siêu nhiên',
+    'technology': 'Công nghệ',
+    'transportation': 'Giao thông',
+    'travel': 'Du lịch',
+    'weather': 'Thời tiết',
+    'work': 'Công việc'
+  };
+
+  return topicMapping[englishTopic] || englishTopic;
+};
+
+export const getTopicIcon = (topic: string): string => {
+  const iconMapping: Record<string, string> = {
+    'actions': '⚡',
+    'animals': '🐾',
+    'architecture': '🏛️',
+    'art': '🎨',
+    'astronomy': '🔭',
+    'body': '👤',
+    'body_parts': '👤',
+    'books': '📚',
+    'business': '💼',
+    'clothing': '👕',
+    'colors': '🌈',
+    'communication': '💬',
+    'conflict': '⚔️',
+    'crime': '🚔',
+    'death': '💀',
+    'disasters': '🌪️',
+    'education': '🎓',
+    'entertainment': '🎭',
+    'environment': '🌍',
+    'family': '👨‍👩‍👧‍👦',
+    'feelings': '😊',
+    'food': '🍽️',
+    'fruits': '🍎',
+    'games': '🎮',
+    'general': '📖',
+    'geography': '🗺️',
+    'government': '🏛️',
+    'groups': '👥',
+    'growth': '📈',
+    'health': '❤️',
+    'health_medical': '🏥',
+    'history': '📜',
+    'home': '🏠',
+    'house_furniture': '🛋️',
+    'knowledge': '🧠',
+    'language': '🗣️',
+    'law': '⚖️',
+    'life': '🌱',
+    'media': '📺',
+    'meetings': '👔',
+    'money': '💰',
+    'names': '📛',
+    'nature': '🌿',
+    'objects': '📦',
+    'personality': '😊',
+    'philosophy': '🤔',
+    'places': '📍',
+    'politics': '🗳️',
+    'power': '⚡',
+    'problems': '❓',
+    'relationships': '💕',
+    'religion': '⛪',
+    'science': '🔬',
+    'senses': '👁️',
+    'skills': '🎯',
+    'society': '🏙️',
+    'sports': '⚽',
+    'success': '🏆',
+    'supernatural': '👻',
+    'technology': '💻',
+    'transportation': '🚗',
+    'travel': '✈️',
+    'weather': '🌤️',
+    'work': '💼'
+  };
+
+  return iconMapping[topic] || '📖';
+};

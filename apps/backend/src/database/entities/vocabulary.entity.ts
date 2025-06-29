@@ -29,6 +29,9 @@ export class Vocabulary {
   topic: string; // Thêm trường topic
 
   @Column({ nullable: true })
+  topicVi: string; // Thêm trường topic tiếng Việt
+
+  @Column({ nullable: true })
   imageUrl: string;
 
   @CreateDateColumn()

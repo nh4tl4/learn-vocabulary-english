@@ -6,6 +6,19 @@ import { useLearningSettingsStore } from '@/store/learningSettingsStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { vocabularyAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { formatTopicDisplay, getTopicIcon } from '@/lib/topicUtils';
+import {
+  CalendarDaysIcon,
+  ClockIcon,
+  ChartBarIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  EyeIcon,
+  CheckCircleIcon,
+  XCircleIcon
+} from '@heroicons/react/24/outline';
+import MobileButton from '@/components/MobileOptimized/MobileButton';
+import PullToRefresh from '@/components/MobileOptimized/PullToRefresh';
 
 interface Vocabulary {
   id: number;
@@ -16,7 +29,21 @@ interface Vocabulary {
   partOfSpeech?: string;
   level?: string;
   topic?: string;
+  topicVi?: string;
+  lastReviewed?: string;
+  reviewCount?: number;
+  difficulty?: number;
 }
+
+interface ReviewStats {
+  totalWords: number;
+  todayWords: number;
+  yesterdayWords: number;
+  last7DaysWords: number;
+  last30DaysWords: number;
+}
+
+type ReviewPeriod = 'today' | 'yesterday' | '7days' | '30days' | 'all';
 
 export default function ReviewContent() {
   const { isAuthenticated, loadUser } = useAuthStore();
@@ -29,6 +56,10 @@ export default function ReviewContent() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMeaning, setShowMeaning] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<ReviewPeriod>('today');
+  const [reviewMode, setReviewMode] = useState<'selection' | 'review'>('selection');
+  const [currentWordStats, setCurrentWordStats] = useState<{correct: number, incorrect: number}>({correct: 0, incorrect: 0});
 
   useEffect(() => {
     loadUser();
@@ -41,36 +72,51 @@ export default function ReviewContent() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadReviewWords();
+    if (isAuthenticated && reviewMode === 'selection') {
+      loadReviewStats();
     }
-  }, [isAuthenticated, topic]);
+  }, [isAuthenticated, reviewMode]);
 
-  const loadReviewWords = async () => {
+  const loadReviewStats = async () => {
+    try {
+      setLoading(true);
+      const response = await vocabularyAPI.getReviewStats();
+      setReviewStats(response.data);
+    } catch (error: any) {
+      console.error('Failed to load review stats:', error);
+      toast.error('Không thể tải thống kê ôn tập');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadReviewWords = async (period: ReviewPeriod = selectedPeriod) => {
     try {
       setLoading(true);
       let response;
 
-      // Lấy limit từ URL hoặc sử dụng settings
       const urlLimit = searchParams.get('limit');
       const limit = urlLimit ? parseInt(urlLimit) : (topic ? getTopicSettings(topic).reviewWordsPerSession : reviewWordsPerSession);
 
       if (topic) {
-        // Nếu có topic, lấy từ ôn tập theo topic
-        response = await vocabularyAPI.getReviewWordsByTopic(topic, limit);
+        response = await vocabularyAPI.getReviewWordsByTopic(topic, limit, period);
       } else {
-        // Nếu không có topic, lấy từ ôn tập tổng quát
-        response = await vocabularyAPI.getWordsForReview(limit);
+        response = await vocabularyAPI.getWordsForReviewByPeriod(period, limit);
       }
 
       setWords(response.data);
+      setCurrentIndex(0);
+      setShowMeaning(false);
+      setCurrentWordStats({correct: 0, incorrect: 0});
 
       if (response.data.length === 0) {
-        const message = topic
-          ? `Không có từ nào cần ôn tập trong chủ đề "${topic}"!`
-          : 'Không có từ nào cần ôn tập!';
-        toast.success(message);
+        const periodText = getPeriodText(period);
+        toast(`Không có từ nào để ôn tập ${periodText}!`);
+        setReviewMode('selection');
+        return;
       }
+
+      setReviewMode('review');
     } catch (error: any) {
       console.error('Failed to load review words:', error);
       toast.error('Không thể tải từ ôn tập. Vui lòng thử lại.');
@@ -79,13 +125,58 @@ export default function ReviewContent() {
     }
   };
 
+  const getPeriodText = (period: ReviewPeriod): string => {
+    const texts = {
+      today: 'hôm nay',
+      yesterday: 'hôm qua',
+      '7days': '7 ngày qua',
+      '30days': '30 ngày qua',
+      all: 'tất cả'
+    };
+    return texts[period];
+  };
+
+  const handleRefresh = async () => {
+    if (reviewMode === 'selection') {
+      await loadReviewStats();
+    } else {
+      await loadReviewWords();
+    }
+  };
+
+  const handleAnswerFeedback = async (isCorrect: boolean) => {
+    const currentWord = words[currentIndex];
+    if (!currentWord) return;
+
+    try {
+      await vocabularyAPI.recordReviewResult(currentWord.id, isCorrect);
+
+      setCurrentWordStats(prev => ({
+        correct: prev.correct + (isCorrect ? 1 : 0),
+        incorrect: prev.incorrect + (isCorrect ? 0 : 1)
+      }));
+
+      // Auto proceed to next word after feedback
+      setTimeout(() => {
+        handleNext();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Failed to record review result:', error);
+    }
+  };
+
   const handleNext = () => {
     if (currentIndex < words.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setShowMeaning(false);
     } else {
-      toast.success('Bạn đã hoàn thành tất cả từ ôn tập!');
-      router.push('/learn/topics');
+      const totalAnswered = currentWordStats.correct + currentWordStats.incorrect;
+      const accuracy = totalAnswered > 0 ? Math.round((currentWordStats.correct / totalAnswered) * 100) : 0;
+
+      toast.success(`Hoàn thành! Độ chính xác: ${accuracy}% (${currentWordStats.correct}/${totalAnswered})`);
+      setReviewMode('selection');
+      loadReviewStats(); // Refresh stats
     }
   };
 
@@ -100,63 +191,145 @@ export default function ReviewContent() {
     setShowMeaning(true);
   };
 
-  const handleReviewWord = async (quality: number) => {
-    const currentWord = words[currentIndex];
-    if (!currentWord) return;
-
-    try {
-      await vocabularyAPI.processStudySession({
-        vocabularyId: currentWord.id,
-        quality: quality,
-        responseTime: 5000
-      });
-
-      toast.success('Đã lưu kết quả ôn tập!');
-      handleNext();
-    } catch (error) {
-      console.error('Error processing review session:', error);
-      toast.error('Không thể lưu kết quả. Vui lòng thử lại.');
-    }
+  const handleBackToSelection = () => {
+    setReviewMode('selection');
+    setWords([]);
+    setCurrentIndex(0);
+    setShowMeaning(false);
   };
 
-  if (!isAuthenticated) {
+  if (loading && reviewMode === 'selection') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-600"></div>
+      <div className="min-h-mobile flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
 
+  if (reviewMode === 'selection') {
+    return (
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="max-w-4xl mx-auto py-6 spacing-mobile">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-responsive-xl font-bold text-gray-800 dark:text-white mb-2">
+              Ôn Tập Từ Vựng
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 text-responsive-sm">
+              Ôn lại những từ đã học theo thời gian
+            </p>
+          </div>
+
+          {/* Stats Overview */}
+          {reviewStats && (
+            <div className="card-mobile mb-6 bg-gradient-to-r from-yellow-500 to-orange-600 text-white">
+              <div className="flex items-center mb-4">
+                <ChartBarIcon className="h-6 w-6 mr-2" />
+                <h2 className="text-responsive-lg font-semibold">Thống Kê Ôn Tập</h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{reviewStats.totalWords}</div>
+                  <div className="text-sm opacity-80">Tổng từ</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{reviewStats.todayWords}</div>
+                  <div className="text-sm opacity-80">Hôm nay</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{reviewStats.last7DaysWords}</div>
+                  <div className="text-sm opacity-80">7 ngày qua</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Period Selection */}
+          <div className="card-mobile mb-6">
+            <h3 className="text-responsive-base font-semibold text-gray-800 dark:text-white mb-4">
+              Chọn Thời Gian Ôn Tập
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { period: 'today' as ReviewPeriod, label: 'Hôm Nay', count: reviewStats?.todayWords || 0, icon: ClockIcon },
+                { period: 'yesterday' as ReviewPeriod, label: 'Hôm Qua', count: reviewStats?.yesterdayWords || 0, icon: CalendarDaysIcon },
+                { period: '7days' as ReviewPeriod, label: '7 Ngày Qua', count: reviewStats?.last7DaysWords || 0, icon: CalendarDaysIcon },
+                { period: '30days' as ReviewPeriod, label: '30 Ngày Qua', count: reviewStats?.last30DaysWords || 0, icon: CalendarDaysIcon }
+              ].map(({ period, label, count, icon: Icon }) => (
+                <button
+                  key={period}
+                  onClick={() => {
+                    setSelectedPeriod(period);
+                    loadReviewWords(period);
+                  }}
+                  disabled={count === 0}
+                  className={`
+                    card-mobile hover:shadow-md transition-all duration-200 
+                    ${count === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
+                    ${selectedPeriod === period ? 'ring-2 ring-yellow-500' : ''}
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                        <Icon className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <div className="text-left">
+                        <h4 className="font-semibold text-gray-800 dark:text-white text-responsive-sm">{label}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{count} từ</p>
+                      </div>
+                    </div>
+                    <ArrowRightIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MobileButton
+              variant="outline"
+              onClick={() => router.push('/learn')}
+              icon={<ArrowLeftIcon className="h-5 w-5" />}
+            >
+              Quay Lại Học Tập
+            </MobileButton>
+            <MobileButton
+              variant="primary"
+              onClick={() => loadReviewWords('all')}
+            >
+              Ôn Tập Tất Cả
+            </MobileButton>
+          </div>
+        </div>
+      </PullToRefresh>
+    );
+  }
+
+  // Review Mode
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-500"></div>
+      <div className="min-h-mobile flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
 
-  if (!words || words.length === 0) {
+  if (words.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-mobile flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            {topic
-              ? `Không có từ nào cần ôn tập trong chủ đề "${topic}"`
-              : "Không có từ nào cần ôn tập"
-            }
+          <div className="text-6xl mb-4">📚</div>
+          <h2 className="text-responsive-lg font-semibold text-gray-800 dark:text-white mb-2">
+            Không có từ để ôn tập
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            {topic
-              ? "Tất cả từ vựng trong chủ đề này đã được ôn tập gần đây."
-              : "Tất cả từ vựng đã được ôn tập gần đây."
-            }
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Hãy học thêm từ mới hoặc chọn thời gian khác
           </p>
-          <button
-            onClick={() => router.push('/learn/topics')}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Quay lại danh sách chủ đề
-          </button>
+          <MobileButton onClick={handleBackToSelection}>
+            Quay Lại
+          </MobileButton>
         </div>
       </div>
     );
@@ -165,143 +338,123 @@ export default function ReviewContent() {
   const currentWord = words[currentIndex];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => router.push('/learn/topics')}
-              className="flex items-center text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Quay lại
-            </button>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {currentIndex + 1} / {words.length}
-            </div>
-          </div>
-
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {topic
-              ? `Ôn tập từ vựng: ${topic.charAt(0).toUpperCase() + topic.slice(1)}`
-              : "Ôn tập từ vựng"
-            }
+    <div className="max-w-2xl mx-auto py-6 spacing-mobile">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={handleBackToSelection}
+          className="btn-touch p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <ArrowLeftIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+        </button>
+        <div className="text-center">
+          <h1 className="text-responsive-base font-semibold text-gray-800 dark:text-white">
+            Ôn Tập {getPeriodText(selectedPeriod)}
           </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {currentIndex + 1} / {words.length}
+          </p>
+        </div>
+        <div className="flex items-center space-x-2 text-sm">
+          <span className="text-green-600">✓{currentWordStats.correct}</span>
+          <span className="text-red-600">✗{currentWordStats.incorrect}</span>
+        </div>
+      </div>
 
-          {/* Progress bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            <div
-              className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentIndex + 1) / words.length) * 100}%` }}
-            ></div>
-          </div>
+      {/* Progress Bar */}
+      <div className="mb-6">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div
+            className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / words.length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Word Card */}
+      <div className="card-mobile mb-6 text-center">
+        <div className="mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white mb-2">
+            {currentWord.word}
+          </h2>
+          {currentWord.pronunciation && (
+            <p className="text-gray-600 dark:text-gray-400 text-responsive-sm">
+              /{currentWord.pronunciation}/
+            </p>
+          )}
+          {currentWord.partOfSpeech && (
+            <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm mt-2">
+              {currentWord.partOfSpeech}
+            </span>
+          )}
         </div>
 
-        {/* Word Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
-          <div className="text-center">
-            {/* Word */}
-            <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              {currentWord.word}
-            </h2>
-
-            {/* Pronunciation */}
-            {currentWord.pronunciation && (
-              <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
-                /{currentWord.pronunciation}/
+        {showMeaning ? (
+          <div className="animate-fade-in">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <p className="text-responsive-base text-gray-800 dark:text-white mb-3">
+                <strong>Nghĩa:</strong> {currentWord.meaning}
               </p>
-            )}
-
-            {/* Part of Speech & Topic */}
-            <div className="flex justify-center gap-2 mb-6">
-              {currentWord.partOfSpeech && (
-                <span className="inline-block bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-sm px-3 py-1 rounded-full">
-                  {currentWord.partOfSpeech}
-                </span>
-              )}
-              {currentWord.topic && (
-                <span className="inline-block bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm px-3 py-1 rounded-full">
-                  {currentWord.topic}
-                </span>
+              {currentWord.example && (
+                <p className="text-responsive-sm text-gray-600 dark:text-gray-400 italic">
+                  <strong>Ví dụ:</strong> {currentWord.example}
+                </p>
               )}
             </div>
 
-            {/* Show/Hide Meaning Button */}
-            {!showMeaning ? (
-              <button
-                onClick={handleShowMeaning}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors"
+            {/* Feedback Buttons */}
+            <div className="flex justify-center space-x-4 mt-6">
+              <MobileButton
+                variant="danger"
+                onClick={() => handleAnswerFeedback(false)}
+                icon={<XCircleIcon className="h-5 w-5" />}
               >
-                Hiển thị nghĩa
-              </button>
-            ) : (
-              <div className="space-y-4">
-                {/* Meaning */}
-                <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <h3 className="text-lg font-semibold text-green-800 dark:text-green-400 mb-2">Nghĩa:</h3>
-                  <p className="text-xl text-green-700 dark:text-green-300">{currentWord.meaning}</p>
-                </div>
-
-                {/* Example */}
-                {currentWord.example && (
-                  <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-400 mb-2">Ví dụ:</h3>
-                    <p className="text-lg text-blue-700 dark:text-blue-300 italic">{currentWord.example}</p>
-                  </div>
-                )}
-
-                {/* Review buttons */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                  <button
-                    onClick={() => handleReviewWord(1)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                  >
-                    😓 Khó nhớ
-                  </button>
-                  <button
-                    onClick={() => handleReviewWord(3)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                  >
-                    🤔 Tạm ổn
-                  </button>
-                  <button
-                    onClick={() => handleReviewWord(5)}
-                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                  >
-                    😊 Dễ nhớ
-                  </button>
-                </div>
-              </div>
-            )}
+                Khó
+              </MobileButton>
+              <MobileButton
+                variant="success"
+                onClick={() => handleAnswerFeedback(true)}
+                icon={<CheckCircleIcon className="h-5 w-5" />}
+              >
+                Dễ
+              </MobileButton>
+            </div>
           </div>
+        ) : (
+          <MobileButton
+            onClick={handleShowMeaning}
+            icon={<EyeIcon className="h-5 w-5" />}
+            fullWidth
+          >
+            Hiển Thị Nghĩa
+          </MobileButton>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between items-center">
+        <MobileButton
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={currentIndex === 0}
+          icon={<ArrowLeftIcon className="h-5 w-5" />}
+        >
+          Trước
+        </MobileButton>
+
+        <div className="text-center">
+          <p className="text-responsive-sm text-gray-600 dark:text-gray-400">
+            {currentIndex + 1} / {words.length}
+          </p>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between items-center">
-          <button
-            onClick={handlePrevious}
-            disabled={currentIndex === 0}
-            className="flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Trước
-          </button>
-
-          <button
-            onClick={handleNext}
-            className="flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-          >
-            Tiếp theo
-            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
+        <MobileButton
+          variant="primary"
+          onClick={handleNext}
+          icon={<ArrowRightIcon className="h-5 w-5" />}
+        >
+          {currentIndex === words.length - 1 ? 'Hoàn Thành' : 'Tiếp'}
+        </MobileButton>
       </div>
     </div>
   );

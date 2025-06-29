@@ -13,6 +13,8 @@ export interface Vocabulary {
   example?: string;
   level: string;
   partOfSpeech: string;
+  topic?: string;
+  topicVi?: string;
   createdAt: string;
 }
 
