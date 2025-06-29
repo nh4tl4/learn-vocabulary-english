@@ -16,7 +16,7 @@ export class AddTopicViToVocabulary1703875200000 implements MigrationInterface {
             }));
         }
 
-        // Update existing records with Vietnamese topic names
+        // Update existing records with Vietnamese topic names using PostgreSQL syntax
         const topicMapping = {
             'food': 'Ẩm thực',
             'animals': 'Động vật',
@@ -37,7 +37,7 @@ export class AddTopicViToVocabulary1703875200000 implements MigrationInterface {
 
         for (const [englishTopic, vietnameseTopic] of Object.entries(topicMapping)) {
             await queryRunner.query(
-                `UPDATE vocabulary SET topicVi = ? WHERE topic = ?`,
+                `UPDATE vocabulary SET "topicVi" = $1 WHERE topic = $2`,
                 [vietnameseTopic, englishTopic]
             );
         }
