@@ -9,13 +9,15 @@ databases:
     engine: redis
 
 services:
-  # Backend API Service
+  # Backend API Service - Optimized
   - type: web
     name: vocabulary-backend
     env: node
     plan: free
-    buildCommand: cd apps/backend && npm install && npm run build
-    startCommand: cd apps/backend && npm run start:prod
+    region: oregon
+    buildCommand: cd apps/backend && npm ci --only=production && npm run build
+    startCommand: cd apps/backend && NODE_ENV=production npm run start:prod
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -29,16 +31,20 @@ services:
         fromDatabase:
           name: vocabulary-redis
           property: connectionString
+      - key: PORT
+        value: 3001
 
-  # Frontend Web Service
+  # Frontend Web Service - Optimized
   - type: web
     name: vocabulary-frontend
     env: node
     plan: free
-    buildCommand: cd apps/frontend && npm install && npm run build
+    region: oregon
+    buildCommand: cd apps/frontend && npm ci --only=production && npm run build
     startCommand: cd apps/frontend && npm start
+    staticPublishPath: ./apps/frontend/.next/static
     envVars:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        value: https://vocabulary-backend.onrender.com
+        value: https://vocabulary-backend-lm26.onrender.com/api

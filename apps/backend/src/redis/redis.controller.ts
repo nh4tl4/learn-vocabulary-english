@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { RedisService } from './redis.service';
 
 @Controller('redis')
@@ -56,12 +56,12 @@ export class RedisController {
   }
 
   @Get('get/:key')
-  async getTestData(@Body() body: { key: string }) {
+  async getTestData(@Param('key') key: string) {
     try {
-      const result = await this.redisService.get(body.key);
+      const result = await this.redisService.get(key);
       return {
         success: true,
-        key: body.key,
+        key: key,
         data: result,
         timestamp: new Date()
       };

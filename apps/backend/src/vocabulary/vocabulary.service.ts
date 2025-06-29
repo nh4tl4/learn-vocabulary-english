@@ -171,7 +171,7 @@ export class VocabularyService {
 
   // Get topic stats with pagination (for backward compatibility)
   async getTopicStats(page: number = 1, limit: number = 20, level?: string) {
-    // Cache key for topic stats
+    // Cache key for topic stats with longer TTL for Oregon latency
     const cacheKey = `topic:stats:page:${page}:limit:${limit}:level:${level || 'all'}`;
     const cached = await this.redisService.getTopicStats();
 
@@ -181,14 +181,14 @@ export class VocabularyService {
 
     const result = await this.getTopics(page, limit, level);
 
-    // Cache topic stats for 10 minutes
-    await this.redisService.setTopicStats(result, 600);
+    // Cache topic stats for 20 minutes (longer for Oregon deployment)
+    await this.redisService.setTopicStats(result, 1200);
     return result;
   }
 
   // Find vocabulary by topic with pagination
   async findByTopic(topic: string, page: number = 1, limit: number = 20, level?: string) {
-    // Cache key for vocabulary by topic
+    // Cache key for vocabulary by topic with longer TTL
     const cacheKey = `vocabulary:topic:${topic}:page:${page}:limit:${limit}:level:${level || 'all'}`;
     const cached = await this.redisService.getVocabularyByTopic(cacheKey);
 
@@ -218,8 +218,8 @@ export class VocabularyService {
       level
     };
 
-    // Cache for 15 minutes
-    await this.redisService.setVocabularyByTopic(cacheKey, result, 900);
+    // Cache for 30 minutes (longer for Oregon deployment)
+    await this.redisService.setVocabularyByTopic(cacheKey, result, 1800);
     return result;
   }
 
