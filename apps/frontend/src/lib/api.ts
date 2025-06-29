@@ -71,6 +71,12 @@ export const userAPI = {
     apiClient.get('/user/last-selected-topic'),
   updateTopicWordsLearned: (topic: string | null, wordsCount: number) =>
     apiClient.post('/user/topic-words-learned', { topic, wordsCount }),
+
+  // Selected topics APIs
+  getSelectedTopics: () =>
+    apiClient.get('/user/selected-topics'),
+  saveSelectedTopics: (topics: string[]) =>
+    apiClient.post('/user/selected-topics', { topics }),
 };
 
 export const vocabularyAPI = {

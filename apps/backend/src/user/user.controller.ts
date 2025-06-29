@@ -52,4 +52,16 @@ export class UserController {
     await this.userService.updateTopicWordsLearned(req.user.userId, body.topic, body.wordsCount);
     return { success: true, message: 'Topic words count updated' };
   }
+
+  // API endpoints cho selected topics
+  @Get('selected-topics')
+  async getSelectedTopics(@Request() req) {
+    return this.userService.getSelectedTopics(req.user.userId);
+  }
+
+  @Post('selected-topics')
+  async saveSelectedTopics(@Request() req, @Body() body: { topics: string[] }) {
+    await this.userService.saveSelectedTopics(req.user.userId, body.topics);
+    return { success: true, message: 'Selected topics saved successfully' };
+  }
 }

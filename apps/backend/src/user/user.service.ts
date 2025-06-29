@@ -137,4 +137,23 @@ export class UserService {
       });
     }
   }
+
+  // Lấy danh sách chủ đề đã chọn của user
+  async getSelectedTopics(userId: number) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['selectedTopics'],
+    });
+
+    return {
+      topics: user?.selectedTopics ? JSON.parse(user.selectedTopics) : [],
+    };
+  }
+
+  // Lưu danh sách chủ đề đã chọn của user
+  async saveSelectedTopics(userId: number, topics: string[]) {
+    await this.userRepository.update(userId, {
+      selectedTopics: JSON.stringify(topics),
+    });
+  }
 }

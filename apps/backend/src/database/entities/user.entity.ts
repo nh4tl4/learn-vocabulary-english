@@ -37,6 +37,9 @@ export class User {
   @Column({ default: 0 })
   averageTestScore: number;
 
+  @Column({ type: 'text', nullable: true })
+  selectedTopics: string; // JSON string chứa danh sách chủ đề đã chọn
+
   @CreateDateColumn()
   createdAt: Date;
 

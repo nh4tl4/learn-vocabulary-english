@@ -6,6 +6,7 @@ import { useLearningSettingsStore } from '@/store/learningSettingsStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { vocabularyAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import TextToSpeech from '@/components/TextToSpeech';
 
 interface Vocabulary {
   id: number;
@@ -209,10 +210,17 @@ export default function LearnNewContent() {
         {/* Word Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
           <div className="text-center">
-            {/* Word */}
-            <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              {currentWord.word}
-            </h2>
+            {/* Word with Text-to-Speech */}
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                {currentWord.word}
+              </h2>
+              <TextToSpeech
+                  text={currentWord.word}
+                  size="md"
+                  className="flex items-center justify-center w-12 h-12 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 rounded-full transition-colors"
+              />
+            </div>
 
             {/* Pronunciation */}
             {currentWord.pronunciation && (
