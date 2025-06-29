@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Vocabulary } from '../database/entities/vocabulary.entity';
 import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class VocabularyService {
@@ -11,21 +12,34 @@ export class VocabularyService {
     private vocabularyRepository: Repository<Vocabulary>,
     @InjectRepository(UserVocabulary)
     private userVocabularyRepository: Repository<UserVocabulary>,
+    private redisService: RedisService,
   ) {}
 
   async findAll(page: number = 1, limit: number = 20) {
+    // Cache key for paginated vocabulary list
+    const cacheKey = `vocabulary:all:page:${page}:limit:${limit}`;
+    const cached = await this.redisService.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
     const [vocabularies, total] = await this.vocabularyRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
       order: { createdAt: 'DESC' },
     });
 
-    return {
+    const result = {
       vocabularies,
       total,
       page,
       totalPages: Math.ceil(total / limit),
     };
+
+    // Cache for 5 minutes
+    await this.redisService.set(cacheKey, result, 300);
+    return result;
   }
 
   async findRandom(count: number = 10) {
@@ -46,13 +60,19 @@ export class VocabularyService {
   }
 
   async getUserProgress(userId: number) {
+    // Try cache first
+    const cached = await this.redisService.getUserProgress(userId);
+    if (cached) {
+      return cached;
+    }
+
     const userVocabularies = await this.userVocabularyRepository.find({
       where: { userId },
       relations: ['vocabulary'],
       order: { lastReviewedAt: 'DESC' },
     });
 
-    return userVocabularies.map(uv => ({
+    const result = userVocabularies.map(uv => ({
       vocabulary: uv.vocabulary,
       status: uv.status,
       correctCount: uv.correctCount,
@@ -60,6 +80,10 @@ export class VocabularyService {
       accuracy: uv.accuracy,
       nextReviewDate: uv.nextReviewDate,
     }));
+
+    // Cache user progress for 15 minutes
+    await this.redisService.setUserProgress(userId, result, 900);
+    return result;
   }
 
   async updateProgress(userId: number, vocabularyId: number, isCorrect: boolean) {
@@ -86,7 +110,12 @@ export class VocabularyService {
 
     userVocabulary.lastReviewedAt = new Date();
 
-    return await this.userVocabularyRepository.save(userVocabulary);
+    const result = await this.userVocabularyRepository.save(userVocabulary);
+
+    // Clear user progress cache when updated
+    await this.redisService.setUserProgress(userId, null);
+
+    return result;
   }
 
   // Get all available topics with pagination
@@ -142,11 +171,31 @@ export class VocabularyService {
 
   // Get topic stats with pagination (for backward compatibility)
   async getTopicStats(page: number = 1, limit: number = 20, level?: string) {
-    return this.getTopics(page, limit, level);
+    // Cache key for topic stats
+    const cacheKey = `topic:stats:page:${page}:limit:${limit}:level:${level || 'all'}`;
+    const cached = await this.redisService.getTopicStats();
+
+    if (cached && cached.page === page && cached.limit === limit && cached.level === level) {
+      return cached;
+    }
+
+    const result = await this.getTopics(page, limit, level);
+
+    // Cache topic stats for 10 minutes
+    await this.redisService.setTopicStats(result, 600);
+    return result;
   }
 
   // Find vocabulary by topic with pagination
   async findByTopic(topic: string, page: number = 1, limit: number = 20, level?: string) {
+    // Cache key for vocabulary by topic
+    const cacheKey = `vocabulary:topic:${topic}:page:${page}:limit:${limit}:level:${level || 'all'}`;
+    const cached = await this.redisService.getVocabularyByTopic(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
     const whereCondition: any = { topic };
     if (level) {
       whereCondition.level = level;
@@ -159,7 +208,7 @@ export class VocabularyService {
       order: { createdAt: 'DESC' },
     });
 
-    return {
+    const result = {
       vocabularies,
       total,
       page,
@@ -168,6 +217,10 @@ export class VocabularyService {
       topic,
       level
     };
+
+    // Cache for 15 minutes
+    await this.redisService.setVocabularyByTopic(cacheKey, result, 900);
+    return result;
   }
 
   // Search words by topic with pagination

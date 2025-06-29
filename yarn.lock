@@ -659,6 +659,13 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
+"@keyv/serialize@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/@keyv/serialize/-/serialize-1.0.3.tgz"
+  integrity sha512-qnEovoOp5Np2JDGonIDL6Ayihw0RhnRh6vxPuHo4RDn1UOzwEo4AeIfpL6UGIrsceWrCMiVPgwRjbHu4vYFc3g==
+  dependencies:
+    buffer "^6.0.3"
+
 "@ljharb/through@^2.3.12":
   version "2.3.14"
   resolved "https://registry.npmjs.org/@ljharb/through/-/through-2.3.14.tgz"
@@ -670,6 +677,11 @@
   version "1.1.0"
   resolved "https://registry.npmjs.org/@lukeed/csprng/-/csprng-1.1.0.tgz"
   integrity sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==
+
+"@nestjs/cache-manager@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.npmjs.org/@nestjs/cache-manager/-/cache-manager-3.0.1.tgz"
+  integrity sha512-4UxTnR0fsmKL5YDalU2eLFVnL+OBebWUpX+hEduKGncrVKH4PPNoiRn1kXyOCjmzb0UvWgqubpssNouc8e0MCw==
 
 "@nestjs/cli@^10.4.9":
   version "10.4.9"
@@ -696,7 +708,7 @@
     webpack "5.97.1"
     webpack-node-externals "3.0.0"
 
-"@nestjs/common@^10.0.0", "@nestjs/common@^8.0.0 || ^9.0.0 || ^10.0.0":
+"@nestjs/common@^10.0.0", "@nestjs/common@^8.0.0 || ^9.0.0 || ^10.0.0", "@nestjs/common@^9.0.0 || ^10.0.0 || ^11.0.0":
   version "10.4.19"
   resolved "https://registry.npmjs.org/@nestjs/common/-/common-10.4.19.tgz"
   integrity sha512-0TZJ8H+7qtaqZt6YfZJkDRp0e+v6jjo5/pevPAjUy0WYxaTy16bNNQxFPRKLMe/v1hUr2oGV9imvL2477zNt5g==
@@ -715,7 +727,7 @@
     dotenv-expand "10.0.0"
     lodash "4.17.21"
 
-"@nestjs/core@^10.0.0", "@nestjs/core@^8.0.0 || ^9.0.0 || ^10.0.0":
+"@nestjs/core@^10.0.0", "@nestjs/core@^8.0.0 || ^9.0.0 || ^10.0.0", "@nestjs/core@^9.0.0 || ^10.0.0 || ^11.0.0":
   version "10.4.19"
   resolved "https://registry.npmjs.org/@nestjs/core/-/core-10.4.19.tgz"
   integrity sha512-gahghu0y4Rn4gn/xPjTgNHFMpUM8TxfhdeMowVWTGVnYMZtGeEGbIXMFhJS0Dce3E4VKyqAglzgO9ecAZd4Ong==
@@ -865,6 +877,40 @@
   version "0.2.7"
   resolved "https://registry.npmjs.org/@pkgr/core/-/core-0.2.7.tgz"
   integrity sha512-YLT9Zo3oNPJoBjBc4q8G2mjU4tqIbf5CEOORbUUr48dCD9q3umJ3IPlVqOqDakPfd2HuwccBaqlGhN4Gmr5OWg==
+
+"@redis/bloom@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.npmjs.org/@redis/bloom/-/bloom-1.2.0.tgz"
+  integrity sha512-HG2DFjYKbpNmVXsa0keLHp/3leGJz1mjh09f2RLGGLQZzSHpkmZWuwJbAvo3QcRY8p80m5+ZdXZdYOSBLlp7Cg==
+
+"@redis/client@^1.0.0", "@redis/client@1.6.1":
+  version "1.6.1"
+  resolved "https://registry.npmjs.org/@redis/client/-/client-1.6.1.tgz"
+  integrity sha512-/KCsg3xSlR+nCK8/8ZYSknYxvXHwubJrU82F3Lm1Fp6789VQ0/3RJKfsmRXjqfaTA++23CvC3hqmqe/2GEt6Kw==
+  dependencies:
+    cluster-key-slot "1.1.2"
+    generic-pool "3.9.0"
+    yallist "4.0.0"
+
+"@redis/graph@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.npmjs.org/@redis/graph/-/graph-1.1.1.tgz"
+  integrity sha512-FEMTcTHZozZciLRl6GiiIB4zGm5z5F3F6a6FZCyrfxdKOhFlGkiAqlexWMBzCi4DcRoyiOsuLfW+cjlGWyExOw==
+
+"@redis/json@1.0.7":
+  version "1.0.7"
+  resolved "https://registry.npmjs.org/@redis/json/-/json-1.0.7.tgz"
+  integrity sha512-6UyXfjVaTBTJtKNG4/9Z8PSpKE6XgSyEb8iwaqDcy+uKrd/DGYHTWkUdnQDyzm727V7p21WUMhsqz5oy65kPcQ==
+
+"@redis/search@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.npmjs.org/@redis/search/-/search-1.2.0.tgz"
+  integrity sha512-tYoDBbtqOVigEDMAcTGsRlMycIIjwMCgD8eR2t0NANeQmgK/lvxNAvYyb6bZDD4frHRhIHkJu2TBRvB0ERkOmw==
+
+"@redis/time-series@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.npmjs.org/@redis/time-series/-/time-series-1.1.0.tgz"
+  integrity sha512-c1Q99M5ljsIuc4YdaCwfUEXsofakb9c8+Zse2qxTadu8TalLXuAESzLvFAvNVbkmSlvlzIQOLpBCmWI9wTOt+g==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"
@@ -1386,7 +1432,11 @@
   version "1.0.0"
   resolved "file:apps/frontend"
   dependencies:
-    "@heroicons/react" "^2.0.18"
+    "@heroicons/react" "^2.2.0"
+    "@types/js-cookie" "^3.0.6"
+    "@types/node" "^20.0.0"
+    "@types/react" "^18.0.0"
+    "@types/react-dom" "^18.0.0"
     autoprefixer "^10.4.16"
     axios "^1.6.0"
     js-cookie "^3.0.5"
@@ -1397,6 +1447,7 @@
     react-hook-form "^7.47.0"
     react-hot-toast "^2.4.1"
     tailwindcss "^3.3.0"
+    typescript "^5.0.0"
     zustand "^4.4.7"
 
 "@webassemblyjs/ast@^1.14.1", "@webassemblyjs/ast@1.14.1":
@@ -2132,6 +2183,20 @@ cacache@^15.2.0:
     tar "^6.0.2"
     unique-filename "^1.1.1"
 
+cache-manager-redis-store@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.npmjs.org/cache-manager-redis-store/-/cache-manager-redis-store-3.0.1.tgz"
+  integrity sha512-o560kw+dFqusC9lQJhcm6L2F2fMKobJ5af+FoR2PdnMVdpQ3f3Bz6qzvObTGyvoazQJxjQNWgMQeChP4vRTuXQ==
+  dependencies:
+    redis "^4.3.1"
+
+cache-manager@>=6:
+  version "7.0.1"
+  resolved "https://registry.npmjs.org/cache-manager/-/cache-manager-7.0.1.tgz"
+  integrity sha512-Hd7FOyTtwhwLgkKeKQWEw6Ixj63VKuUWYwkGgL6g6Q7eISW6uxci5+DtUXlqI0gtbLCPPdhL1+HP9Zht27DbrA==
+  dependencies:
+    keyv "^5.3.4"
+
 call-bind-apply-helpers@^1.0.0, call-bind-apply-helpers@^1.0.1, call-bind-apply-helpers@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmjs.org/call-bind-apply-helpers/-/call-bind-apply-helpers-1.0.2.tgz"
@@ -2314,6 +2379,11 @@ clone@^1.0.2:
   version "1.0.4"
   resolved "https://registry.npmjs.org/clone/-/clone-1.0.4.tgz"
   integrity sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==
+
+cluster-key-slot@1.1.2:
+  version "1.1.2"
+  resolved "https://registry.npmjs.org/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz"
+  integrity sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==
 
 co@^4.6.0:
   version "4.6.0"
@@ -3613,6 +3683,11 @@ gauge@^4.0.3:
     strip-ansi "^6.0.1"
     wide-align "^1.1.5"
 
+generic-pool@3.9.0:
+  version "3.9.0"
+  resolved "https://registry.npmjs.org/generic-pool/-/generic-pool-3.9.0.tgz"
+  integrity sha512-hymDOu5B53XvN4QT9dBmZxPX4CWhBPPLguTZ9MMFeFa/Kg0xWVfylOVNlJji/E7yTZWFd/q9GO5TxDLq156D7g==
+
 gensync@^1.0.0-beta.2:
   version "1.0.0-beta.2"
   resolved "https://registry.npmjs.org/gensync/-/gensync-1.0.0-beta.2.tgz"
@@ -4892,6 +4967,20 @@ keyv@^4.5.3:
   integrity sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==
   dependencies:
     json-buffer "3.0.1"
+
+keyv@^5.3.4:
+  version "5.3.4"
+  resolved "https://registry.npmjs.org/keyv/-/keyv-5.3.4.tgz"
+  integrity sha512-ypEvQvInNpUe+u+w8BIcPkQvEqXquyyibWE/1NB5T2BTzIpS5cGEV1LZskDzPSTvNAaT4+5FutvzlvnkxOSKlw==
+  dependencies:
+    "@keyv/serialize" "^1.0.3"
+
+keyv@>=5:
+  version "5.3.4"
+  resolved "https://registry.npmjs.org/keyv/-/keyv-5.3.4.tgz"
+  integrity sha512-ypEvQvInNpUe+u+w8BIcPkQvEqXquyyibWE/1NB5T2BTzIpS5cGEV1LZskDzPSTvNAaT4+5FutvzlvnkxOSKlw==
+  dependencies:
+    "@keyv/serialize" "^1.0.3"
 
 kleur@^3.0.3:
   version "3.0.3"
@@ -6199,6 +6288,18 @@ readdirp@~3.6.0:
   integrity sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==
   dependencies:
     picomatch "^2.2.1"
+
+"redis@^3.1.1 || ^4.0.0", redis@^4.3.1, redis@^4.7.1:
+  version "4.7.1"
+  resolved "https://registry.npmjs.org/redis/-/redis-4.7.1.tgz"
+  integrity sha512-S1bJDnqLftzHXHP8JsT5II/CtHWQrASX5K96REjWjlmWKrviSOLWmM7QnRLstAWsu1VBBV1ffV6DzCvxNP0UJQ==
+  dependencies:
+    "@redis/bloom" "1.2.0"
+    "@redis/client" "1.6.1"
+    "@redis/graph" "1.1.1"
+    "@redis/json" "1.0.7"
+    "@redis/search" "1.2.0"
+    "@redis/time-series" "1.1.0"
 
 "reflect-metadata@^0.1.12 || ^0.2.0", reflect-metadata@^0.1.13, "reflect-metadata@^0.1.13 || ^0.2.0", "reflect-metadata@^0.1.14 || ^0.2.0":
   version "0.1.14"
@@ -7765,6 +7866,11 @@ yallist@^3.0.2:
   integrity sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==
 
 yallist@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz"
+  integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
+
+yallist@4.0.0:
   version "4.0.0"
   resolved "https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz"
   integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==

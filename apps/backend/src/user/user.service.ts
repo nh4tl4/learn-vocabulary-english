@@ -5,6 +5,7 @@ import { User } from '../database/entities/user.entity';
 import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
 import { UserTopicHistory } from '../database/entities/user-topic-history.entity';
 import { UserSelectedTopic } from '../database/entities/user-selected-topic.entity';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class UserService {
@@ -17,6 +18,7 @@ export class UserService {
     private userTopicHistoryRepository: Repository<UserTopicHistory>,
     @InjectRepository(UserSelectedTopic)
     private userSelectedTopicRepository: Repository<UserSelectedTopic>,
+    private redisService: RedisService,
   ) {}
 
   async findOne(id: number): Promise<User> {
@@ -143,14 +145,23 @@ export class UserService {
 
   // Lấy danh sách chủ đề đã chọn của user
   async getSelectedTopics(userId: number) {
+    // Try cache first
+    const cached = await this.redisService.getUserSelectedTopics(userId);
+    if (cached) {
+      return { topics: cached };
+    }
+
     const selectedTopics = await this.userSelectedTopicRepository.find({
       where: { userId },
       order: { selectedAt: 'DESC' }
     });
 
-    return {
-      topics: selectedTopics.map(st => st.topic)
-    };
+    const topics = selectedTopics.map(st => st.topic);
+
+    // Cache for 30 minutes
+    await this.redisService.setUserSelectedTopics(userId, topics, 1800);
+
+    return { topics };
   }
 
   // Lưu danh sách chủ đề đã chọn của user
@@ -168,5 +179,9 @@ export class UserService {
 
       await this.userSelectedTopicRepository.save(selectedTopics);
     }
+
+    // Clear cache and update with new data
+    await this.redisService.clearUserSelectedTopics(userId);
+    await this.redisService.setUserSelectedTopics(userId, topics, 1800);
   }
 }

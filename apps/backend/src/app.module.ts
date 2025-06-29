@@ -5,11 +5,8 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { VocabularyModule } from './vocabulary/vocabulary.module';
-import { User } from './database/entities/user.entity';
-import { Vocabulary } from './database/entities/vocabulary.entity';
-import { UserVocabulary } from './database/entities/user-vocabulary.entity';
-import { UserTopicHistory } from './database/entities/user-topic-history.entity';
 import { AIModule } from './ai/ai.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -44,6 +41,7 @@ import { AIModule } from './ai/ai.module';
         }
       },
     }),
+    RedisModule, // Add Redis module for caching
     AuthModule,
     UserModule,
     VocabularyModule,

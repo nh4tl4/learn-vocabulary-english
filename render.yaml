@@ -1,52 +1,44 @@
 databases:
-  - name: vocabulary-postgres
-    databaseName: vocabulary_db
+  # PostgreSQL Database
+  - name: vocabulary-db
+    plan: free
+
+  # Redis Cache
+  - name: vocabulary-redis
     plan: free
 
 services:
-  # Backend Service
+  # Backend API Service
   - type: web
     name: vocabulary-backend
-    runtime: node
+    env: node
     plan: free
-    rootDir: apps/backend
-    buildFilter:
-      paths:
-        - apps/backend/**
-    buildCommand: |
-      npm ci --only=production --include=dev &&
-      npm run build
-    startCommand: npm run start:prod
+    buildCommand: cd apps/backend && npm install && npm run build
+    startCommand: cd apps/backend && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: vocabulary-postgres
+          name: vocabulary-db
           property: connectionString
-      - key: OPENAI_API_KEY
-        sync: false  # This will be set manually in Render dashboard
-    healthCheckPath: /api/health
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: vocabulary-redis
+          property: connectionString
 
-  # Frontend Service
+  # Frontend Web Service
   - type: web
     name: vocabulary-frontend
-    runtime: node
+    env: node
     plan: free
-    rootDir: apps/frontend
-    buildFilter:
-      paths:
-        - apps/frontend/**
-    buildCommand: |
-      npm ci &&
-      npm run build
-    startCommand: npm start
+    buildCommand: cd apps/frontend && npm install && npm run build
+    startCommand: cd apps/frontend && npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        value: https://vocabulary-backend-lm26.onrender.com/api
+        value: https://vocabulary-backend.onrender.com

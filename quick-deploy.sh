@@ -48,3 +48,4 @@ print_status "🌐 Check your app at: https://vocabulary-frontend.onrender.com/t
 
 echo ""
 print_success "🎉 Deploy process completed!"
+
