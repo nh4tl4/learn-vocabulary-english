@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useLearningSettingsStore } from '@/store/learningSettingsStore';
 import LearningSettingsModal from './LearningSettingsModal';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { getTopicDisplayBilingual } from '@/lib/topicUtils';
 
 interface TopicStat {
   topic: string;
+  topicVi?: string; // Add topicVi field
   count: number;
 }
 
@@ -231,7 +233,7 @@ export default function TopicLearning() {
                   </div>
                 </div>
                 <h3 className="font-semibold text-sm sm:text-base line-clamp-2">
-                  {topicStat.topic}
+                  {getTopicDisplayBilingual(topicStat.topic, topicStat.topicVi)}
                 </h3>
               </div>
 

@@ -155,6 +155,15 @@ export default function LearningDashboard() {
         />
 
         <ActionCard
+            title="Học Theo Chủ Đề"
+            description="Học từ vựng theo chủ đề cụ thể"
+            count="15+ chủ đề"
+            color="bg-indigo-500"
+            icon="📚"
+            onClick={() => router.push('/learn/topics')}
+        />
+
+        <ActionCard
           title="Ôn Tập Từ"
           description="Ôn tập các từ đến hạn hôm nay"
           count={`${wordsToReview} từ`}
@@ -190,14 +199,6 @@ export default function LearningDashboard() {
           onClick={() => router.push('/learn/ai-chat')}
         />
 
-        <ActionCard
-          title="Học Theo Chủ Đề"
-          description="Học từ vựng theo chủ đề cụ thể"
-          count="15+ chủ đề"
-          color="bg-indigo-500"
-          icon="📚"
-          onClick={() => router.push('/learn/topics')}
-        />
       </div>
 
       {/* Statistics Grid */}

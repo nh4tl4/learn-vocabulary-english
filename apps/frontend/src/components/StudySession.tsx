@@ -76,11 +76,15 @@ export default function StudySession(topic: string) {
       setTopicsLoading(true);
       setError(null);
       const response = await vocabularyAPI.getTopicStats();
-      const topics = response.data.map((item: any) => ({
+
+      // Backend trả về { topics: [...], total: ..., page: ... }
+      const topicsData = response.data.topics || response.data.data || response.data;
+      const topics = Array.isArray(topicsData) ? topicsData.map((item: any) => ({
         topic: item.topic,
         topicVi: item.topicVi || getVietnameseTopicName(item.topic),
         count: item.count
-      }));
+      })) : [];
+
       setAvailableTopics(topics);
     } catch (error) {
       console.error('Failed to load topics:', error);
