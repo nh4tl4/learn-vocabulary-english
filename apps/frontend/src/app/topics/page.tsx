@@ -44,9 +44,9 @@ export default function TopicsPage() {
       ]);
 
       // Process topics data
-      const topics = topicsResponse.data.data.map((item: any) => ({
+      const topics = topicsResponse.data.topics.map((item: any) => ({
         topic: item.topic,
-        topicVi: getVietnameseTopicName(item.topic),
+        topicVi: item.topicVi, // Use topicVi from API response instead of getVietnameseTopicName
         count: item.count
       }));
 
