@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { vocabularyAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { formatTopicDisplay, getTopicIcon, getVietnameseTopicName } from '@/lib/topicUtils';
+import { getVietnameseTopicName, getTopicDisplayBilingual, getTopicIcon } from '@/lib/topicUtils';
 import { XMarkIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import MobileButton from './MobileOptimized/MobileButton';
 import AIAssistant from './AIAssistant';
@@ -26,7 +26,7 @@ interface TopicInfo {
   count: number;
 }
 
-export default function StudySession() {
+export default function StudySession(topic: string) {
   const [words, setWords] = useState<Vocabulary[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMeaning, setShowMeaning] = useState(false);
@@ -85,6 +85,16 @@ export default function StudySession() {
     } catch (error) {
       console.error('Failed to load topics:', error);
       setError('Không thể tải danh sách chủ đề. Vui lòng thử lại.');
+
+      // Fallback: Show default topics if API fails
+      const defaultTopics = [
+        { topic: 'food', topicVi: 'Ẩm thực', count: 50 },
+        { topic: 'animals', topicVi: 'Động vật', count: 40 },
+        { topic: 'technology', topicVi: 'Công nghệ', count: 60 },
+        { topic: 'business', topicVi: 'Kinh doanh', count: 45 },
+        { topic: 'education', topicVi: 'Giáo dục', count: 35 },
+      ];
+      setAvailableTopics(defaultTopics);
     } finally {
       setTopicsLoading(false);
     }
@@ -202,7 +212,7 @@ export default function StudySession() {
             </div>
 
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Chọn một chủ đề c��� thể để học từ v��ng có tính tập trung cao, hoặc chọn "Tất cả chủ đề" để học đa dạng.
+              Chọn một chủ đề có thể để học từ vựng có tính tập trung cao, hoặc chọn "Tất cả chủ đề" để học đa dạng.
             </p>
 
             {error && (
@@ -296,10 +306,10 @@ export default function StudySession() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium text-gray-800 dark:text-white text-sm truncate">
-                                {formatTopicDisplay(topicInfo.topic, topicInfo.topicVi)}
+                                {getTopicDisplayBilingual(topicInfo.topic, topicInfo.topicVi)}
                               </h3>
                               <p className="text-xs text-gray-600 dark:text-gray-400">
-                                {topicInfo.count} từ có sẵn
+                                {topicInfo.count} words available
                               </p>
                             </div>
                           </div>
@@ -509,7 +519,7 @@ export default function StudySession() {
             {(currentWord.topic || currentWord.topicVi) && (
               <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-medium">
                 <span>{getTopicIcon(currentWord.topic || '')}</span>
-                <span>{formatTopicDisplay(currentWord.topic, currentWord.topicVi)}</span>
+                <span>{getTopicDisplayBilingual(currentWord.topic || '', currentWord.topicVi)}</span>
               </span>
             )}
           </div>

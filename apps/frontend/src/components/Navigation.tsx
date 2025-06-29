@@ -11,7 +11,8 @@ import {
   ChartBarIcon,
   MapIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
 
@@ -57,6 +58,11 @@ export default function Navigation() {
       href: '/dashboard/progress',
       icon: ChartBarIcon,
     },
+    {
+      name: 'Chủ đề',
+      href: '/topics',
+      icon: TagIcon,
+    },
   ];
 
   const handleLogout = () => {
@@ -75,12 +81,15 @@ export default function Navigation() {
         <div className="flex justify-between h-14 sm:h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center">
+            <button
+              onClick={() => handleNavigation('/dashboard')}
+              className="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-1"
+            >
               <BookOpenIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
               <span className="ml-2 text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 VocabLearn
               </span>
-            </div>
+            </button>
           </div>
 
           {/* Desktop Navigation Items */}
@@ -119,7 +128,7 @@ export default function Navigation() {
               onClick={handleLogout}
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white px-2 lg:px-3 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
             >
-              <span className="hidden lg:inline">Logout</span>
+              <span className="hidden lg:inline">Đăng Xuất</span>
               <span className="lg:hidden">Exit</span>
             </button>
           </div>

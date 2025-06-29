@@ -1,156 +1,100 @@
-// Utility functions for topic formatting
+import {
+  AcademicCapIcon,
+  BeakerIcon,
+  BuildingOfficeIcon,
+  CakeIcon,
+  CloudIcon,
+  HeartIcon,
+  HomeIcon,
+  PaintBrushIcon,
+  SwatchIcon,
+  TruckIcon,
+  MapPinIcon,
+  ComputerDesktopIcon,
+  FaceSmileIcon,
+  GlobeAltIcon
+} from '@heroicons/react/24/outline';
 
-export const formatTopicDisplay = (topic?: string, topicVi?: string): string => {
-  if (!topic && !topicVi) return 'Không xác định';
-
-  if (topicVi && topic) {
-    return `${topicVi} - ${topic}`;
-  }
-
-  if (topicVi) return topicVi;
-  if (topic) return getVietnameseTopicName(topic);
-
-  return 'Không xác định';
+// Topic mappings with Vietnamese translations
+export const TOPIC_MAPPINGS: Record<string, string> = {
+  'animals': 'Động vật',
+  'body_parts': 'Bộ phận c�� thể',
+  'business': 'Kinh doanh',
+  'clothing': 'Quần áo',
+  'colors': 'Màu sắc',
+  'education': 'Giáo dục',
+  'food': 'Thức ăn',
+  'fruits': 'Trái cây',
+  'health_medical': 'Y tế - Sức khỏe',
+  'house_furniture': 'Nhà cửa - Nội thất',
+  'sports': 'Thể thao',
+  'technology': 'Công nghệ',
+  'transportation': 'Giao thông',
+  'travel': 'Du lịch',
+  'weather': 'Thời tiết'
 };
 
-export const getVietnameseTopicName = (englishTopic: string): string => {
-  const topicMapping: Record<string, string> = {
-    'actions': 'Hành động',
-    'animals': 'Động vật',
-    'architecture': 'Kiến trúc',
-    'art': 'Nghệ thuật',
-    'astronomy': 'Thiên văn học',
-    'body': 'Cơ thể',
-    'body_parts': 'Bộ phận cơ thể',
-    'books': 'Sách',
-    'business': 'Kinh doanh',
-    'clothing': 'Trang phục',
-    'colors': 'Màu sắc',
-    'communication': 'Giao tiếp',
-    'conflict': 'Xung đột',
-    'crime': 'Tội phạm',
-    'death': 'Cái chết',
-    'disasters': 'Thảm họa',
-    'education': 'Giáo dục',
-    'entertainment': 'Giải trí',
-    'environment': 'Môi trường',
-    'family': 'Gia đình',
-    'feelings': 'Cảm xúc',
-    'food': 'Ẩm thực',
-    'fruits': 'Trái cây',
-    'games': 'Trò chơi',
-    'general': 'Tổng quát',
-    'geography': 'Địa lý',
-    'government': 'Chính phủ',
-    'groups': 'Nhóm',
-    'growth': 'Phát triển',
-    'health': 'Sức khỏe',
-    'health_medical': 'Y tế',
-    'history': 'Lịch sử',
-    'home': 'Gia đình',
-    'house_furniture': 'Nội thất',
-    'knowledge': 'Kiến thức',
-    'language': 'Ngôn ngữ',
-    'law': 'Luật pháp',
-    'life': 'Cuộc sống',
-    'media': 'Truyền thông',
-    'meetings': 'Cuộc họp',
-    'money': 'Tiền bạc',
-    'names': 'Tên',
-    'nature': 'Thiên nhiên',
-    'objects': 'Đồ vật',
-    'personality': 'Tính cách',
-    'philosophy': 'Triết học',
-    'places': 'Địa điểm',
-    'politics': 'Chính trị',
-    'power': 'Quyền lực',
-    'problems': 'Vấn đề',
-    'relationships': 'Mối quan hệ',
-    'religion': 'Tôn giáo',
-    'science': 'Khoa học',
-    'senses': 'Giác quan',
-    'skills': 'Kỹ năng',
-    'society': 'Xã hội',
-    'sports': 'Thể thao',
-    'success': 'Thành công',
-    'supernatural': 'Siêu nhiên',
-    'technology': 'Công nghệ',
-    'transportation': 'Giao thông',
-    'travel': 'Du lịch',
-    'weather': 'Thời tiết',
-    'work': 'Công việc'
+// Topic icons mapping
+export const TOPIC_ICONS: Record<string, any> = {
+  'animals': FaceSmileIcon,
+  'body_parts': HeartIcon,
+  'business': BuildingOfficeIcon,
+  'clothing': SwatchIcon,
+  'colors': PaintBrushIcon,
+  'education': AcademicCapIcon,
+  'food': CakeIcon,
+  'fruits': BeakerIcon,
+  'health_medical': HeartIcon,
+  'house_furniture': HomeIcon,
+  'sports': FaceSmileIcon,
+  'technology': ComputerDesktopIcon,
+  'transportation': TruckIcon,
+  'travel': MapPinIcon,
+  'weather': CloudIcon
+};
+
+// Format topic display name
+export function formatTopicDisplay(topic: string): string {
+  return topic.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Get Vietnamese topic name
+export function getVietnameseTopicName(topic: string): string {
+  return TOPIC_MAPPINGS[topic] || formatTopicDisplay(topic);
+}
+
+// Get topic icon component
+export function getTopicIcon(topic: string) {
+  return TOPIC_ICONS[topic] || GlobeAltIcon;
+}
+
+// Get topic color class
+export function getTopicColorClass(topic: string): string {
+  const colors: Record<string, string> = {
+    'animals': 'bg-green-100 text-green-800 border-green-200',
+    'body_parts': 'bg-red-100 text-red-800 border-red-200',
+    'business': 'bg-blue-100 text-blue-800 border-blue-200',
+    'clothing': 'bg-purple-100 text-purple-800 border-purple-200',
+    'colors': 'bg-pink-100 text-pink-800 border-pink-200',
+    'education': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    'food': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'fruits': 'bg-orange-100 text-orange-800 border-orange-200',
+    'health_medical': 'bg-red-100 text-red-800 border-red-200',
+    'house_furniture': 'bg-brown-100 text-brown-800 border-brown-200',
+    'sports': 'bg-green-100 text-green-800 border-green-200',
+    'technology': 'bg-gray-100 text-gray-800 border-gray-200',
+    'transportation': 'bg-blue-100 text-blue-800 border-blue-200',
+    'travel': 'bg-teal-100 text-teal-800 border-teal-200',
+    'weather': 'bg-sky-100 text-sky-800 border-sky-200'
   };
 
-  return topicMapping[englishTopic] || englishTopic;
-};
+  return colors[topic] || 'bg-gray-100 text-gray-800 border-gray-200';
+}
 
-export const getTopicIcon = (topic: string): string => {
-  const iconMapping: Record<string, string> = {
-    'actions': '⚡',
-    'animals': '🐾',
-    'architecture': '🏛️',
-    'art': '🎨',
-    'astronomy': '🔭',
-    'body': '👤',
-    'body_parts': '👤',
-    'books': '📚',
-    'business': '💼',
-    'clothing': '👕',
-    'colors': '🌈',
-    'communication': '💬',
-    'conflict': '⚔️',
-    'crime': '🚔',
-    'death': '💀',
-    'disasters': '🌪️',
-    'education': '🎓',
-    'entertainment': '🎭',
-    'environment': '🌍',
-    'family': '👨‍👩‍👧‍👦',
-    'feelings': '😊',
-    'food': '🍽️',
-    'fruits': '🍎',
-    'games': '🎮',
-    'general': '📖',
-    'geography': '🗺️',
-    'government': '🏛️',
-    'groups': '👥',
-    'growth': '📈',
-    'health': '❤️',
-    'health_medical': '🏥',
-    'history': '📜',
-    'home': '🏠',
-    'house_furniture': '🛋️',
-    'knowledge': '🧠',
-    'language': '🗣️',
-    'law': '⚖️',
-    'life': '🌱',
-    'media': '📺',
-    'meetings': '👔',
-    'money': '💰',
-    'names': '📛',
-    'nature': '🌿',
-    'objects': '📦',
-    'personality': '😊',
-    'philosophy': '🤔',
-    'places': '📍',
-    'politics': '🗳️',
-    'power': '⚡',
-    'problems': '❓',
-    'relationships': '💕',
-    'religion': '⛪',
-    'science': '🔬',
-    'senses': '👁️',
-    'skills': '🎯',
-    'society': '🏙️',
-    'sports': '⚽',
-    'success': '🏆',
-    'supernatural': '👻',
-    'technology': '💻',
-    'transportation': '🚗',
-    'travel': '✈️',
-    'weather': '🌤️',
-    'work': '💼'
-  };
-
-  return iconMapping[topic] || '📖';
-};
+// Get topic display with both Vietnamese and English
+export function getTopicDisplayBilingual(topic: string, topicVi?: string): string {
+  // Use topicVi from database if available, otherwise fallback to mapping
+  const vietnameseName = topicVi || getVietnameseTopicName(topic);
+  const englishName = formatTopicDisplay(topic);
+  return `${vietnameseName} - ${englishName}`;
+}

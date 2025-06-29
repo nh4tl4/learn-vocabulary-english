@@ -72,10 +72,15 @@ export default function LearningDashboard() {
     <div className="max-w-6xl mx-auto py-4 sm:py-6 lg:py-8 spacing-mobile">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-responsive-xl font-bold text-gray-800 dark:text-white mb-2">
-          Bảng Điều Khiển Học Tập
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 text-responsive-sm">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+            <span className="text-xl sm:text-2xl">📊</span>
+          </div>
+          <h1 className="text-responsive-xl font-bold text-gray-800 dark:text-white">
+            Bảng Điều Khiển Học Tập
+          </h1>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 text-responsive-sm ml-11 sm:ml-13">
           Theo dõi tiến trình học từ vựng của bạn
         </p>
       </div>

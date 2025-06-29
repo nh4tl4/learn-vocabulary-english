@@ -96,6 +96,7 @@ export class VocabularyService {
     let query = this.vocabularyRepository
       .createQueryBuilder('vocabulary')
       .select('vocabulary.topic', 'topic')
+      .addSelect('vocabulary.topicVi', 'topicVi')  // Thêm topicVi vào response
       .addSelect('COUNT(*)', 'count')
       .where('vocabulary.topic IS NOT NULL');
 
@@ -106,6 +107,7 @@ export class VocabularyService {
 
     const topics = await query
       .groupBy('vocabulary.topic')
+      .addGroupBy('vocabulary.topicVi')  // Group by topicVi cũng
       .orderBy('COUNT(*)', 'DESC')
       .addOrderBy('vocabulary.topic', 'ASC')
       .offset(offset)
@@ -127,6 +129,7 @@ export class VocabularyService {
     return {
       topics: topics.map(t => ({
         topic: t.topic,
+        topicVi: t.topicVi,  // Thêm topicVi vào response
         count: parseInt(t.count)
       })),
       total: parseInt(totalTopics.total),
