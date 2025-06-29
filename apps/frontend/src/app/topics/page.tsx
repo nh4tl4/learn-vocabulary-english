@@ -199,7 +199,7 @@ export default function TopicsPage() {
           </div>
         </div>
 
-        {/* Topic Grid - Simplified */}
+        {/* Topic Grid - Ultra Simplified */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {availableTopics.map((topicInfo) => {
             const isSelected = selectedTopics.includes(topicInfo.topic);
@@ -208,20 +208,15 @@ export default function TopicsPage() {
               <div
                 key={topicInfo.topic}
                 onClick={() => handleTopicToggle(topicInfo.topic)}
-                className={`bg-white rounded-lg shadow-sm border-2 p-4 cursor-pointer transition-all duration-200 hover:shadow-md text-center ${
+                className={`bg-white rounded-lg p-3 cursor-pointer transition-all text-center border-2 ${
                   isSelected 
-                    ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg ring-2 ring-blue-200 ring-opacity-50' 
-                    : 'border-gray-200 hover:border-blue-300'
+                    ? 'border-orange-500 bg-orange-50' 
+                    : 'border-gray-200 hover:border-orange-300'
                 }`}
               >
                 <h3 className="text-sm font-medium text-gray-900">
                   {getTopicDisplayBilingual(topicInfo.topic, topicInfo.topicVi)}
                 </h3>
-                {isSelected && (
-                  <div className="mt-2">
-                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
-                  </div>
-                )}
               </div>
             );
           })}
