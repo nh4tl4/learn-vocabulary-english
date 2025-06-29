@@ -8,20 +8,30 @@ import { RedisService } from './redis.service';
   imports: [
     CacheModule.registerAsync({
       useFactory: async () => {
-        const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+        const redisUrl = process.env.REDIS_URL || 'redis://:emddi2024@svc.emddi.net:6379/12';
+        console.log('🔴 Redis URL:', redisUrl);
 
         // Parse Redis URL for connection options
         const url = new URL(redisUrl);
 
-        return {
+        const config = {
           store: redisStore as any,
           host: url.hostname,
           port: parseInt(url.port) || 6379,
           password: url.password || undefined,
-          db: 0,
+          db: parseInt(url.pathname.slice(1)) || 0, // Extract DB number from path
           ttl: 300, // Default TTL 5 minutes
           max: 1000, // Maximum number of items in cache
         };
+
+        console.log('🔴 Redis Config:', {
+          host: config.host,
+          port: config.port,
+          db: config.db,
+          hasPassword: !!config.password
+        });
+
+        return config;
       },
     }),
   ],
