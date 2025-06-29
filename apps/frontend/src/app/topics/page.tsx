@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { vocabularyAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { getTopicIcon, getTopicColorClass, getTopicDisplayBilingual } from '@/lib/topicUtils';
+import { getTopicDisplayBilingual } from '@/lib/topicUtils';
 import { ArrowLeftIcon, BookOpenIcon, CheckIcon } from '@heroicons/react/24/outline';
+import Toast from '@/components/Toast';
 
 interface TopicInfo {
   topic: string;
@@ -198,40 +199,29 @@ export default function TopicsPage() {
           </div>
         </div>
 
-        {/* Topic Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Topic Grid - Simplified */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {availableTopics.map((topicInfo) => {
-            const IconComponent = getTopicIcon(topicInfo.topic);
             const isSelected = selectedTopics.includes(topicInfo.topic);
 
             return (
               <div
                 key={topicInfo.topic}
                 onClick={() => handleTopicToggle(topicInfo.topic)}
-                className={`bg-white rounded-xl shadow-sm border-2 p-6 cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] ${
-                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                className={`bg-white rounded-lg shadow-sm border-2 p-4 cursor-pointer transition-all duration-200 hover:shadow-md text-center ${
+                  isSelected 
+                    ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg ring-2 ring-blue-200 ring-opacity-50' 
+                    : 'border-gray-200 hover:border-blue-300'
                 }`}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <IconComponent className="w-8 h-8 text-blue-600" />
-                  <div className="flex items-center space-x-2">
-                    {isSelected && (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                        Đã chọn
-                      </span>
-                    )}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getTopicColorClass(topicInfo.topic)}`}>
-                      {topicInfo.count} từ
-                    </span>
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                <h3 className="text-sm font-medium text-gray-900">
                   {getTopicDisplayBilingual(topicInfo.topic, topicInfo.topicVi)}
                 </h3>
-                <p className="text-gray-600 text-sm mb-3">
-                  {topicInfo.count} từ vựng có sẵn
-                </p>
+                {isSelected && (
+                  <div className="mt-2">
+                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -266,20 +256,25 @@ export default function TopicsPage() {
               <span>Lưu lựa chọn chủ đề</span>
             )}
           </button>
-
-          {/* Success and Error Messages */}
-          {success && (
-            <div className="mt-4 text-center text-green-600">
-              {success}
-            </div>
-          )}
-          {error && (
-            <div className="mt-4 text-center text-red-600">
-              {error}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <Toast
+        message="Đã lưu lựa chọn chủ đề thành công!"
+        type="success"
+        isVisible={!!success}
+        onClose={() => setSuccess(null)}
+        duration={3000}
+      />
+
+      <Toast
+        message={error || "Có lỗi xảy ra"}
+        type="error"
+        isVisible={!!error}
+        onClose={() => setError(null)}
+        duration={5000}
+      />
     </div>
   );
 }
