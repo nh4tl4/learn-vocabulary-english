@@ -23,7 +23,7 @@ export class UserTopicHistory {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   lastSelectedAt: Date; // Lần cuối chọn chủ đề này
 
   @ManyToOne(() => User, user => user.topicHistory)
