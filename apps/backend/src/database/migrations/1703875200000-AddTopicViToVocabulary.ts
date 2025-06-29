@@ -4,11 +4,17 @@ export class AddTopicViToVocabulary1703875200000 implements MigrationInterface {
     name = 'AddTopicViToVocabulary1703875200000'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.addColumn('vocabulary', new TableColumn({
-            name: 'topicVi',
-            type: 'varchar',
-            isNullable: true
-        }));
+        // Check if column already exists before adding it
+        const table = await queryRunner.getTable('vocabulary');
+        const topicViColumn = table?.findColumnByName('topicVi');
+
+        if (!topicViColumn) {
+            await queryRunner.addColumn('vocabulary', new TableColumn({
+                name: 'topicVi',
+                type: 'varchar',
+                isNullable: true,
+            }));
+        }
 
         // Update existing records with Vietnamese topic names
         const topicMapping = {
@@ -38,6 +44,12 @@ export class AddTopicViToVocabulary1703875200000 implements MigrationInterface {
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.dropColumn('vocabulary', 'topicVi');
+        // Check if column exists before dropping it
+        const table = await queryRunner.getTable('vocabulary');
+        const topicViColumn = table?.findColumnByName('topicVi');
+
+        if (topicViColumn) {
+            await queryRunner.dropColumn('vocabulary', 'topicVi');
+        }
     }
 }
