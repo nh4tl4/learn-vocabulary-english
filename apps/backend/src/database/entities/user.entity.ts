@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { UserVocabulary } from './user-vocabulary.entity';
 import { UserTopicHistory } from './user-topic-history.entity';
+import { UserSelectedTopic } from './user-selected-topic.entity';
 
 @Entity('user')
 export class User {
@@ -37,9 +38,6 @@ export class User {
   @Column({ default: 0 })
   averageTestScore: number;
 
-  @Column({ type: 'text', nullable: true })
-  selectedTopics: string; // JSON string chứa danh sách chủ đề đã chọn
-
   @CreateDateColumn()
   createdAt: Date;
 
@@ -51,6 +49,9 @@ export class User {
 
   @OneToMany(() => UserTopicHistory, topicHistory => topicHistory.user)
   topicHistory: UserTopicHistory[];
+
+  @OneToMany(() => UserSelectedTopic, userSelectedTopic => userSelectedTopic.user)
+  userSelectedTopics: UserSelectedTopic[];
 
   // Calculate today's progress
   get todayProgress(): number {

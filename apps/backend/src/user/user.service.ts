@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
 import { UserTopicHistory } from '../database/entities/user-topic-history.entity';
+import { UserSelectedTopic } from '../database/entities/user-selected-topic.entity';
 
 @Injectable()
 export class UserService {
@@ -14,6 +15,8 @@ export class UserService {
     private userVocabularyRepository: Repository<UserVocabulary>,
     @InjectRepository(UserTopicHistory)
     private userTopicHistoryRepository: Repository<UserTopicHistory>,
+    @InjectRepository(UserSelectedTopic)
+    private userSelectedTopicRepository: Repository<UserSelectedTopic>,
   ) {}
 
   async findOne(id: number): Promise<User> {
@@ -140,20 +143,30 @@ export class UserService {
 
   // Lấy danh sách chủ đề đã chọn của user
   async getSelectedTopics(userId: number) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['selectedTopics'],
+    const selectedTopics = await this.userSelectedTopicRepository.find({
+      where: { userId },
+      order: { selectedAt: 'DESC' }
     });
 
     return {
-      topics: user?.selectedTopics ? JSON.parse(user.selectedTopics) : [],
+      topics: selectedTopics.map(st => st.topic)
     };
   }
 
   // Lưu danh sách chủ đề đã chọn của user
   async saveSelectedTopics(userId: number, topics: string[]) {
-    await this.userRepository.update(userId, {
-      selectedTopics: JSON.stringify(topics),
-    });
+    // Xóa tất cả chủ đề đã chọn cũ của user
+    await this.userSelectedTopicRepository.delete({ userId });
+
+    // Thêm các chủ đề mới
+    if (topics.length > 0) {
+      const selectedTopics = topics.map(topic => ({
+        userId,
+        topic,
+        selectedAt: new Date()
+      }));
+
+      await this.userSelectedTopicRepository.save(selectedTopics);
+    }
   }
 }

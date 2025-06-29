@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { vocabularyAPI } from '@/lib/api';
+import { vocabularyAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useLearningSettingsStore } from '@/store/learningSettingsStore';
 import LearningSettingsModal from './LearningSettingsModal';
@@ -51,29 +51,34 @@ export default function TopicLearning() {
         setLoadingMore(true);
       }
 
-      // Load topics and stats with pagination
-      const [topicsResponse, statsResponse] = await Promise.all([
-        vocabularyAPI.getTopics(page, 12), // Load 12 topics per page
-        vocabularyAPI.getTopicStats(page, 12),
-      ]);
+      // Load user's selected topics first
+      const selectedTopicsResponse = await userAPI.getSelectedTopics();
+      const selectedTopics = selectedTopicsResponse.data.topics || [];
 
-      const newTopics = topicsResponse.data.topics || [];
-      const newStats = statsResponse.data.topics || [];
-
-      if (append) {
-        setTopics(prev => [...prev, ...newTopics.map((t: any) => t.topic)]);
-        setTopicStats(prev => [...prev, ...newStats]);
-      } else {
-        setTopics(newTopics.map((t: any) => t.topic));
-        setTopicStats(newStats);
+      if (selectedTopics.length === 0) {
+        // If user hasn't selected any topics, show message
+        setTopicStats([]);
+        setHasMore(false);
+        setTotalTopics(0);
+        return;
       }
 
-      setHasMore(topicsResponse.data.hasMore || false);
-      setTotalTopics(topicsResponse.data.total || 0);
-      setCurrentPage(page);
+      // Load stats only for selected topics
+      const statsResponse = await vocabularyAPI.getTopicStats(1, 50); // Get all topics
+      const allStats = statsResponse.data.topics || [];
 
-      // Load progress for new topics only
-      const progressPromises = newStats.map(async (topicStat: TopicStat) => {
+      // Filter stats to only include user's selected topics
+      const selectedStats = allStats.filter((stat: any) =>
+        selectedTopics.includes(stat.topic)
+      );
+
+      setTopicStats(selectedStats);
+      setHasMore(false); // No pagination needed since we show only selected topics
+      setTotalTopics(selectedStats.length);
+      setCurrentPage(1);
+
+      // Load progress for selected topics only
+      const progressPromises = selectedStats.map(async (topicStat: TopicStat) => {
         try {
           const progressResponse = await vocabularyAPI.getProgressByTopic(topicStat.topic);
           return { topic: topicStat.topic, progress: progressResponse.data };
@@ -206,103 +211,123 @@ export default function TopicLearning() {
         </div>
       </div>
 
-      {/* Topic Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-        {topicStats.map((topicStat) => {
-          const progress = topicProgress[topicStat.topic];
-          const masteryPercentage = progress?.masteryPercentage || 0;
-          const settings = getTopicSettings(topicStat.topic);
+      {/* Topic Grid or Empty State */}
+      {topicStats.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="max-w-md mx-auto">
+            <div className="text-6xl mb-6">📚</div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Chưa có chủ đề nào được chọn
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Bạn chưa chọn chủ đề nào để học. Hãy vào trang chọn chủ đề để bắt đầu hành trình học tập của bạn!
+            </p>
+            <button
+              onClick={() => router.push('/topics')}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              📋 Chọn chủ đề
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          {topicStats.map((topicStat) => {
+            const progress = topicProgress[topicStat.topic];
+            const masteryPercentage = progress?.masteryPercentage || 0;
+            const settings = getTopicSettings(topicStat.topic);
 
-          return (
-            <div key={topicStat.topic} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-              {/* Topic Header */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-2xl">{getTopicIcon(topicStat.topic)}</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                      {topicStat.count} từ
-                    </span>
-                    <button
-                      onClick={(e) => openTopicSettings(topicStat.topic, e)}
-                      className="p-1 hover:bg-white/20 rounded transition-colors"
-                      title="Cấu hình cho topic này"
-                    >
-                      <Cog6ToothIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                <h3 className="font-semibold text-sm sm:text-base line-clamp-2">
-                  {getTopicDisplayBilingual(topicStat.topic, topicStat.topicVi)}
-                </h3>
-              </div>
-
-              {/* Progress */}
-              <div className="p-4">
-                {progress ? (
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                      <span>Tiến độ</span>
-                      <span>{masteryPercentage}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(masteryPercentage)}`}
-                        style={{ width: `${masteryPercentage}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      <span>Đã học: {progress.totalLearned}</span>
-                      <span>Thành thạo: {progress.mastered}</span>
+            return (
+              <div key={topicStat.topic} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                {/* Topic Header */}
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-2xl">{getTopicIcon(topicStat.topic)}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                        {topicStat.count} từ
+                      </span>
+                      <button
+                        onClick={(e) => openTopicSettings(topicStat.topic, e)}
+                        className="p-1 hover:bg-white/20 rounded transition-colors"
+                        title="Cấu hình cho topic này"
+                      >
+                        <Cog6ToothIcon className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="mb-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-                    Chưa bắt đầu học
-                  </div>
-                )}
-
-                {/* Settings Preview */}
-                <div className="mb-4 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
-                  <div className="flex justify-between">
-                    <span>Học: {settings.newWordsPerSession}</span>
-                    <span>Ôn: {settings.reviewWordsPerSession}</span>
-                    <span>Test: {settings.testWordsPerSession}</span>
-                  </div>
+                  <h3 className="font-semibold text-sm sm:text-base line-clamp-2">
+                    {getTopicDisplayBilingual(topicStat.topic, topicStat.topicVi)}
+                  </h3>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  <button
-                    onClick={() => startTopicLearning(topicStat.topic, 'learn')}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    📚 Học từ mới ({settings.newWordsPerSession})
-                  </button>
-
-                  {progress && progress.learning > 0 && (
-                    <button
-                      onClick={() => startTopicLearning(topicStat.topic, 'review')}
-                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
-                    >
-                      🔄 Ôn tập ({settings.reviewWordsPerSession})
-                    </button>
+                {/* Progress */}
+                <div className="p-4">
+                  {progress ? (
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        <span>Tiến độ</span>
+                        <span>{masteryPercentage}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(masteryPercentage)}`}
+                          style={{ width: `${masteryPercentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>Đã học: {progress.totalLearned}</span>
+                        <span>Thành thạo: {progress.mastered}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                      Chưa bắt đầu học
+                    </div>
                   )}
 
-                  {progress && progress.totalLearned >= 5 && (
+                  {/* Settings Preview */}
+                  <div className="mb-4 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                    <div className="flex justify-between">
+                      <span>Học: {settings.newWordsPerSession}</span>
+                      <span>Ôn: {settings.reviewWordsPerSession}</span>
+                      <span>Test: {settings.testWordsPerSession}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
                     <button
-                      onClick={() => startTopicLearning(topicStat.topic, 'test')}
-                      className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
+                      onClick={() => startTopicLearning(topicStat.topic, 'learn')}
+                      className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
                     >
-                      📝 Kiểm tra ({settings.testWordsPerSession})
+                      📚 Học từ mới ({settings.newWordsPerSession})
                     </button>
-                  )}
+
+                    {progress && progress.learning > 0 && (
+                      <button
+                        onClick={() => startTopicLearning(topicStat.topic, 'review')}
+                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        🔄 Ôn tập ({settings.reviewWordsPerSession})
+                      </button>
+                    )}
+
+                    {progress && progress.totalLearned >= 5 && (
+                      <button
+                        onClick={() => startTopicLearning(topicStat.topic, 'test')}
+                        className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-3 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        📝 Kiểm tra ({settings.testWordsPerSession})
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Load More Button */}
       {hasMore && (

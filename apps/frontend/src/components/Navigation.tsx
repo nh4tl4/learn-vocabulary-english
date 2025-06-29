@@ -38,16 +38,16 @@ export default function Navigation() {
       href: '/dashboard',
       icon: HomeIcon,
     },
-    {
-      name: 'Lộ trình',
-      href: '/learn/roadmap',
-      icon: MapIcon,
-    },
-    {
-      name: 'Learn',
-      href: '/learn',
-      icon: BookOpenIcon,
-    },
+    // {
+    //   name: 'Lộ trình',
+    //   href: '/learn/roadmap',
+    //   icon: MapIcon,
+    // },
+    // {
+    //   name: 'Learn',
+    //   href: '/learn',
+    //   icon: BookOpenIcon,
+    // },
     {
       name: 'Test',
       href: '/learn/test',
@@ -59,7 +59,7 @@ export default function Navigation() {
       icon: ChartBarIcon,
     },
     {
-      name: 'Chủ đề',
+      name: 'Chọn chủ đề',
       href: '/topics',
       icon: TagIcon,
     },
