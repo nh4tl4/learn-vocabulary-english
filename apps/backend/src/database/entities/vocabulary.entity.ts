@@ -22,6 +22,7 @@ export class Vocabulary {
   @Column({ nullable: true })
   partOfSpeech: string;
 
+  //beginger || intermediate || advanced
   @Column({ nullable: true })
   level: string;
 

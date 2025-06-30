@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { vocabularyAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useLevelStore } from '@/store/levelStore';
 
 interface DashboardData {
   user: {
@@ -29,10 +30,11 @@ export default function LearningDashboard() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [newGoal, setNewGoal] = useState(10);
   const router = useRouter();
+  const { selectedLevel } = useLevelStore();
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [selectedLevel]);
 
   const loadDashboardData = async () => {
     try {

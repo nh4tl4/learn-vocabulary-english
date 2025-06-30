@@ -7,6 +7,7 @@ import { getVietnameseTopicName, getTopicDisplayBilingual, getTopicIcon } from '
 import { XMarkIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import MobileButton from './MobileOptimized/MobileButton';
 import AIAssistant from './AIAssistant';
+import { useLevelStore } from '@/store/levelStore';
 
 interface Vocabulary {
   id: number;
@@ -43,12 +44,20 @@ export default function StudySession(topic: string) {
   const [topicHistory, setTopicHistory] = useState<any[]>([]);
   const [lastSelectedTopic, setLastSelectedTopic] = useState<string | null>(null);
   const router = useRouter();
+  const { selectedLevel } = useLevelStore();
 
   // Load topic history and available topics on component mount
   useEffect(() => {
     loadTopicHistory();
     loadAvailableTopics();
   }, []);
+
+  // Reload data when level changes
+  useEffect(() => {
+    if (!showTopicSelector && selectedTopic !== undefined) {
+      handleTopicSelect(selectedTopic);
+    }
+  }, [selectedLevel]);
 
   const loadTopicHistory = async () => {
     try {
@@ -75,7 +84,8 @@ export default function StudySession(topic: string) {
     try {
       setTopicsLoading(true);
       setError(null);
-      const response = await vocabularyAPI.getTopicStats();
+      const levelParam = selectedLevel === 'all' ? undefined : selectedLevel;
+      const response = await vocabularyAPI.getTopicStats(1, 20, levelParam);
 
       // Backend trả về { topics: [...], total: ..., page: ... }
       const topicsData = response.data.topics || response.data.data || response.data;
@@ -129,10 +139,12 @@ export default function StudySession(topic: string) {
 
     try {
       let response;
+      const levelParam = selectedLevel === 'all' ? undefined : selectedLevel;
+
       if (topic) {
-        response = await vocabularyAPI.getNewWordsByTopic(topic, 10);
+        response = await vocabularyAPI.getNewWordsByTopic(topic, 10, levelParam);
       } else {
-        response = await vocabularyAPI.getNewWords(10);
+        response = await vocabularyAPI.getNewWords(10, levelParam);
       }
 
       setWords(response.data);

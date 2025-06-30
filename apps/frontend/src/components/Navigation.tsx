@@ -15,6 +15,7 @@ import {
   TagIcon
 } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
+import LevelSelector from './LevelSelector';
 
 export default function Navigation() {
   const router = useRouter();
@@ -117,6 +118,7 @@ export default function Navigation() {
 
           {/* Desktop User Menu & Theme Toggle */}
           <div className="hidden md:flex md:items-center md:space-x-2 lg:space-x-4">
+            <LevelSelector />
             <ThemeToggle />
             <div className="hidden lg:flex items-center space-x-2">
               <UserIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -154,6 +156,12 @@ export default function Navigation() {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            {/* Mobile Level Selector */}
+            <div className="px-3 py-2">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Chọn độ khó</div>
+              <LevelSelector />
+            </div>
+
             {navigationItems.map((item) => {
               const isActive = pathname === item.href ||
                 (item.href !== '/dashboard' && pathname.startsWith(item.href));
