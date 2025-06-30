@@ -1,4 +1,4 @@
-# GitLab CI/CD Pipeline cho Render Deployment
+# GitLab CI/CD Pipeline - Backend to Render, Frontend to Vercel
 stages:
   - test
   - build
@@ -31,7 +31,7 @@ cache:
       fi
     - |
       # Kiểm tra frontend changes  
-      if git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA | grep -E "^apps/frontend/|^render\.yaml$"; then
+      if git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA | grep -E "^apps/frontend/"; then
         echo "FRONTEND_CHANGED=true" >> build.env
       else
         echo "FRONTEND_CHANGED=false" >> build.env
@@ -138,7 +138,7 @@ deploy-backend:
   only:
     - main
 
-# Deploy Frontend qua Render API
+# Deploy Frontend qua Vercel
 deploy-frontend:
   stage: deploy
   image: alpine/curl
@@ -146,34 +146,41 @@ deploy-frontend:
   script:
     - |
       if [ "$FRONTEND_CHANGED" = "true" ]; then
-        echo "🚀 Deploying Frontend to Render..."
+        echo "🚀 Deploying Frontend to Vercel..."
         
+        # Trigger Vercel deployment using the deploy hook
         RESPONSE=$(curl -s -w "%{http_code}" -X POST \
-          -H "Authorization: Bearer $RENDER_API_KEY" \
-          -H "Accept: application/json" \
-          -H "Content-Type: application/json" \
-          "https://api.render.com/v1/services/$RENDER_FRONTEND_SERVICE_ID/deploys")
+          "https://api.vercel.com/v1/integrations/deploy/prj_p9p0pWrULpQD2enAxBxoCP3bs8st/Zllx4JLO3y")
         
         HTTP_CODE=$(echo $RESPONSE | tail -c 4)
+        RESPONSE_BODY=$(echo $RESPONSE | head -c -4)
         
-        if [ "$HTTP_CODE" = "201" ]; then
+        if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
           echo "✅ Frontend deployment triggered successfully"
+          echo "Response: $RESPONSE_BODY"
           
-          echo "⏳ Waiting for deployment to complete..."
-          sleep 45
+          # Wait for deployment to start
+          echo "⏳ Waiting for Vercel deployment to start..."
+          sleep 15
           
-          # Check frontend health
-          for i in {1..8}; do
-            if curl -f "$FRONTEND_URL"; then
-              echo "✅ Frontend is live!"
-              break
-            else
-              echo "⏳ Waiting for frontend... (attempt $i/8)"
-              sleep 30
-            fi
-          done
+          # Check if frontend is accessible (optional health check)
+          if [ -n "$FRONTEND_URL" ]; then
+            echo "🔍 Checking frontend health..."
+            for i in {1..8}; do
+              if curl -f "$FRONTEND_URL" >/dev/null 2>&1; then
+                echo "✅ Frontend deployment completed and is accessible!"
+                break
+              else
+                echo "⏳ Waiting for frontend to be ready... (attempt $i/8)"
+                sleep 15
+              fi
+            done
+          else
+            echo "ℹ️ FRONTEND_URL not set, skipping health check"
+          fi
         else
           echo "❌ Frontend deployment failed (HTTP: $HTTP_CODE)"
+          echo "Response: $RESPONSE_BODY"
           exit 1
         fi
       else
@@ -182,6 +189,61 @@ deploy-frontend:
   environment:
     name: production-frontend
     url: $FRONTEND_URL
+  only:
+    - main
+
+# Deploy to develop branch (Vercel Preview)
+deploy-frontend-preview:
+  stage: deploy
+  image: alpine/curl
+  needs: ["test-frontend"]
+  script:
+    - |
+      if [ "$FRONTEND_CHANGED" = "true" ]; then
+        echo "🚀 Deploying Frontend Preview to Vercel..."
+        
+        # Same deploy hook works for preview deployments
+        RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+          "https://api.vercel.com/v1/integrations/deploy/prj_p9p0pWrULpQD2enAxBxoCP3bs8st/Zllx4JLO3y")
+        
+        HTTP_CODE=$(echo $RESPONSE | tail -c 4)
+        
+        if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+          echo "✅ Frontend preview deployment triggered successfully"
+        else
+          echo "❌ Frontend preview deployment failed (HTTP: $HTTP_CODE)"
+          exit 1
+        fi
+      else
+        echo "⏭️ No frontend changes, skipping preview deployment"
+      fi
+  environment:
+    name: preview-frontend
+  only:
+    - develop
+
+# Manual deployment job (có thể trigger thủ công)
+deploy-frontend-manual:
+  stage: deploy
+  image: alpine/curl
+  script:
+    - echo "🚀 Manual Frontend Deployment to Vercel..."
+    - |
+      RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+        "https://api.vercel.com/v1/integrations/deploy/prj_p9p0pWrULpQD2enAxBxoCP3bs8st/Zllx4JLO3y")
+      
+      HTTP_CODE=$(echo $RESPONSE | tail -c 4)
+      
+      if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+        echo "✅ Manual frontend deployment triggered successfully"
+      else
+        echo "❌ Manual frontend deployment failed (HTTP: $HTTP_CODE)"
+        exit 1
+      fi
+  environment:
+    name: production-frontend
+    url: $FRONTEND_URL
+  when: manual
   only:
     - main
 
