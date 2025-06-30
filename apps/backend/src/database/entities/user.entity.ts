@@ -38,6 +38,9 @@ export class User {
   @Column({ default: 0 })
   averageTestScore: number;
 
+  @Column({ default: 'beginner' })
+  level: string; // beginner, intermediate, advanced
+
   @CreateDateColumn()
   createdAt: Date;
 

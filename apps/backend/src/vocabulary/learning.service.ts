@@ -5,6 +5,7 @@ import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabu
 import { User } from '../database/entities/user.entity';
 import { Vocabulary } from '../database/entities/vocabulary.entity';
 import { StudySessionDto, ReviewFilterDto } from './dto/learning.dto';
+import { VocabularyCacheService } from './vocabulary-cache.service';
 
 @Injectable()
 export class LearningService {
@@ -15,6 +16,7 @@ export class LearningService {
     private userRepository: Repository<User>,
     @InjectRepository(Vocabulary)
     private vocabularyRepository: Repository<Vocabulary>,
+    private vocabularyCacheService: VocabularyCacheService,
   ) {}
 
   // Get today's learning progress for user
@@ -45,62 +47,80 @@ export class LearningService {
     };
   }
 
-  // Get new words for learning
+  // Get new words for learning - SUPER OPTIMIZED VERSION
   async getNewWordsForLearning(userId: number, limit: number = 10, level?: string) {
     try {
-      // Get words user hasn't learned yet
-      const learnedWordIds = await this.userVocabularyRepository
+      // Get user's level from cache or database
+      if (!level) {
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
+          select: ['level'],
+          cache: 300000 // Cache for 5 minutes
+        });
+        level = user?.level || 'beginner';
+      }
+
+      // Get learned word IDs efficiently
+      const learnedIds = await this.userVocabularyRepository
         .createQueryBuilder('uv')
         .select('uv.vocabularyId')
         .where('uv.userId = :userId', { userId })
-        .getRawMany();
+        .cache(60000) // Cache for 1 minute
+        .getRawMany()
+        .then(results => results.map(item => item.uv_vocabularyId));
 
-      const learnedIds = learnedWordIds.map(item => item.uv_vocabularyId);
+      // Use cache service to get vocabulary by level
+      const allWords = await this.vocabularyCacheService.getVocabularyByLevel(level, limit * 3);
 
-      let queryBuilder = this.vocabularyRepository
-        .createQueryBuilder('v')
-        .take(limit);
+      // Filter out already learned words
+      const unlearnedWords = allWords.filter(word => !learnedIds.includes(word.id));
 
-      if (learnedIds.length > 0) {
-        queryBuilder = queryBuilder.where('v.id NOT IN (:...learnedIds)', { learnedIds });
-      }
+      return unlearnedWords.slice(0, limit);
 
-      // Add level filter if provided
-      if (level) {
-        if (learnedIds.length > 0) {
-          queryBuilder = queryBuilder.andWhere('v.level = :level', { level });
-        } else {
-          queryBuilder = queryBuilder.where('v.level = :level', { level });
-        }
-      }
-
-      // Use ORDER BY id ASC instead of RANDOM() for better performance
-      const words = await queryBuilder
-        .orderBy('v.id', 'ASC')
-        .getMany();
-
-      return words;
     } catch (error) {
-      console.error('Error getting new words for learning:', error);
-      throw error;
+      console.error('Error in optimized getNewWordsForLearning:', error);
+
+      // Fallback to direct database query
+      return this.getNewWordsForLearningFallback(userId, limit, level);
     }
+  }
+
+  // Fallback method for when cache fails
+  private async getNewWordsForLearningFallback(userId: number, limit: number, level?: string) {
+    if (!level) {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['level']
+      });
+      level = user?.level || 'beginner';
+    }
+
+    return await this.vocabularyRepository
+      .createQueryBuilder('v')
+      .where('v.level = :level', { level })
+      .andWhere('NOT EXISTS (SELECT 1 FROM user_vocabulary uv WHERE uv.vocabularyId = v.id AND uv.userId = :userId)', { userId })
+      .orderBy('v.id', 'ASC')
+      .take(limit)
+      .getMany();
   }
 
   // Get words that need review today
   async getWordsForReview(userId: number, limit: number = 20, level?: string) {
     const now = new Date();
 
+    // Get user's level if no level is specified
+    if (!level) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      level = user?.level || 'beginner';
+    }
+
     let query = this.userVocabularyRepository
       .createQueryBuilder('uv')
       .leftJoinAndSelect('uv.vocabulary', 'v')
       .where('uv.userId = :userId', { userId })
       .andWhere('uv.nextReviewDate < :now', { now })
-      .andWhere('uv.status = :status', { status: LearningStatus.LEARNING });
-
-    // Add level filter if provided
-    if (level) {
-      query = query.andWhere('v.level = :level', { level });
-    }
+      .andWhere('uv.status = :status', { status: LearningStatus.LEARNING })
+      .andWhere('v.level = :level', { level });
 
     return await query
       .orderBy('uv.nextReviewDate', 'ASC')
