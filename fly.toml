@@ -1,0 +1,64 @@
+# Fly.io configuration for Learn Vocabulary Frontend
+app = "learn-vocabulary-frontend"
+primary_region = "sin" # Singapore for better performance in Vietnam
+
+[build]
+  dockerfile = "./apps/frontend/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  NEXT_TELEMETRY_DISABLED = "1"
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 500
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/"
+
+[mounts]
+
+[[services]]
+  http_checks = []
+  internal_port = 3000
+  processes = ["app"]
+  protocol = "tcp"
+
+  [services.concurrency]
+    hard_limit = 1000
+    soft_limit = 500
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"
+
+# Machine configuration optimized for Next.js
+[machine]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
