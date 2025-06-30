@@ -75,23 +75,69 @@ export class RedisController {
       const store = cacheManager?.store;
 
       console.log('🔍 Checking Redis store type:', store?.constructor?.name);
+      console.log('🔍 Store details:', {
+        hasClient: !!(store?.client),
+        hasRedisClient: !!(store?.redisClient),
+        storeType: store?.constructor?.name,
+        storeMethods: Object.getOwnPropertyNames(store || {})
+      });
 
-      // If using redis store, try to get the client
-      if (store?.client || store?.redisClient) {
-        const client = store.client || store.redisClient;
+      // Try multiple ways to access Redis client
+      let client = null;
+      if (store?.client) {
+        client = store.client;
+        console.log('🔍 Using store.client');
+      } else if (store?.redisClient) {
+        client = store.redisClient;
+        console.log('🔍 Using store.redisClient');
+      } else if (store?._client) {
+        client = store._client;
+        console.log('🔍 Using store._client');
+      }
+
+      if (client) {
         console.log('🔍 Found Redis client, getting all keys...');
 
-        const keys = await client.keys('*');
+        // Try different methods to get keys
+        let keys = [];
+        try {
+          if (typeof client.keys === 'function') {
+            keys = await client.keys('*');
+          } else if (typeof client.scan === 'function') {
+            // Use SCAN if KEYS is not available
+            const result = await client.scan(0);
+            keys = result.keys || result[1] || [];
+          }
+        } catch (keyError) {
+          console.error('❌ Error getting keys:', keyError.message);
+          return {
+            success: false,
+            error: `Error getting keys: ${keyError.message}`,
+            storeType: store?.constructor?.name,
+            clientMethods: Object.getOwnPropertyNames(client),
+            timestamp: new Date().toISOString()
+          };
+        }
+
         console.log('🔍 Redis keys found:', keys);
 
         // Get values for each key
         const keyValues = {};
         for (const key of keys) {
           try {
-            const value = await client.get(key);
-            keyValues[key] = value ? JSON.parse(value) : value;
+            let value;
+            if (typeof client.get === 'function') {
+              value = await client.get(key);
+            }
+
+            // Try to parse JSON
+            try {
+              keyValues[key] = value ? JSON.parse(value) : value;
+            } catch (parseError) {
+              keyValues[key] = value; // Keep as string if not JSON
+            }
           } catch (e) {
-            keyValues[key] = `Error parsing: ${e.message}`;
+            keyValues[key] = `Error getting value: ${e.message}`;
           }
         }
 
@@ -101,13 +147,19 @@ export class RedisController {
           keys: keys,
           keyValues: keyValues,
           storeType: store?.constructor?.name,
+          clientType: client?.constructor?.name,
           timestamp: new Date().toISOString()
         };
       } else {
         return {
           success: false,
-          message: 'Redis client not accessible or using in-memory store',
+          message: 'Redis client not accessible - likely using in-memory store',
           storeType: store?.constructor?.name || 'unknown',
+          storeDetails: {
+            hasStore: !!store,
+            storeMethods: store ? Object.getOwnPropertyNames(store) : [],
+            storePrototype: store ? Object.getOwnPropertyNames(Object.getPrototypeOf(store)) : []
+          },
           timestamp: new Date().toISOString()
         };
       }

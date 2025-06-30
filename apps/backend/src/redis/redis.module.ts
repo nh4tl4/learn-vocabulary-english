@@ -17,21 +17,14 @@ import { RedisController } from './redis.controller';
           const url = new URL(redisUrl);
 
           const config = {
-            store: redisStore as any,
+            store: redisStore,
             host: url.hostname,
             port: parseInt(url.port) || 6379,
             password: url.password || undefined,
             db: parseInt(url.pathname.slice(1)) || 0,
             ttl: 300,
-            max: 1000,
-            // Add connection retry and timeout options
-            retryAttempts: 3,
-            retryDelay: 1000,
-            connectTimeout: 10000,
-            lazyConnect: true,
-            // Add error handling options
-            enableOfflineQueue: false,
-            maxRetriesPerRequest: 3,
+            // Remove incompatible options for redis store
+            isGlobal: true,
           };
 
           console.log('🔴 Redis Config:', {
@@ -43,23 +36,13 @@ import { RedisController } from './redis.controller';
 
           console.log('🔄 Attempting to connect to Redis...');
 
-          // Test basic connection using native redis client
-          const { createClient } = require('redis');
-          const testClient = createClient({
-            url: redisUrl,
-            socket: {
-              connectTimeout: 5000,
-              reconnectStrategy: false
-            }
+          // Test Redis connection before using it
+          const Redis = require('redis');
+          const testClient = Redis.createClient({
+            url: redisUrl
           });
 
-          // Test connection with timeout
-          const connectionPromise = testClient.connect();
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Connection timeout')), 5000)
-          );
-
-          await Promise.race([connectionPromise, timeoutPromise]);
+          await testClient.connect();
           await testClient.ping();
           console.log('✅ Redis connection successful');
           await testClient.disconnect();
@@ -70,11 +53,11 @@ import { RedisController } from './redis.controller';
           console.error('❌ Redis connection failed:', error.message);
           console.log('📢 Falling back to in-memory store');
 
-          // Return memory store configuration (no Redis)
+          // Return memory store configuration
           return {
             ttl: 300,
             max: 1000,
-            // This will use in-memory caching instead of Redis
+            isGlobal: true,
           };
         }
       },
