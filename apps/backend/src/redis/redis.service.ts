@@ -78,20 +78,10 @@ export class RedisService {
     try {
       console.log('💾 Setting to cache, key:', key, 'TTL:', ttl);
       console.log('💾 Value to cache:', JSON.stringify(value));
-
       await this.cacheManager.set(key, value, ttl);
-
-      // Verify data was actually set
-      const verification = await this.cacheManager.get(key);
-      if (verification) {
-        console.log('✅ Cached successfully and verified, key:', key);
-        console.log('✅ Verified data:', JSON.stringify(verification));
-      } else {
-        console.log('❌ Cache set but verification failed, key:', key);
-      }
+      console.log('💾 Cache set successfully');
     } catch (error) {
       console.error('❌ Cache set error:', error);
-      throw error;
     }
   }
 
@@ -99,10 +89,7 @@ export class RedisService {
     try {
       console.log('🔍 Getting from cache, key:', key);
       const result = await this.cacheManager.get(key);
-      console.log('🔍 Cache result for', key, ':', result ? 'HIT' : 'MISS');
-      if (result) {
-        console.log('🔍 Cache data:', JSON.stringify(result));
-      }
+      console.log('🔍 Cache get result:', result ? 'HIT' : 'MISS');
       return result;
     } catch (error) {
       console.error('❌ Cache get error:', error);
@@ -110,13 +97,58 @@ export class RedisService {
     }
   }
 
-  async del(key: string): Promise<void> {
-    console.log('🗑️ Deleting from cache, key:', key);
-    await this.cacheManager.del(key);
-    console.log('🗑️ Cache deleted, key:', key);
+  async delete(key: string): Promise<void> {
+    try {
+      console.log('🗑️ Deleting from cache, key:', key);
+      await this.cacheManager.del(key);
+      console.log('🗑️ Cache delete successful');
+    } catch (error) {
+      console.error('❌ Cache delete error:', error);
+    }
   }
 
-  async clear(): Promise<void> {
-    console.warn('⚠️ Cache clear method called - implement specific key clearing if needed');
+  // Debug method to test Redis connection
+  async testRedisConnection(): Promise<any> {
+    try {
+      console.log('🧪 Testing Redis connection...');
+
+      // Set a test value
+      const testKey = 'redis:test:' + Date.now();
+      const testValue = { test: true, timestamp: new Date().toISOString() };
+
+      console.log('🧪 Setting test value, key:', testKey);
+      await this.cacheManager.set(testKey, testValue, 60); // 1 minute TTL
+
+      // Get the test value
+      console.log('🧪 Getting test value...');
+      const result = await this.cacheManager.get(testKey);
+
+      // Check if Redis store is being used
+      const store = (this.cacheManager as any).store;
+      const storeInfo = {
+        name: store?.constructor?.name || 'unknown',
+        isRedis: store?.constructor?.name?.includes('Redis') || false,
+        hasRedisClient: !!(store?.client || store?.redisClient),
+      };
+
+      console.log('🧪 Cache store info:', storeInfo);
+      console.log('🧪 Test result:', result);
+
+      return {
+        connectionTest: result ? 'SUCCESS' : 'FAILED',
+        testKey,
+        testValue,
+        retrievedValue: result,
+        storeInfo,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Redis connection test failed:', error);
+      return {
+        connectionTest: 'ERROR',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }

@@ -14,7 +14,7 @@ primary_region = "sin" # Singapore for better performance in Vietnam
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1  # Keep at least 1 machine running to avoid cold starts
 
   [http_service.concurrency]
     type = "connections"
@@ -22,14 +22,14 @@ primary_region = "sin" # Singapore for better performance in Vietnam
     soft_limit = 500
 
 [[http_service.checks]]
-  grace_period = "10s"
+  grace_period = "15s"  # Increase grace period for slower startup
   interval = "30s"
   method = "GET"
-  timeout = "5s"
-  path = "/api/health"
+  timeout = "10s"
+  path = "/api/health"  # Use correct health check endpoint
 
 # Machine configuration optimized for NestJS
-[machine]
-  memory = "1gb"
+[[vm]]
   cpu_kind = "shared"
   cpus = 1
+  memory_mb = 512
