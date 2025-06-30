@@ -66,4 +66,58 @@ export class RedisController {
       timestamp: new Date().toISOString()
     };
   }
+
+  @Get('debug/keys')
+  async getAllKeys() {
+    try {
+      // Try to access the Redis client directly
+      const cacheManager = (this.redisService as any).cacheManager;
+      const store = cacheManager?.store;
+
+      console.log('🔍 Checking Redis store type:', store?.constructor?.name);
+
+      // If using redis store, try to get the client
+      if (store?.client || store?.redisClient) {
+        const client = store.client || store.redisClient;
+        console.log('🔍 Found Redis client, getting all keys...');
+
+        const keys = await client.keys('*');
+        console.log('🔍 Redis keys found:', keys);
+
+        // Get values for each key
+        const keyValues = {};
+        for (const key of keys) {
+          try {
+            const value = await client.get(key);
+            keyValues[key] = value ? JSON.parse(value) : value;
+          } catch (e) {
+            keyValues[key] = `Error parsing: ${e.message}`;
+          }
+        }
+
+        return {
+          success: true,
+          totalKeys: keys.length,
+          keys: keys,
+          keyValues: keyValues,
+          storeType: store?.constructor?.name,
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Redis client not accessible or using in-memory store',
+          storeType: store?.constructor?.name || 'unknown',
+          timestamp: new Date().toISOString()
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error checking Redis keys:', error);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
 }
