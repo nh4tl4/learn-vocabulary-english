@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// Use production backend URL from Render or fallback to localhost for development
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vocabulary-backend-lm26.onrender.com/api';
+
+// Use Fly.io backend URL instead of Render
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://learn-vocabulary-backend.fly.dev/api';
 console.log('Environment Variables:');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
