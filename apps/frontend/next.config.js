@@ -6,10 +6,9 @@ const nextConfig = {
   // Optimize for production
   swcMinify: true,
 
-  // Enable experimental features for better performance
+  // Remove experimental optimizeCss as it's causing issues
   experimental: {
-    // Reduce bundle size
-    optimizeCss: true,
+    // Remove optimizeCss - this might be causing the critters error
   },
 
   // Environment variables that should be available on the client
@@ -29,19 +28,13 @@ const nextConfig = {
   // Power optimizations for serverless
   poweredByHeader: false,
 
-  // Webpack optimizations
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Optimize bundle analyzer in production
+  // Simplified webpack config
+  webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@': path.resolve(__dirname, './src'),
-      }
+      // Add any necessary webpack optimizations here
     }
-    return config
+    return config;
   },
-}
+};
 
-const path = require('path')
-
-module.exports = nextConfig
+module.exports = nextConfig;
