@@ -81,8 +81,8 @@ export class VocabularyService {
       nextReviewDate: uv.nextReviewDate,
     }));
 
-    // Cache user progress for 15 minutes
-    await this.redisService.setUserProgress(userId, result, 900);
+    // Cache user progress for 15 minutes - fix parameter order
+    await this.redisService.setUserProgress(userId, result, 'v1', 900);
     return result;
   }
 
@@ -174,6 +174,7 @@ export class VocabularyService {
     // Cache key for topic stats with longer TTL for Oregon latency
     const cacheKey = `topic:stats:page:${page}:limit:${limit}:level:${level || 'all'}`;
     const cached = await this.redisService.getTopicStats();
+    console.log(cached)
 
     if (cached && cached.page === page && cached.limit === limit && cached.level === level) {
       return cached;

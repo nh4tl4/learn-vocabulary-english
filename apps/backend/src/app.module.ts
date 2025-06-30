@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import {ConfigModule, ConfigService} from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
@@ -41,7 +41,14 @@ import { RedisModule } from './redis/redis.module';
         }
       },
     }),
-    RedisModule, // Add Redis module for caching
+    RedisModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        url: configService.get('REDIS_URL'),
+        pingInterval: 60000,
+      }),
+    }),
     AuthModule,
     UserModule,
     VocabularyModule,

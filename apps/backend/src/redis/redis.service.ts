@@ -1,154 +1,424 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRedis } from './redis.decorators';
+import { RedisClientType } from 'redis';
+
+interface RedisConnection extends RedisClientType {}
 
 @Injectable()
 export class RedisService {
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  private readonly logger = new Logger(RedisService.name);
 
-  // Topic stats caching
-  async getTopicStats(): Promise<any> {
-    console.log('🔍 Getting topic stats from cache...');
-    const result = await this.cacheManager.get('topic:stats');
-    console.log('🔍 Topic stats cache result:', result ? 'HIT' : 'MISS');
-    return result;
-  }
+  constructor(
+    @InjectRedis() private readonly redisClient: RedisConnection,
+  ) {}
 
-  async setTopicStats(data: any, ttl: number = 300): Promise<void> {
-    console.log('💾 Setting topic stats to cache, TTL:', ttl);
-    await this.cacheManager.set('topic:stats', data, ttl);
-    console.log('💾 Topic stats cached successfully');
-  }
-
-  // User selected topics caching
-  async getUserSelectedTopics(userId: number): Promise<any> {
-    const cacheKey = `user:${userId}:selected-topics`;
-    console.log('🔍 Getting user selected topics from cache, key:', cacheKey);
-    const result = await this.cacheManager.get(cacheKey);
-    console.log('🔍 User selected topics cache result:', result ? 'HIT' : 'MISS');
-    return result;
-  }
-
-  async setUserSelectedTopics(userId: number, topics: string[], ttl: number = 1800): Promise<void> {
-    const cacheKey = `user:${userId}:selected-topics`;
-    console.log('💾 Setting user selected topics to cache, key:', cacheKey, 'topics:', topics);
-    await this.cacheManager.set(cacheKey, topics, ttl);
-    console.log('💾 User selected topics cached successfully');
-  }
-
-  async clearUserSelectedTopics(userId: number): Promise<void> {
-    const cacheKey = `user:${userId}:selected-topics`;
-    console.log('🗑️ Clearing user selected topics cache, key:', cacheKey);
-    await this.cacheManager.del(cacheKey);
-    console.log('🗑️ User selected topics cache cleared');
-  }
-
-  // Vocabulary by topic caching
-  async getVocabularyByTopic(cacheKey: string): Promise<any> {
-    console.log('🔍 Getting vocabulary by topic from cache, key:', cacheKey);
-    const result = await this.cacheManager.get(cacheKey);
-    console.log('🔍 Vocabulary by topic cache result:', result ? 'HIT' : 'MISS');
-    return result;
-  }
-
-  async setVocabularyByTopic(cacheKey: string, data: any, ttl: number = 600): Promise<void> {
-    console.log('💾 Setting vocabulary by topic to cache, key:', cacheKey, 'TTL:', ttl);
-    await this.cacheManager.set(cacheKey, data, ttl);
-    console.log('💾 Vocabulary by topic cached successfully');
-  }
-
-  // User progress caching
-  async getUserProgress(userId: number): Promise<any> {
-    const cacheKey = `user:${userId}:progress`;
-    console.log('🔍 Getting user progress from cache, key:', cacheKey);
-    const result = await this.cacheManager.get(cacheKey);
-    console.log('🔍 User progress cache result:', result ? 'HIT' : 'MISS');
-    return result;
-  }
-
-  async setUserProgress(userId: number, progress: any, ttl: number = 900): Promise<void> {
-    const cacheKey = `user:${userId}:progress`;
-    console.log('💾 Setting user progress to cache, key:', cacheKey, 'TTL:', ttl);
-    await this.cacheManager.set(cacheKey, progress, ttl);
-    console.log('💾 User progress cached successfully');
-  }
-
-  // Generic cache methods
-  async set(key: string, value: any, ttl?: number): Promise<void> {
+  // Enhanced cache operation with better error handling
+  private async safeOperation<T>(
+    operation: () => Promise<T>,
+    operationType: string,
+    key?: string
+  ): Promise<T | null> {
     try {
-      console.log('💾 Setting to cache, key:', key, 'TTL:', ttl);
-      console.log('💾 Value to cache:', JSON.stringify(value));
-      await this.cacheManager.set(key, value, ttl);
-      console.log('💾 Cache set successfully');
+      return await operation();
     } catch (error) {
-      console.error('❌ Cache set error:', error);
-    }
-  }
-
-  async get(key: string): Promise<any> {
-    try {
-      console.log('🔍 Getting from cache, key:', key);
-      const result = await this.cacheManager.get(key);
-      console.log('🔍 Cache get result:', result ? 'HIT' : 'MISS');
-      return result;
-    } catch (error) {
-      console.error('❌ Cache get error:', error);
+      this.logger.error(`❌ ${operationType} failed for key: ${key}`, error.stack);
       return null;
     }
   }
 
-  async delete(key: string): Promise<void> {
+  // Topic stats caching using Redis hSet for structured data
+  async getTopicStats(): Promise<any> {
+    this.logger.log('🔍 Getting topic stats from Redis hash...');
+    const result = await this.safeOperation(
+      () => this.redisClient.hGet('topic:stats', 'data'),
+      'Get topic stats',
+      'topic:stats'
+    );
+
+    if (result) {
+      this.logger.log('🔍 Topic stats cache result: HIT');
+      try {
+        return JSON.parse(result);
+      } catch {
+        this.logger.error('❌ Failed to parse cached topic stats');
+        return null;
+      }
+    }
+
+    this.logger.log('🔍 Topic stats cache result: MISS');
+    return null;
+  }
+
+  async setTopicStats(data: any, ttl: number = 1200): Promise<boolean> {
+    this.logger.log(`💾 Setting topic stats to Redis hash, TTL: ${ttl}s`);
+    const success = await this.safeOperation(
+      async () => {
+        // Store the entire data as a single JSON string
+        const serializedData = JSON.stringify(data);
+        await this.redisClient.hSet('topic:stats', 'data', serializedData);
+        // Set expiration
+        await this.redisClient.expire('topic:stats', ttl);
+        return true;
+      },
+      'Set topic stats',
+      'topic:stats'
+    );
+
+    if (success) {
+      this.logger.log('💾 Topic stats cached successfully using hSet');
+      return true;
+    }
+    return false;
+  }
+
+  // User selected topics using Redis Sets for better performance
+  async getUserSelectedTopics(userId: number): Promise<string[]> {
+    const cacheKey = `user:${userId}:selected-topics`;
+    this.logger.log(`🔍 Getting user selected topics from Redis set, key: ${cacheKey}`);
+
+    const result = await this.safeOperation(
+      () => this.redisClient.sMembers(cacheKey),
+      'Get user selected topics',
+      cacheKey
+    );
+
+    if (result && result.length > 0) {
+      this.logger.log('🔍 User selected topics cache result: HIT');
+      return result;
+    }
+
+    this.logger.log('🔍 User selected topics cache result: MISS');
+    return [];
+  }
+
+  async setUserSelectedTopics(userId: number, topics: string[], ttl: number = 1800): Promise<boolean> {
+    const cacheKey = `user:${userId}:selected-topics`;
+    this.logger.log(`💾 Setting user selected topics to Redis set, key: ${cacheKey}, topics:`, topics);
+
+    const success = await this.safeOperation(
+      async () => {
+        // Clear existing set
+        await this.redisClient.del(cacheKey);
+
+        if (topics.length > 0) {
+          // Add topics to set
+          await this.redisClient.sAdd(cacheKey, topics);
+        }
+
+        // Set expiration
+        await this.redisClient.expire(cacheKey, ttl);
+        return true;
+      },
+      'Set user selected topics',
+      cacheKey
+    );
+
+    if (success) {
+      this.logger.log('💾 User selected topics cached successfully using sAdd');
+      return true;
+    }
+    return false;
+  }
+
+  async clearUserSelectedTopics(userId: number): Promise<boolean> {
+    const cacheKey = `user:${userId}:selected-topics`;
+    this.logger.log(`🗑️ Clearing user selected topics set, key: ${cacheKey}`);
+
+    const success = await this.safeOperation(
+      () => this.redisClient.del(cacheKey),
+      'Clear user selected topics',
+      cacheKey
+    );
+
+    if (success) {
+      this.logger.log('🗑️ User selected topics cache cleared');
+      return true;
+    }
+    return false;
+  }
+
+  // Enhanced vocabulary caching with Redis hSet for complex data
+  async getVocabularyByTopic(topic: string, page: number = 1, level?: string): Promise<any> {
+    const cacheKey = `vocab:topic:${topic}:page:${page}${level ? `:level:${level}` : ''}`;
+    this.logger.log(`🔍 Getting vocabulary by topic from Redis hash, key: ${cacheKey}`);
+
+    const result = await this.safeOperation(
+      () => this.redisClient.hGetAll(cacheKey),
+      'Get vocabulary by topic',
+      cacheKey
+    );
+
+    if (result && Object.keys(result).length > 0) {
+      this.logger.log('🔍 Vocabulary by topic cache result: HIT');
+      // Parse vocabulary data
+      const parsedResult = {};
+      for (const [key, value] of Object.entries(result)) {
+        try {
+          parsedResult[key] = JSON.parse(value as string);
+        } catch {
+          parsedResult[key] = value;
+        }
+      }
+      return parsedResult;
+    }
+
+    this.logger.log('🔍 Vocabulary by topic cache result: MISS');
+    return null;
+  }
+
+  async setVocabularyByTopic(topic: string, data: any, page: number = 1, level?: string, ttl: number = 600): Promise<boolean> {
+    const cacheKey = `vocab:topic:${topic}:page:${page}${level ? `:level:${level}` : ''}`;
+    this.logger.log(`💾 Setting vocabulary by topic to Redis hash, key: ${cacheKey}, TTL: ${ttl}s`);
+
+    const success = await this.safeOperation(
+      async () => {
+        // Convert data to hash format
+        const hashData = {};
+        for (const [key, value] of Object.entries(data)) {
+          hashData[key] = typeof value === 'object' ? JSON.stringify(value) : value;
+        }
+
+        await this.redisClient.hSet(cacheKey, hashData);
+        await this.redisClient.expire(cacheKey, ttl);
+        return true;
+      },
+      'Set vocabulary by topic',
+      cacheKey
+    );
+
+    if (success) {
+      this.logger.log('💾 Vocabulary by topic cached successfully using hSet');
+      return true;
+    }
+    return false;
+  }
+
+  // User progress using Redis hSet for structured progress data
+  async getUserProgress(userId: number, version: string = 'v1'): Promise<any> {
+    const cacheKey = `user:${userId}:progress:${version}`;
+    this.logger.log(`🔍 Getting user progress from Redis hash, key: ${cacheKey}`);
+
+    const result = await this.safeOperation(
+      () => this.redisClient.hGetAll(cacheKey),
+      'Get user progress',
+      cacheKey
+    );
+
+    if (result && Object.keys(result).length > 0) {
+      this.logger.log('🔍 User progress cache result: HIT');
+      // Parse progress data
+      const parsedResult = {};
+      for (const [key, value] of Object.entries(result)) {
+        try {
+          parsedResult[key] = JSON.parse(value as string);
+        } catch {
+          parsedResult[key] = value;
+        }
+      }
+      return parsedResult;
+    }
+
+    this.logger.log('🔍 User progress cache result: MISS');
+    return null;
+  }
+
+  async setUserProgress(userId: number, progress: any, version: string = 'v1', ttl: number = 900): Promise<boolean> {
+    const cacheKey = `user:${userId}:progress:${version}`;
+    this.logger.log(`💾 Setting user progress to Redis hash, key: ${cacheKey}, TTL: ${ttl}s`);
+
+    const success = await this.safeOperation(
+      async () => {
+        // Convert progress to hash format
+        const hashData = {};
+        for (const [key, value] of Object.entries(progress)) {
+          hashData[key] = typeof value === 'object' ? JSON.stringify(value) : value;
+        }
+
+        await this.redisClient.hSet(cacheKey, hashData);
+        await this.redisClient.expire(cacheKey, ttl);
+        return true;
+      },
+      'Set user progress',
+      cacheKey
+    );
+
+    if (success) {
+      this.logger.log('💾 User progress cached successfully using hSet');
+      return true;
+    }
+    return false;
+  }
+
+  // Enhanced generic cache methods using Redis native commands
+  async set(key: string, value: any, ttl: number = 300): Promise<boolean> {
+    this.logger.log(`💾 Setting to Redis, key: ${key}, TTL: ${ttl}s`);
+    this.logger.debug(`💾 Value to cache:`, JSON.stringify(value).substring(0, 200) + '...');
+
+    const success = await this.safeOperation(
+      async () => {
+        const serializedValue = typeof value === 'object' ? JSON.stringify(value) : value;
+        await this.redisClient.setEx(key, ttl, serializedValue);
+        return true;
+      },
+      'Set cache',
+      key
+    );
+
+    return success !== null;
+  }
+
+  async get(key: string): Promise<any> {
+    this.logger.log(`🔍 Getting from Redis, key: ${key}`);
+
+    const result = await this.safeOperation(
+      () => this.redisClient.get(key),
+      'Get cache',
+      key
+    );
+
+    if (result) {
+      this.logger.log('🔍 Cache get result: HIT');
+      try {
+        return JSON.parse(result);
+      } catch {
+        return result;
+      }
+    }
+
+    this.logger.log('🔍 Cache get result: MISS');
+    return null;
+  }
+
+  async delete(key: string): Promise<boolean> {
+    this.logger.log(`🗑️ Deleting from Redis, key: ${key}`);
+
+    const success = await this.safeOperation(
+      async () => {
+        const result = await this.redisClient.del(key);
+        return result > 0;
+      },
+      'Delete cache',
+      key
+    );
+
+    return success !== null && success;
+  }
+
+  // Pattern-based operations using Redis SCAN
+  async deletePattern(pattern: string): Promise<boolean> {
     try {
-      console.log('🗑️ Deleting from cache, key:', key);
-      await this.cacheManager.del(key);
-      console.log('🗑️ Cache delete successful');
+      this.logger.log(`🗑️ Deleting Redis keys by pattern: ${pattern}`);
+
+      const keys = await this.redisClient.keys(pattern);
+      if (keys.length > 0) {
+        await this.redisClient.del(keys);
+        this.logger.log(`🗑️ Deleted ${keys.length} keys matching pattern: ${pattern}`);
+        return true;
+      }
+
+      this.logger.log(`🗑️ No keys found matching pattern: ${pattern}`);
+      return true;
     } catch (error) {
-      console.error('❌ Cache delete error:', error);
+      this.logger.error(`❌ Pattern deletion failed for: ${pattern}`, error.stack);
+      return false;
     }
   }
 
-  // Debug method to test Redis connection
+  // Enhanced Redis connection test using native Redis commands
   async testRedisConnection(): Promise<any> {
     try {
-      console.log('🧪 Testing Redis connection...');
+      this.logger.log('🧪 Testing Redis connection...');
 
-      // Set a test value
-      const testKey = 'redis:test:' + Date.now();
-      const testValue = { test: true, timestamp: new Date().toISOString() };
-
-      console.log('🧪 Setting test value, key:', testKey);
-      await this.cacheManager.set(testKey, testValue, 60); // 1 minute TTL
-
-      // Get the test value
-      console.log('🧪 Getting test value...');
-      const result = await this.cacheManager.get(testKey);
-
-      // Check if Redis store is being used
-      const store = (this.cacheManager as any).store;
-      const storeInfo = {
-        name: store?.constructor?.name || 'unknown',
-        isRedis: store?.constructor?.name?.includes('Redis') || false,
-        hasRedisClient: !!(store?.client || store?.redisClient),
+      const testKey = `redis:test:${Date.now()}`;
+      const testValue = {
+        test: true,
+        timestamp: new Date().toISOString(),
+        random: Math.random()
       };
 
-      console.log('🧪 Cache store info:', storeInfo);
-      console.log('🧪 Test result:', result);
+      this.logger.log(`🧪 Setting test value using hSet, key: ${testKey}`);
+      await this.redisClient.hSet(testKey, 'data', JSON.stringify(testValue));
+      await this.redisClient.expire(testKey, 60);
+
+      this.logger.log('🧪 Getting test value using hGet...');
+      const result = await this.redisClient.hGet(testKey, 'data');
+      const parsedResult = result ? JSON.parse(result) : null;
+
+      // Redis client info
+      const clientInfo = {
+        isConnected: this.redisClient.isOpen,
+      };
+
+      this.logger.log('🧪 Redis client info:', clientInfo);
+      this.logger.log('🧪 Test result:', parsedResult ? 'SUCCESS' : 'FAILED');
+
+      // Clean up test key
+      await this.redisClient.del(testKey);
 
       return {
-        connectionTest: result ? 'SUCCESS' : 'FAILED',
+        connectionTest: parsedResult && JSON.stringify(parsedResult) === JSON.stringify(testValue) ? 'SUCCESS' : 'FAILED',
         testKey,
         testValue,
-        retrievedValue: result,
-        storeInfo,
+        retrievedValue: parsedResult,
+        clientInfo,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('❌ Redis connection test failed:', error);
+      this.logger.error('❌ Redis connection test failed:', error.stack);
       return {
         connectionTest: 'ERROR',
         error: error.message,
         timestamp: new Date().toISOString()
       };
     }
+  }
+
+  // Redis-specific operations
+  async ping(): Promise<string> {
+    return await this.redisClient.ping();
+  }
+
+  async info(): Promise<string> {
+    return await this.redisClient.info();
+  }
+
+  async flushdb(): Promise<string> {
+    this.logger.warn('🗑️ Flushing current Redis database');
+    return await this.redisClient.flushDb();
+  }
+
+  // Cache statistics using Redis INFO command
+  async getCacheStats(): Promise<any> {
+    try {
+      const info = await this.redisClient.info('memory');
+      const keyspace = await this.redisClient.info('keyspace');
+
+      return {
+        storeType: 'redis-node',
+        isRedis: true,
+        hasClient: true,
+        isConnected: this.redisClient.isOpen,
+        memory: this.parseRedisInfo(info),
+        keyspace: this.parseRedisInfo(keyspace),
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      this.logger.error('❌ Failed to get Redis stats:', error.stack);
+      return {
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  private parseRedisInfo(info: string): any {
+    const result = {};
+    info.split('\n').forEach(line => {
+      if (line.includes(':')) {
+        const [key, value] = line.split(':');
+        result[key.trim()] = value.trim();
+      }
+    });
+    return result;
   }
 }
