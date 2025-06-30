@@ -8,10 +8,12 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitialized: boolean;
+  lastTokenCheck: number; // Add caching timestamp
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
+  quickAuth: () => void; // Add quick auth check
   getToken: () => string | null;
   setToken: (token: string) => void;
 }
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       isInitialized: false,
+      lastTokenCheck: 0,
 
       // Get token from localStorage
       getToken: () => {
@@ -81,12 +84,47 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false, isInitialized: true });
       },
 
-      loadUser: async () => {
-        if (get().isInitialized) return;
+      // Quick authentication check without API call
+      quickAuth: () => {
+        const token = get().getToken();
+        const state = get();
 
+        // If we have a recent token check (within 5 minutes), trust it
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+
+        if (token && state.user && (now - state.lastTokenCheck < fiveMinutes)) {
+          set({
+            isAuthenticated: true,
+            isInitialized: true,
+            lastTokenCheck: now
+          });
+          return;
+        }
+
+        if (!token) {
+          set({
+            isAuthenticated: false,
+            user: null,
+            isInitialized: true,
+            lastTokenCheck: now
+          });
+          return;
+        }
+
+        // Token exists but needs verification - do it in background
+        get().loadUser();
+      },
+
+      loadUser: async () => {
         const token = get().getToken();
         if (!token) {
-          set({ isAuthenticated: false, user: null, isInitialized: true });
+          set({
+            isAuthenticated: false,
+            user: null,
+            isInitialized: true,
+            lastTokenCheck: Date.now()
+          });
           return;
         }
 
@@ -97,7 +135,8 @@ export const useAuthStore = create<AuthState>()(
             user: response.data,
             isAuthenticated: true,
             isLoading: false,
-            isInitialized: true
+            isInitialized: true,
+            lastTokenCheck: Date.now()
           });
         } catch (error) {
           // Token không hợp lệ hoặc đã hết hạn
@@ -108,25 +147,20 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            isInitialized: true
+            isInitialized: true,
+            lastTokenCheck: Date.now()
           });
         }
       },
     }),
     {
       name: 'auth-storage',
-      // Persist user data but not token (token is in localStorage)
+      // Persist user data and cache timestamp
       partialize: (state) => ({
         user: state.user,
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
+        lastTokenCheck: state.lastTokenCheck
       }),
-      // Reset initialization on rehydration
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.isInitialized = false;
-          state.isLoading = false;
-        }
-      },
     }
   )
 );

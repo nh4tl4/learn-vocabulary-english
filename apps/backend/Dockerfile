@@ -1,36 +1,59 @@
-# Simple Dockerfile for NestJS Backend
-FROM node:18-alpine
-
+# Production-ready multi-stage Dockerfile for NestJS backend
+FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install dependencies
-COPY apps/backend/package*.json ./
-RUN npm install
+# 1. --- Dependencies Stage ---
+FROM base AS deps
 
-# Copy source code
-COPY apps/backend/ ./
+# Copy root and backend package files
+COPY package.json yarn.lock ./
+COPY apps/backend/package.json ./apps/backend/
 
-# Build the application
-RUN npm run build
+# Install ALL dependencies (including devDependencies for the build)
+RUN yarn install --frozen-lockfile
 
-# Expose port (Render uses PORT env variable, usually 10000)
-EXPOSE 10000
+# 2. --- Builder Stage ---
+FROM base AS builder
 
-# Set environment variables
+# Copy all dependencies
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy the entire source code
+COPY . .
+
+# Build the NestJS application
+RUN yarn workspace @vocab/backend build
+
+# 3. --- Production/Runner Stage ---
+FROM base AS runner
+
 ENV NODE_ENV=production
 
-# Create a startup script that runs migrations then starts the app
-RUN echo '#!/bin/sh' > start.sh && \
-    echo 'set -e' >> start.sh && \
-    echo 'echo "=== Starting Vocabulary Backend ==="' >> start.sh && \
-    echo 'echo "Environment: $NODE_ENV"' >> start.sh && \
-    echo 'echo "Database Host: $DB_HOST"' >> start.sh && \
-    echo 'echo "=== Running Database Migrations ==="' >> start.sh && \
-    echo 'npx typeorm-ts-node-commonjs -d data-source.ts migration:run' >> start.sh && \
-    echo 'echo "=== Migrations Complete ==="' >> start.sh && \
-    echo 'echo "=== Starting NestJS Application ==="' >> start.sh && \
-    echo 'npm run start:prod' >> start.sh && \
-    chmod +x start.sh
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
 
-# Start the application with migrations
-CMD ["./start.sh"]
+# Copy only production dependencies from the deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json ./
+
+# Copy backend package.json for migrations and scripts
+COPY apps/backend/package.json ./apps/backend/
+
+# Copy the built application from the builder stage
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+
+# Copy source files needed for migrations (data-source.ts and migrations)
+COPY --from=builder /app/apps/backend/src/data-source.ts ./apps/backend/src/
+COPY --from=builder /app/apps/backend/src/database ./apps/backend/src/database
+
+USER nestjs
+
+# Set working directory to the app's root
+WORKDIR /app
+
+EXPOSE 3001
+ENV PORT 3001
+
+# Start the application
+CMD ["node", "apps/backend/dist/main.js"]

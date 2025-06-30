@@ -21,10 +21,15 @@ interface RegisterForm {
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const router = useRouter();
-  const { login, register, isLoading, isAuthenticated, isInitialized } = useAuthStore();
+  const { login, register, isLoading, isAuthenticated, isInitialized, quickAuth } = useAuthStore();
 
   const loginForm = useForm<LoginForm>();
   const registerForm = useForm<RegisterForm>();
+
+  // Fast authentication check on mount
+  useEffect(() => {
+    quickAuth(); // Use quick auth instead of loadUser
+  }, [quickAuth]);
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
@@ -33,11 +38,14 @@ export default function AuthPage() {
     }
   }, [isAuthenticated, isInitialized, router]);
 
-  // Show loading while checking authentication
+  // Show minimal loading while checking authentication
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 dark:border-blue-400"></div>
+        <div className="animate-pulse">
+          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
       </div>
     );
   }

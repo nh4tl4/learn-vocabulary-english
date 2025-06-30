@@ -4,28 +4,24 @@ import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { loadUser, isLoading, isInitialized } = useAuthStore();
+  const { quickAuth, isLoading, isInitialized } = useAuthStore();
 
   useEffect(() => {
-    // Tự động kiểm tra và load user khi app khởi động
-    const initializeAuth = async () => {
-      if (!isInitialized && typeof loadUser === "function") {
-        try {
-          await loadUser();
-        } catch (error) {
-          console.error("Error initializing auth:", error);
-        }
-      }
-    };
+    // Sử dụng quickAuth để khởi tạo nhanh hơn
+    if (!isInitialized) {
+      quickAuth();
+    }
+  }, [quickAuth, isInitialized]);
 
-    initializeAuth();
-  }, [isInitialized]); // Remove loadUser from dependency array
-
-  // Hiển thị loading khi đang khôi phục authentication
-  if (!isInitialized && isLoading) {
+  // Hiển thị skeleton loading thay vì spinner
+  if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 dark:border-blue-400"></div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-12 w-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
       </div>
     );
   }

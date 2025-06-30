@@ -1,0 +1,35 @@
+# Fly.io configuration for Learn Vocabulary Backend
+app = "learn-vocabulary-backend"
+primary_region = "sin" # Singapore for better performance in Vietnam
+
+[build]
+  dockerfile = "./apps/backend/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 500
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/api/health"
+
+# Machine configuration optimized for NestJS
+[machine]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
