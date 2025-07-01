@@ -118,7 +118,7 @@ export default function LearnNewContent() {
         responseTime: 5000
       });
 
-      toast.success('Đã lưu tiến độ học!');
+      // toast.success('Đã lưu tiến độ học!');
       handleNext();
     } catch (error) {
       console.error('Error processing study session:', error);

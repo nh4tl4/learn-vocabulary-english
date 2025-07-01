@@ -2,6 +2,7 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  level: string; // Add level field: 'beginner' | 'intermediate' | 'advanced'
   createdAt: string;
 }
 

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThan, Between } from 'typeorm';
+import { Repository, LessThan, Between } from 'typeorm';
 import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
 import { User } from '../database/entities/user.entity';
 import { Vocabulary } from '../database/entities/vocabulary.entity';
-import { StudySessionDto, ReviewFilterDto } from './dto/learning.dto';
+import { StudySessionDto } from './dto/learning.dto';
 import { VocabularyCacheService } from './vocabulary-cache.service';
 
 @Injectable()
@@ -59,6 +59,7 @@ export class LearningService {
         });
         level = user?.level || 'beginner';
       }
+      console.log(level)
 
       // Get learned word IDs efficiently
       const learnedIds = await this.userVocabularyRepository
@@ -473,33 +474,95 @@ export class LearningService {
     return now;
   }
 
-  // Get new words for learning by topic
+  // Get new words for learning by topic - OPTIMIZED VERSION
   async getNewWordsForLearningByTopic(userId: number, topic: string, limit: number = 10, level?: string) {
     try {
-      const learnedWordIds = await this.userVocabularyRepository
+      // Get user's level if not provided, but prioritize the level parameter from FE
+      let targetLevel = level; // Use level from FE if provided
+      if (!targetLevel) {
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
+          select: ['level'],
+          cache: 300000 // Cache for 5 minutes
+        });
+        targetLevel = user?.level || 'beginner';
+      }
+
+      console.log(`🔍 Getting words for topic: ${topic}, level: ${targetLevel}, limit: ${limit}, userId: ${userId}`);
+
+      // Get learned word IDs efficiently with cache
+      const learnedIds = await this.userVocabularyRepository
         .createQueryBuilder('uv')
         .select('uv.vocabularyId')
         .where('uv.userId = :userId', { userId })
-        .getRawMany();
+        .cache(60000) // Cache for 1 minute
+        .getRawMany()
+        .then(results => results.map(item => item.uv_vocabularyId));
 
-      const learnedIds = learnedWordIds.map(item => item.uv_vocabularyId);
+      console.log(`📖 User has learned ${learnedIds.length} words`);
 
+      // Try using cache service first for topic-level combination
+      const allWords = await this.vocabularyCacheService.getVocabularyByTopic(topic, targetLevel, limit * 3);
+
+      if (allWords.length > 0) {
+        console.log(`📊 Cache hit: Found ${allWords.length} words from cache`);
+
+        // Filter out already learned words
+        const unlearnedWords = allWords.filter(word => !learnedIds.includes(word.id));
+
+        console.log(`📊 After filtering: ${unlearnedWords.length} unlearned words`);
+
+        return unlearnedWords.slice(0, limit);
+      }
+
+      // Fallback to direct database query with optimized approach
+      console.log(`⚠️ Cache miss, using optimized database query`);
+
+      // Use EXISTS clause for better performance instead of NOT IN
       let queryBuilder = this.vocabularyRepository
         .createQueryBuilder('v')
         .where('v.topic = :topic', { topic })
+        .andWhere('v.level = :level', { level: targetLevel });
+
+      // Use EXISTS instead of NOT IN for better performance
+      if (learnedIds.length > 0) {
+        queryBuilder = queryBuilder.andWhere(
+          'NOT EXISTS (SELECT 1 FROM user_vocabulary uv WHERE uv.vocabularyId = v.id AND uv.userId = :userId)',
+          { userId }
+        );
+      }
+
+      queryBuilder = queryBuilder
+        .orderBy('v.id', 'ASC')
         .take(limit);
 
-      if (learnedIds.length > 0) {
-        queryBuilder = queryBuilder.andWhere('v.id NOT IN (:...learnedIds)', { learnedIds });
+      // Log the final query for debugging
+      const query = queryBuilder.getQuery();
+      const parameters = queryBuilder.getParameters();
+      console.log(`🔍 Final query:`, query);
+      console.log(`🔍 Parameters:`, parameters);
+
+      const result = await queryBuilder.getMany();
+      console.log(`📊 Query returned ${result.length} words`);
+
+      // If no results, let's check what's available
+      if (result.length === 0) {
+        // Debug: Check if there are any words for this topic and level
+        const totalWordsForTopicLevel = await this.vocabularyRepository.count({
+          where: { topic, level: targetLevel }
+        });
+        console.log(`🔍 Debug: Total words for topic '${topic}' and level '${targetLevel}': ${totalWordsForTopicLevel}`);
+
+        // Debug: Check if there are any words for this topic (any level)
+        const totalWordsForTopic = await this.vocabularyRepository.count({
+          where: { topic }
+        });
+        console.log(`🔍 Debug: Total words for topic '${topic}' (any level): ${totalWordsForTopic}`);
       }
 
-      if (level) {
-        queryBuilder = queryBuilder.andWhere('v.level = :level', { level });
-      }
-
-      return await queryBuilder.orderBy('v.id', 'ASC').getMany();
+      return result;
     } catch (error) {
-      console.error('Error getting new words for learning by topic:', error);
+      console.error('❌ Error getting new words for learning by topic:', error);
       throw error;
     }
   }

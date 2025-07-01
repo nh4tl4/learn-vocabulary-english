@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { vocabularyAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useLearningSettingsStore } from '@/store/learningSettingsStore';
+import { useAuthStore } from '@/store/authStore'; // Add auth store import
 import LearningSettingsModal from './LearningSettingsModal';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { getTopicDisplayBilingual } from '@/lib/topicUtils';
@@ -38,6 +39,7 @@ export default function TopicLearning() {
 
   const router = useRouter();
   const { getTopicSettings } = useLearningSettingsStore();
+  const { user } = useAuthStore(); // Add auth store to get user level
 
   useEffect(() => {
     loadTopicsData();
@@ -150,20 +152,21 @@ export default function TopicLearning() {
 
   const startTopicLearning = (topic: string, mode: 'learn' | 'review' | 'test') => {
     const settings = getTopicSettings(topic);
+    const userLevel = user?.level || 'beginner'; // Get user level with fallback
     let limit: number;
 
     switch (mode) {
       case 'learn':
         limit = settings.newWordsPerSession;
-        router.push(`/learn/new?topic=${topic}&limit=${limit}`);
+        router.push(`/learn/new?topic=${topic}&limit=${limit}&level=${userLevel}`);
         break;
       case 'review':
         limit = settings.reviewWordsPerSession;
-        router.push(`/learn/review?topic=${topic}&limit=${limit}`);
+        router.push(`/learn/review?topic=${topic}&limit=${limit}&level=${userLevel}`);
         break;
       case 'test':
         limit = settings.testWordsPerSession;
-        router.push(`/learn/test?topic=${topic}&limit=${limit}`);
+        router.push(`/learn/test?topic=${topic}&limit=${limit}&level=${userLevel}`);
         break;
     }
   };

@@ -19,6 +19,9 @@ export class Vocabulary {
   @Column({ type: 'text', nullable: true })
   example: string;
 
+  @Column({ type: 'text', nullable: true })
+  exampleVi: string;
+
   @Column({ nullable: true })
   partOfSpeech: string;
 

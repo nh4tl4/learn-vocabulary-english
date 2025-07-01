@@ -147,9 +147,10 @@ export class UserService {
   async getSelectedTopics(userId: number) {
     // Try cache first
     const cached = await this.redisService.getUserSelectedTopics(userId);
-    if (cached) {
+    if (cached && cached.length > 0) {
       return { topics: cached };
     }
+
 
     const selectedTopics = await this.userSelectedTopicRepository.find({
       where: { userId },
