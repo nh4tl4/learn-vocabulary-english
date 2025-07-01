@@ -215,7 +215,7 @@ export default function LearningDashboard() {
         <StatCard
           title="Từ Đã Thành Thạo"
           value={masteredWords.toString()}
-          subtitle={`${Math.round((masteredWords / (masteredWords + wordsToReview + difficultWords)) * 100)}% đã học`}
+          subtitle={`${Math.round((masteredWords / (masteredWords + wordsToReview + difficultWords)) * 100) || 0 }% đã học`}
           icon="⭐"
         />
 

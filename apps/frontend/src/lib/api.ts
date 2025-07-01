@@ -108,6 +108,9 @@ export const vocabularyAPI = {
   getDashboard: () =>
     apiClient.get('/vocabulary/dashboard/stats'),
 
+  getLearningDashboard: () =>
+    apiClient.get('/vocabulary/dashboard/stats'),
+
   getNewWords: (limit = 10, level?: string) => {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (level) params.append('level', level);
