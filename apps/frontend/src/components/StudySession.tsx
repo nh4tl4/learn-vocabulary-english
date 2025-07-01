@@ -452,9 +452,12 @@ export default function StudySession(topic: string) {
             </MobileButton>
             <MobileButton
               variant="secondary"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => {
+                // Refresh dashboard data before navigating
+                window.location.href = '/dashboard';
+              }}
             >
-              Về Trang Chủ
+              Về Trang Chủ (Cập nhật tiến trình)
             </MobileButton>
             <MobileButton
               variant="primary"

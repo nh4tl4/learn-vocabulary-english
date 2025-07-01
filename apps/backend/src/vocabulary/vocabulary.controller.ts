@@ -49,6 +49,21 @@ export class VocabularyController {
     return this.learningService.getWordsForReview(req.user.userId, limit, level);
   }
 
+  @Get('learn/difficult')
+  async getDifficultWords(@Request() req, @Query('limit') limit: number = 20, @Query('level') level?: string) {
+    return this.learningService.getDifficultWords(req.user.userId, limit, level);
+  }
+
+  @Get('today/learned')
+  async getTodayLearnedWords(@Request() req) {
+    return this.learningService.getTodayLearnedWords(req.user.userId);
+  }
+
+  @Get('today/reviewed')
+  async getTodayReviewedWords(@Request() req) {
+    return this.learningService.getTodayReviewedWords(req.user.userId);
+  }
+
   // New Review by Period endpoints
   @Get('review/stats')
   async getReviewStats(@Request() req) {
@@ -63,6 +78,12 @@ export class VocabularyController {
     @Query('level') level?: string
   ) {
     return this.learningService.getWordsForReviewByPeriod(req.user.userId, period, limit, level);
+  }
+
+  @Post('review/result')
+  async recordReviewResult(@Request() req, @Body() body: { wordId: number; isCorrect: boolean; difficulty?: number }) {
+    const { wordId, isCorrect, difficulty } = body;
+    return this.learningService.recordReviewResult(req.user.userId, wordId, isCorrect, difficulty);
   }
 
   @Get('topics/:topic/review/by-period')

@@ -214,6 +214,14 @@ export const vocabularyAPI = {
     if (level) params.append('level', level);
     return apiClient.get(`/vocabulary/search/topic?${params}`);
   },
+
+  // Get today's learned and reviewed words
+  getTodayLearnedWords: () =>
+    apiClient.get('/vocabulary/today/learned'),
+
+  getTodayReviewedWords: () =>
+    apiClient.get('/vocabulary/today/reviewed'),
+
 };
 
 export const aiAPI = {

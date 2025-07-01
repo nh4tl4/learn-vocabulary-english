@@ -26,33 +26,43 @@ export class UserService {
   }
 
   async getUserStats(userId: number) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    // Use Promise.all to run all queries in parallel for better performance
+    const [
+      user,
+      totalWords,
+      masteredWords,
+      reviewWords,
+      difficultWords,
+      vocabularyStats
+    ] = await Promise.all([
+      this.userRepository.findOne({ where: { id: userId } }),
 
-    // Get vocabulary statistics
-    const totalWords = await this.userVocabularyRepository.count({
-      where: { userId },
-    });
+      this.userVocabularyRepository.count({
+        where: { userId },
+      }),
 
-    const masteredWords = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.MASTERED },
-    });
+      this.userVocabularyRepository.count({
+        where: { userId, status: LearningStatus.MASTERED },
+      }),
 
-    const reviewWords = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.REVIEWING },
-    });
+      this.userVocabularyRepository.count({
+        where: { userId, status: LearningStatus.REVIEWING },
+      }),
 
-    const difficultWords = await this.userVocabularyRepository.count({
-      where: { userId, status: LearningStatus.DIFFICULT },
-    });
+      this.userVocabularyRepository.count({
+        where: { userId, status: LearningStatus.DIFFICULT },
+      }),
+
+      // Calculate accuracy in a single query
+      this.userVocabularyRepository
+        .createQueryBuilder('uv')
+        .select('SUM(uv.correctCount)', 'totalCorrect')
+        .addSelect('SUM(uv.incorrectCount)', 'totalIncorrect')
+        .where('uv.userId = :userId', { userId })
+        .getRawOne()
+    ]);
 
     // Calculate accuracy
-    const vocabularyStats = await this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .select('SUM(uv.correctCount)', 'totalCorrect')
-      .addSelect('SUM(uv.incorrectCount)', 'totalIncorrect')
-      .where('uv.userId = :userId', { userId })
-      .getRawOne();
-
     const totalAttempts = (vocabularyStats.totalCorrect || 0) + (vocabularyStats.totalIncorrect || 0);
     const accuracy = totalAttempts > 0 ? Math.round((vocabularyStats.totalCorrect / totalAttempts) * 100) : 0;
 

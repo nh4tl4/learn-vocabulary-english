@@ -118,47 +118,47 @@ export class VocabularyService {
     return result;
   }
 
-  // Get all available topics with pagination
+  // Get all available topics with pagination - OPTIMIZED with Promise.all
   async getTopics(page: number = 1, limit: number = 20, level?: string) {
     const offset = (page - 1) * limit;
 
-    let query = this.vocabularyRepository
+    // Build queries for parallel execution
+    let topicsQuery = this.vocabularyRepository
       .createQueryBuilder('vocabulary')
       .select('vocabulary.topic', 'topic')
-      .addSelect('vocabulary.topicVi', 'topicVi')  // Thêm topicVi vào response
+      .addSelect('vocabulary.topicVi', 'topicVi')
       .addSelect('COUNT(*)', 'count')
       .where('vocabulary.topic IS NOT NULL');
 
-    // Add level filter if provided
-    if (level) {
-      query = query.andWhere('vocabulary.level = :level', { level });
-    }
-
-    const topics = await query
-      .groupBy('vocabulary.topic')
-      .addGroupBy('vocabulary.topicVi')  // Group by topicVi cũng
-      .orderBy('COUNT(*)', 'DESC')
-      .addOrderBy('vocabulary.topic', 'ASC')
-      .offset(offset)
-      .limit(limit)
-      .getRawMany();
-
-    // Get total count of unique topics with level filter
     let totalQuery = this.vocabularyRepository
       .createQueryBuilder('vocabulary')
       .select('COUNT(DISTINCT vocabulary.topic)', 'total')
       .where('vocabulary.topic IS NOT NULL');
 
+    // Add level filter if provided
     if (level) {
+      topicsQuery = topicsQuery.andWhere('vocabulary.level = :level', { level });
       totalQuery = totalQuery.andWhere('vocabulary.level = :level', { level });
     }
 
-    const totalTopics = await totalQuery.getRawOne();
+    // Execute both queries in parallel
+    const [topics, totalTopics] = await Promise.all([
+      topicsQuery
+        .groupBy('vocabulary.topic')
+        .addGroupBy('vocabulary.topicVi')
+        .orderBy('COUNT(*)', 'DESC')
+        .addOrderBy('vocabulary.topic', 'ASC')
+        .offset(offset)
+        .limit(limit)
+        .getRawMany(),
+
+      totalQuery.getRawOne()
+    ]);
 
     return {
       topics: topics.map(t => ({
         topic: t.topic,
-        topicVi: t.topicVi,  // Thêm topicVi vào response
+        topicVi: t.topicVi,
         count: parseInt(t.count)
       })),
       total: parseInt(totalTopics.total),

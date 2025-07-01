@@ -65,11 +65,14 @@ export default function ProgressPage() {
       const progressData = progressResponse.data;
       const dashboardData = dashboardResponse.data;
 
+      console.log('Dashboard data:', dashboardData); // Debug log
+
       setStats({
-        totalLearned: dashboardData.stats?.totalLearned || 0,
-        totalReviewed: dashboardData.stats?.totalReviewed || 0,
-        newWordsToday: dashboardData.stats?.newWordsToday || 0,
-        reviewWordsToday: dashboardData.stats?.reviewWordsToday || 0,
+        // Fix: Get data from correct paths
+        totalLearned: dashboardData.totalLearned || dashboardData.user?.totalWordsLearned || 0,
+        totalReviewed: dashboardData.todayProgress?.wordsReviewed || 0,
+        newWordsToday: dashboardData.todayProgress?.wordsLearned || 0,
+        reviewWordsToday: dashboardData.todayProgress?.wordsReviewed || 0,
         currentStreak: dashboardData.user?.currentStreak || 0,
         longestStreak: dashboardData.user?.longestStreak || 0,
         dailyGoal: dashboardData.user?.dailyGoal || 10,
@@ -78,9 +81,9 @@ export default function ProgressPage() {
         topicProgress: progressData.topicProgress || [],
         recentActivity: dashboardData.recentActivity || [],
         accuracyStats: {
-          overall: dashboardData.stats?.accuracy || 0,
-          thisWeek: dashboardData.stats?.weeklyAccuracy || 0,
-          thisMonth: dashboardData.stats?.monthlyAccuracy || 0,
+          overall: progressData.accuracyStats?.overall || 0,
+          thisWeek: progressData.accuracyStats?.thisWeek || 0,
+          thisMonth: progressData.accuracyStats?.thisMonth || 0,
         }
       });
     } catch (error) {

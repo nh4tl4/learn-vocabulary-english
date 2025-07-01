@@ -40,24 +40,24 @@ export default function Navigation() {
       icon: HomeIcon,
     },
     // {
-    //   name: 'Lộ trình',
-    //   href: '/learn/roadmap',
-    //   icon: MapIcon,
-    // },
-    // {
     //   name: 'Learn',
     //   href: '/learn',
     //   icon: BookOpenIcon,
     // },
     {
-      name: 'Test',
+      name: 'Kiểm tra',
       href: '/learn/test',
       icon: AcademicCapIcon,
     },
     {
-      name: 'Progress',
-      href: '/dashboard/progress',
+      name: 'Tiến trình',
+      href: '/progress',
       icon: ChartBarIcon,
+    },
+    {
+      name: 'Lộ trình',
+      href: '/learn/roadmap',
+      icon: MapIcon,
     },
     {
       name: 'Chọn chủ đề',

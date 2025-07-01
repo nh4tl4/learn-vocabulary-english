@@ -107,10 +107,13 @@ export default function ReviewSession() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => {
+                // Refresh dashboard data before navigating
+                window.location.href = '/dashboard';
+              }}
               className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-blue-700 text-sm sm:text-base"
             >
-              Về Trang Chủ
+              Về Trang Chủ (Cập nhật tiến trình)
             </button>
             <button
               onClick={() => window.location.reload()}

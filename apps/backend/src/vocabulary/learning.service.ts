@@ -19,26 +19,40 @@ export class LearningService {
     private vocabularyCacheService: VocabularyCacheService,
   ) {}
 
-  // Get today's learning progress for user
+  // Get today's learning progress for user - OPTIMIZED with Promise.all
   async getTodayProgress(userId: number) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayLearned = await this.userVocabularyRepository.count({
-      where: {
-        userId,
-        firstLearnedDate: Between(today, tomorrow),
-      },
-    });
+    console.log(`📊 Getting today progress for user ${userId}:`);
+    console.log(`📅 Today range: ${today.toISOString()} to ${tomorrow.toISOString()}`);
 
-    const todayReviewed = await this.userVocabularyRepository.count({
-      where: {
-        userId,
-        lastReviewedAt: Between(today, tomorrow),
-      },
-    });
+    // Use Promise.all to run queries in parallel
+    const [todayLearned, todayReviewed, todayReviewedRecords] = await Promise.all([
+      this.userVocabularyRepository.count({
+        where: {
+          userId,
+          firstLearnedDate: Between(today, tomorrow),
+        },
+      }),
+      this.userVocabularyRepository.count({
+        where: {
+          userId,
+          lastReviewedAt: Between(today, tomorrow),
+        },
+      }),
+      // Debug: Get actual records for today's reviews
+      this.userVocabularyRepository.find({
+        where: {
+          userId,
+          lastReviewedAt: Between(today, tomorrow),
+        },
+        select: ['vocabularyId', 'lastReviewedAt'],
+        take: 10
+      })
+    ]);
 
     return {
       wordsLearned: todayLearned,
@@ -275,9 +289,7 @@ export class LearningService {
   }
 
   // Record review result with feedback
-  async recordReviewResult(userId: number, reviewResultDto: { wordId: number; isCorrect: boolean }) {
-    const { wordId, isCorrect } = reviewResultDto;
-
+  async recordReviewResult(userId: number, wordId: number, isCorrect: boolean, difficulty?: number) {
     const userVocab = await this.userVocabularyRepository.findOne({
       where: { userId, vocabularyId: wordId }
     });
@@ -422,19 +434,36 @@ export class LearningService {
     };
   }
 
-  // Get learning dashboard data
+  // Get learning dashboard data - HEAVILY OPTIMIZED with Promise.all
   async getLearningDashboard(userId: number) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    const todayProgress = await this.getTodayProgress(userId);
-    const userProgress = await this.getUserProgress(userId);
+    // Run all independent queries in parallel for maximum performance
+    const [user, todayProgress, userProgress, wordsToReview] = await Promise.all([
+      // Get user info
+      this.userRepository.findOne({ where: { id: userId } }),
 
-    const wordsToReview = await this.userVocabularyRepository.count({
-      where: {
-        userId,
-        nextReviewDate: LessThan(new Date()),
-        status: LearningStatus.LEARNING,
-      },
-    });
+      // Get today's progress
+      this.getTodayProgress(userId),
+
+      // Get user progress stats
+      this.getUserProgress(userId),
+
+      // Fix: Include words that need review (nextReviewDate is null or less than now)
+      this.userVocabularyRepository.count({
+        where: [
+          {
+            userId,
+            nextReviewDate: LessThan(new Date()),
+            status: LearningStatus.LEARNING,
+          },
+          {
+            userId,
+            nextReviewDate: null,
+            status: LearningStatus.LEARNING,
+          }
+        ],
+      })
+    ]);
+
 
     const progressPercentage = user?.dailyGoal > 0
       ? Math.round((todayProgress.totalProgress / user.dailyGoal) * 100)
@@ -827,5 +856,66 @@ export class LearningService {
       correctAnswers,
       percentage: Math.round((correctAnswers / testResults.length) * 100),
     };
+  }
+
+  // Get words learned today
+  async getTodayLearnedWords(userId: number): Promise<any[]> {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayLearnedWords = await this.userVocabularyRepository.find({
+      where: {
+        userId,
+        firstLearnedDate: Between(today, tomorrow),
+      },
+      relations: ['vocabulary'],
+      order: { firstLearnedDate: 'DESC' },
+    });
+
+    return todayLearnedWords.map(uv => ({
+      id: uv.vocabulary.id,
+      word: uv.vocabulary.word,
+      meaning: uv.vocabulary.meaning,
+      pronunciation: uv.vocabulary.pronunciation,
+      partOfSpeech: uv.vocabulary.partOfSpeech,
+      example: uv.vocabulary.example,
+      exampleVi: uv.vocabulary.exampleVi,
+      firstLearnedDate: uv.firstLearnedDate,
+      status: uv.status,
+    }));
+  }
+
+  // Get words reviewed today
+  async getTodayReviewedWords(userId: number): Promise<any[]> {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayReviewedWords = await this.userVocabularyRepository.find({
+      where: {
+        userId,
+        lastReviewedAt: Between(today, tomorrow),
+      },
+      relations: ['vocabulary'],
+      order: { lastReviewedAt: 'DESC' },
+    });
+
+    return todayReviewedWords.map(uv => ({
+      id: uv.vocabulary.id,
+      word: uv.vocabulary.word,
+      meaning: uv.vocabulary.meaning,
+      pronunciation: uv.vocabulary.pronunciation,
+      partOfSpeech: uv.vocabulary.partOfSpeech,
+      example: uv.vocabulary.example,
+      exampleVi: uv.vocabulary.exampleVi,
+      lastReviewedAt: uv.lastReviewedAt,
+      status: uv.status,
+      correctCount: uv.correctCount,
+      incorrectCount: uv.incorrectCount,
+      reviewCount: uv.reviewCount,
+    }));
   }
 }

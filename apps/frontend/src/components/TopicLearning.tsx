@@ -216,21 +216,69 @@ export default function TopicLearning() {
 
       {/* Topic Grid or Empty State */}
       {topicStats.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 sm:py-16">
           <div className="max-w-md mx-auto">
-            <div className="text-6xl mb-6">📚</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            {/* Animated Icon */}
+            <div className="relative mb-8">
+              <div className="text-8xl mb-4 animate-bounce">📚</div>
+              <div className="absolute -top-2 -right-2 text-2xl animate-pulse">✨</div>
+            </div>
+
+            {/* Title and Description */}
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
               Chưa có chủ đề nào được chọn
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Bạn chưa chọn chủ đề nào để học. Hãy vào trang chọn chủ đề để bắt đầu hành trình học tập của bạn!
+            <p className="text-gray-600 dark:text-gray-400 mb-8 text-base sm:text-lg leading-relaxed">
+              Hãy chọn những chủ đề bạn quan tâm để bắt đầu hành trình học từ vựng hiệu quả!
+              Mỗi chủ đề sẽ giúp bạn học từ vựng theo cách có hệ thống và dễ nhớ.
             </p>
-            <button
-              onClick={() => router.push('/topics')}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              📋 Chọn chủ đề
-            </button>
+
+            {/* Benefits */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-sm">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <div className="text-2xl mb-2">🎯</div>
+                <div className="font-semibold text-blue-800 dark:text-blue-200">Học có mục tiêu</div>
+                <div className="text-blue-600 dark:text-blue-300">Tập trung vào từ vựng thực tế</div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                <div className="text-2xl mb-2">📈</div>
+                <div className="font-semibold text-green-800 dark:text-green-200">Theo dõi tiến độ</div>
+                <div className="text-green-600 dark:text-green-300">Xem được sự tiến bộ rõ ràng</div>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                <div className="text-2xl mb-2">🧠</div>
+                <div className="font-semibold text-purple-800 dark:text-purple-200">Dễ ghi nhớ</div>
+                <div className="text-purple-600 dark:text-purple-300">Học theo ngữ cảnh thực tế</div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="space-y-4">
+              <button
+                onClick={() => router.push('/topics')}
+                className="group bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center mx-auto"
+              >
+                <span className="mr-2 text-xl group-hover:animate-bounce">📋</span>
+                Chọn chủ đề học tập
+                <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+
+              {/* Secondary Action */}
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium transition-colors"
+              >
+                ← Quay về Dashboard
+              </button>
+            </div>
+
+            {/* Help Text */}
+            <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+              <p className="flex items-center justify-center">
+                <span className="mr-2">💡</span>
+                <span>Tip: Chọn 3-5 chủ đề để bắt đầu hiệu quả nhất!</span>
+              </p>
+            </div>
           </div>
         </div>
       ) : (

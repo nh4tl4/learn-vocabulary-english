@@ -14,6 +14,7 @@ interface Vocabulary {
   meaning: string;
   pronunciation?: string;
   example?: string;
+  exampleVi?: string;
   partOfSpeech?: string;
   level?: string;
   topic?: string;
@@ -264,6 +265,7 @@ export default function LearnNewContent() {
                   <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-400 mb-2">Ví dụ:</h3>
                     <p className="text-lg text-blue-700 dark:text-blue-300 italic">{currentWord.example}</p>
+                    <p className="text-lg text-orange-300 dark:text-orange-400 italic">{currentWord.exampleVi}</p>
                   </div>
                 )}
 
