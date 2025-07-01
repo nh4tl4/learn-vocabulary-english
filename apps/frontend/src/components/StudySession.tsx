@@ -15,6 +15,7 @@ interface Vocabulary {
   meaning: string;
   pronunciation?: string;
   example?: string;
+  exampleVi?: string;
   partOfSpeech?: string;
   level?: string;
   topic?: string;
@@ -553,10 +554,15 @@ export default function StudySession(topic: string) {
             {currentWord.example && (
               <div className="mb-6 sm:mb-8">
                 <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-800 dark:text-white">Ví dụ:</h3>
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-3">
                   <p className="text-gray-700 dark:text-gray-300 italic text-base sm:text-lg leading-relaxed">
                     "{currentWord.example}"
                   </p>
+                  {currentWord.exampleVi && (
+                    <p className="text-blue-700 dark:text-blue-300 italic text-base sm:text-lg leading-relaxed border-t border-gray-200 dark:border-gray-600 pt-3">
+                      "{currentWord.exampleVi}"
+                    </p>
+                  )}
                 </div>
               </div>
             )}

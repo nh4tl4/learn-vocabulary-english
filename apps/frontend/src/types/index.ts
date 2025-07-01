@@ -12,6 +12,7 @@ export interface Vocabulary {
   meaning: string;
   pronunciation?: string;
   example?: string;
+  exampleVi?: string;
   level: string;
   partOfSpeech: string;
   topic?: string;

@@ -16,6 +16,7 @@ interface UserVocabulary {
     meaning: string;
     pronunciation?: string;
     example?: string;
+    exampleVi?: string;
     partOfSpeech?: string;
   };
 }
@@ -174,7 +175,14 @@ export default function ReviewSession() {
             {vocabulary.example && (
               <div className="mb-6 sm:mb-8">
                 <h3 className="text-lg sm:text-xl font-semibold mb-2">Ví dụ:</h3>
-                <p className="text-gray-700 italic text-base sm:text-lg">{vocabulary.example}</p>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                  <p className="text-gray-700 italic text-base sm:text-lg">{vocabulary.example}</p>
+                  {vocabulary.exampleVi && (
+                    <p className="text-blue-700 italic text-base sm:text-lg border-t border-gray-200 pt-3">
+                      "{vocabulary.exampleVi}"
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
