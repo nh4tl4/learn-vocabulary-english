@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { vocabularyAPI } from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import TextToSpeech from './TextToSpeech';
 
 interface TestQuestion {
@@ -20,7 +20,7 @@ interface TestQuestion {
   word?: string;
   meaning?: string;
   pronunciation?: string;
-  hints?: string[];
+  topic?: string;
 }
 
 interface TestResult {
@@ -33,122 +33,144 @@ interface TestResult {
   isCorrect: boolean;
 }
 
+interface TestState {
+  questions: TestQuestion[];
+  currentIndex: number;
+  answers: TestResult[];
+  loading: boolean;
+  testComplete: boolean;
+  testResults: any;
+  showModeSelection: boolean;
+}
+
 export default function VocabularyTest() {
-  const [questions, setQuestions] = useState<TestQuestion[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Consolidated state for better performance
+  const [state, setState] = useState<TestState>({
+    questions: [],
+    currentIndex: 0,
+    answers: [],
+    loading: false,
+    testComplete: false,
+    testResults: null,
+    showModeSelection: true,
+  });
+
+  // Separate state for form inputs to avoid unnecessary re-renders
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [textAnswer, setTextAnswer] = useState('');
-  const [answers, setAnswers] = useState<TestResult[]>([]);
-  const [questionStartTime, setQuestionStartTime] = useState<number>(0);
-  const [testStartTime, setTestStartTime] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-  const [testComplete, setTestComplete] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
-  const [showResult, setShowResult] = useState(false);
   const [testMode, setTestMode] = useState<'en-to-vi' | 'vi-to-en' | 'mixed'>('mixed');
   const [inputType, setInputType] = useState<'multiple-choice' | 'text-input' | 'mixed'>('multiple-choice');
-  const [showModeSelection, setShowModeSelection] = useState(true);
-  const [showHints, setShowHints] = useState(false);
+
+  // Performance tracking
+  const [questionStartTime, setQuestionStartTime] = useState<number>(0);
+  const [testStartTime, setTestStartTime] = useState<number>(0);
+
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Don't load questions automatically, wait for mode selection
-  useEffect(() => {
-    if (!showModeSelection) {
-      loadTestQuestions();
-    }
-  }, [showModeSelection, testMode, inputType]);
+  // Get URL params for topic-based tests
+  const topic = searchParams.get('topic');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const level = searchParams.get('level') || undefined; // Convert null to undefined
 
-  const loadTestQuestions = async () => {
+  // Memoized current question to avoid recalculation
+  const currentQuestion = useMemo(() =>
+    state.questions[state.currentIndex] || null,
+    [state.questions, state.currentIndex]
+  );
+
+  // Optimized test loading function
+  const loadTestQuestions = useCallback(async () => {
     try {
-      setLoading(true);
-      const response = await vocabularyAPI.generateTest(10, testMode, inputType);
-      setQuestions(response.data);
+      setState(prev => ({ ...prev, loading: true }));
+
+      let response;
+      if (topic) {
+        // Load test for specific topic
+        response = await vocabularyAPI.generateTestByTopic(topic, limit, testMode, inputType, level);
+      } else {
+        // Load general test
+        response = await vocabularyAPI.generateTest(limit, testMode, inputType);
+      }
+
+      const questions = response.data || [];
+
+      setState(prev => ({
+        ...prev,
+        questions,
+        loading: false,
+        currentIndex: 0,
+        answers: [],
+      }));
+
       setTestStartTime(Date.now());
       setQuestionStartTime(Date.now());
+
+      // Reset form state
+      setSelectedAnswer(null);
+      setTextAnswer('');
+
     } catch (error) {
       console.error('Failed to load test questions:', error);
-    } finally {
-      setLoading(false);
+      setState(prev => ({ ...prev, loading: false }));
     }
-  };
+  }, [topic, limit, testMode, inputType, level]);
 
-  const startTest = (selectedMode: 'en-to-vi' | 'vi-to-en' | 'mixed', selectedInputType: 'multiple-choice' | 'text-input' | 'mixed') => {
-    setTestMode(selectedMode);
-    setInputType(selectedInputType);
-    setShowModeSelection(false);
-  };
+  // Optimized answer submission
+  const submitAnswer = useCallback(async (answer: number | string) => {
+    if (!currentQuestion) return;
 
-  const handleAnswerSelect = (optionId: number) => {
-    setSelectedAnswer(optionId);
-  };
-
-  const handleTextSubmit = () => {
-    const currentQuestion = questions[currentIndex];
     const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
-
-    // Check if text answer is correct
-    const isCorrect = textAnswer.toLowerCase().trim() === currentQuestion.correctAnswer?.toLowerCase().trim();
-
-    const result: TestResult = {
-      vocabularyId: currentQuestion.vocabularyId,
-      userAnswer: textAnswer.trim(),
-      correctAnswer: currentQuestion.correctAnswer,
-      timeSpent,
-      isCorrect,
-    };
-
-    const newAnswers = [...answers, result];
-    setAnswers(newAnswers);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setTextAnswer('');
-      setShowHints(false);
-      setQuestionStartTime(Date.now());
-    } else {
-      // Test complete, submit results
-      submitTest(newAnswers);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    const currentQuestion = questions[currentIndex];
-    const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
-
+    let isCorrect = false;
     let result: TestResult;
 
     if (currentQuestion.inputType === 'multiple-choice') {
-      if (selectedAnswer === null) return;
-
-      const isCorrect = selectedAnswer === currentQuestion.correctAnswerId;
+      const answerNum = answer as number;
+      isCorrect = answerNum === currentQuestion.correctAnswerId;
       result = {
         vocabularyId: currentQuestion.vocabularyId,
-        selectedOptionId: selectedAnswer,
+        selectedOptionId: answerNum,
         correctOptionId: currentQuestion.correctAnswerId,
         timeSpent,
         isCorrect,
       };
     } else {
-      // This shouldn't happen as text input is handled separately
-      return;
+      const answerStr = (answer as string).toLowerCase().trim();
+      const correctStr = currentQuestion.correctAnswer?.toLowerCase().trim() || '';
+      isCorrect = answerStr === correctStr;
+      result = {
+        vocabularyId: currentQuestion.vocabularyId,
+        userAnswer: answerStr,
+        correctAnswer: currentQuestion.correctAnswer,
+        timeSpent,
+        isCorrect,
+      };
     }
 
-    const newAnswers = [...answers, result];
-    setAnswers(newAnswers);
+    const newAnswers = [...state.answers, result];
 
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setSelectedAnswer(null);
-      setQuestionStartTime(Date.now());
+    // Check if test is complete
+    if (state.currentIndex >= state.questions.length - 1) {
+      // Submit test results immediately
+      await submitTestResults(newAnswers);
     } else {
-      // Test complete, submit results
-      submitTest(newAnswers);
-    }
-  };
+      // Move to next question
+      setState(prev => ({
+        ...prev,
+        answers: newAnswers,
+        currentIndex: prev.currentIndex + 1,
+      }));
 
-  const submitTest = async (testAnswers: TestResult[]) => {
+      // Reset form state
+      setSelectedAnswer(null);
+      setTextAnswer('');
+      setQuestionStartTime(Date.now());
+    }
+  }, [currentQuestion, state.answers, state.currentIndex, state.questions.length, questionStartTime]);
+
+  // Optimized test submission
+  const submitTestResults = useCallback(async (testAnswers: TestResult[]) => {
     try {
-      // Convert to format expected by backend
       const backendFormat = testAnswers.map(answer => ({
         vocabularyId: answer.vocabularyId,
         selectedOptionId: answer.selectedOptionId || 0,
@@ -157,381 +179,327 @@ export default function VocabularyTest() {
       }));
 
       const response = await vocabularyAPI.submitTest(backendFormat);
-
-      // Calculate correct answers from our results
       const correctCount = testAnswers.filter(answer => answer.isCorrect).length;
 
-      setTestResults({
-        ...response.data,
-        correctAnswers: correctCount,
-      });
-      setTestComplete(true);
+      setState(prev => ({
+        ...prev,
+        testComplete: true,
+        testResults: {
+          ...response.data,
+          correctAnswers: correctCount,
+        },
+      }));
+
     } catch (error) {
       console.error('Failed to submit test:', error);
     }
-  };
+  }, []);
 
-  const showCorrectAnswer = () => {
-    setShowResult(true);
-    setTimeout(() => {
-      handleNextQuestion();
-      setShowResult(false);
-    }, 2000);
-  };
+  // Event handlers with performance optimization
+  const handleAnswerSelect = useCallback((optionId: number) => {
+    setSelectedAnswer(optionId);
+  }, []);
 
-  if (showModeSelection) {
-    return (
-      <div className="max-w-3xl mx-auto p-4 sm:p-6">
-        <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
-          <div className="text-center mb-8">
-            <div className="text-4xl sm:text-5xl mb-4">📝</div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Cấu Hình Bài Kiểm Tra</h2>
-            <p className="text-gray-600 mb-8 text-sm sm:text-base">
-              Chọn loại câu hỏi và cách thức trả lời
-            </p>
-          </div>
+  const handleNextQuestion = useCallback(() => {
+    if (selectedAnswer !== null) {
+      submitAnswer(selectedAnswer);
+    }
+  }, [selectedAnswer, submitAnswer]);
 
-          {/* Mode Selection */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">1. Chọn loại câu hỏi:</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { value: 'en-to-vi', label: 'Anh → Việt', icon: '🇺🇸➡️🇻🇳', desc: 'Cho từ Anh, tìm nghĩa Việt' },
-                { value: 'vi-to-en', label: 'Việt → Anh', icon: '🇻🇳➡️🇺🇸', desc: 'Cho nghĩa Việt, tìm từ Anh' },
-                { value: 'mixed', label: 'Hỗn hợp', icon: '🔀', desc: 'Kết hợp cả hai loại' },
-              ].map((mode) => (
-                <button
-                  key={mode.value}
-                  onClick={() => setTestMode(mode.value as any)}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    testMode === mode.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-2xl mb-2">{mode.icon}</div>
-                  <div className="font-semibold text-sm">{mode.label}</div>
-                  <div className="text-xs text-gray-600">{mode.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+  const handleTextSubmit = useCallback(() => {
+    if (textAnswer.trim()) {
+      submitAnswer(textAnswer);
+    }
+  }, [textAnswer, submitAnswer]);
 
-          {/* Input Type Selection */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">2. Chọn cách trả lời:</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { value: 'multiple-choice', label: 'Trắc nghiệm', icon: '☑️', desc: 'Chọn từ các đáp án có sẵn' },
-                { value: 'text-input', label: 'Nhập text', icon: '✍️', desc: 'Gõ đáp án trực tiếp' },
-                { value: 'mixed', label: 'Hỗn hợp', icon: '🎯', desc: 'Kết hợp cả hai cách' },
-              ].map((type) => (
-                <button
-                  key={type.value}
-                  onClick={() => setInputType(type.value as any)}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    inputType === type.value
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-2xl mb-2">{type.icon}</div>
-                  <div className="font-semibold text-sm">{type.label}</div>
-                  <div className="text-xs text-gray-600">{type.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+  const startTest = useCallback((selectedMode: typeof testMode, selectedInputType: typeof inputType) => {
+    setTestMode(selectedMode);
+    setInputType(selectedInputType);
+    setState(prev => ({ ...prev, showModeSelection: false }));
+  }, []);
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => startTest(testMode, inputType)}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium"
-            >
-              🚀 Bắt đầu kiểm tra
-            </button>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ← Quay về Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  // Load questions when mode selection is complete
+  useEffect(() => {
+    if (!state.showModeSelection && state.questions.length === 0) {
+      loadTestQuestions();
+    }
+  }, [state.showModeSelection, state.questions.length, loadTestQuestions]);
+
+  // Memoized progress calculation
+  const progress = useMemo(() => {
+    const total = state.questions.length;
+    const current = state.currentIndex + 1;
+    return total > 0 ? Math.round((current / total) * 100) : 0;
+  }, [state.questions.length, state.currentIndex]);
+
+  // Early returns for different states
+  if (state.showModeSelection) {
+    return <ModeSelection onStartTest={startTest} testMode={testMode} inputType={inputType} setTestMode={setTestMode} setInputType={setInputType} />;
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    );
+  if (state.loading) {
+    return <LoadingState />;
   }
 
-  if (testComplete && testResults) {
-    const correctCount = testResults.correctAnswers || 0;
-    const totalQuestions = questions.length;
-    const percentage = Math.round((correctCount / totalQuestions) * 100);
-
-    return (
-      <div className="max-w-2xl mx-auto p-4 sm:p-6 text-center">
-        <div className="mb-6">
-          <div className="text-4xl sm:text-6xl mb-4">
-            {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold mb-4">Hoàn thành bài kiểm tra!</h2>
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-lg mb-6">
-            <div className="text-2xl sm:text-3xl font-bold mb-2 text-blue-600">
-              {correctCount}/{totalQuestions}
-            </div>
-            <div className="text-lg sm:text-xl mb-2">
-              Điểm số: {percentage}%
-            </div>
-            <div className="text-sm sm:text-base text-gray-600">
-              {percentage >= 80 ? 'Xuất sắc! 🌟' :
-               percentage >= 60 ? 'Tốt! Tiếp tục cố gắng 💪' :
-               'Cần cải thiện thêm 📖'}
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-blue-700 text-sm sm:text-base"
-            >
-              Về Trang Chủ
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-purple-700 text-sm sm:text-base"
-            >
-              Làm Bài Khác
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  if (state.testComplete && state.testResults) {
+    return <TestResults results={state.testResults} questions={state.questions} />;
   }
 
-  if (questions.length === 0) {
-    return (
-      <div className="max-w-2xl mx-auto p-4 sm:p-6 text-center">
-        <div className="text-4xl sm:text-6xl mb-4">😅</div>
-        <h2 className="text-xl sm:text-2xl font-bold mb-4">Chưa có câu hỏi</h2>
-        <p className="text-gray-600 mb-6 text-sm sm:text-base">
-          Bạn cần học thêm từ vựng trước khi có thể làm bài kiểm tra.
-        </p>
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-blue-700 text-sm sm:text-base"
-        >
-          Về Trang Chủ
-        </button>
-      </div>
-    );
+  if (!currentQuestion) {
+    return <NoQuestionsState />;
   }
-
-  const currentQuestion = questions[currentIndex];
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      {/* Header with pronunciation */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">Kiểm Tra Từ Vựng</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {testMode === 'en-to-vi' ? '🇺🇸➡️🇻🇳' : testMode === 'vi-to-en' ? '🇻🇳➡️🇺🇸' : '🔀 Hỗn hợp'}
-              </span>
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {inputType === 'multiple-choice' ? '☑️ Trắc nghiệm' : inputType === 'text-input' ? '✍️ Nhập text' : '🎯 Hỗn hợp'}
-              </span>
-              <span>Câu {currentIndex + 1} / {questions.length}</span>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowModeSelection(true)}
-            className="text-purple-600 hover:text-purple-700 text-sm mt-2 sm:mt-0"
-          >
-            🔄 Đổi cấu hình
-          </button>
+      {/* Progress Bar */}
+      <div className="mb-6">
+        <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <span>Câu {state.currentIndex + 1} / {state.questions.length}</span>
+          <span>{progress}%</span>
         </div>
-
-        {/* Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
+        <div className="w-full bg-gray-200 rounded-full h-2">
           <div
-            className="bg-purple-600 h-2 sm:h-3 rounded-full transition-all duration-300"
-            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-          ></div>
+            className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 
       {/* Question Card */}
-      <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 mb-6 sm:mb-8">
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-              currentQuestion.questionType === 'en-to-vi' 
-                ? 'bg-blue-100 text-blue-800' 
-                : 'bg-green-100 text-green-800'
-            }`}>
-              {currentQuestion.questionType === 'en-to-vi' ? 'Anh → Việt' : 'Việt → Anh'}
-            </div>
-
-            {/* Pronunciation button */}
-            {(currentQuestion.word || currentQuestion.meaning) && (
-              <div className="flex items-center gap-2">
-                <TextToSpeech
-                  text={currentQuestion.questionType === 'en-to-vi' ? currentQuestion.word! : currentQuestion.meaning!}
-                  lang={currentQuestion.questionType === 'en-to-vi' ? 'en-US' : 'vi-VN'}
-                  className="text-2xl"
-                />
-                <span className="text-xs text-gray-500">Phát âm</span>
-              </div>
-            )}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="text-center mb-6">
+          <div className="text-3xl mb-4">
+            {currentQuestion.questionType === 'en-to-vi' ? '🇺🇸➡️🇻🇳' : '🇻🇳➡️🇺🇸'}
           </div>
+          <h2 className="text-xl font-bold mb-2">{currentQuestion.question}</h2>
 
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
-            {currentQuestion.question}
-          </h2>
-
-          {/* Pronunciation display */}
-          {currentQuestion.pronunciation && currentQuestion.questionType === 'en-to-vi' && (
-            <p className="text-gray-500 text-base mb-2">
-              Phát âm: /{currentQuestion.pronunciation}/
-            </p>
+          {/* Pronunciation */}
+          {currentQuestion.pronunciation && (
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-gray-600">/{currentQuestion.pronunciation}/</span>
+              <TextToSpeech text={currentQuestion.word || ''} />
+            </div>
           )}
         </div>
 
+        {/* Answer Section */}
         {currentQuestion.inputType === 'multiple-choice' ? (
-          // Multiple Choice Questions
-          <>
-            <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-              {currentQuestion.options?.map((option, index) => (
-                <button
-                  key={option.id}
-                  onClick={() => handleAnswerSelect(option.id)}
-                  className={`w-full text-left p-4 sm:p-5 rounded-lg border-2 transition-all text-sm sm:text-base ${
-                    selectedAnswer === option.id
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  } ${
-                    showResult && option.isCorrect
-                      ? 'border-green-500 bg-green-50'
-                      : showResult && selectedAnswer === option.id && !option.isCorrect
-                      ? 'border-red-500 bg-red-50'
-                      : ''
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-medium mr-3 sm:mr-4">
-                      {String.fromCharCode(65 + index)}
-                    </span>
-                    <span className={currentQuestion.questionType === 'vi-to-en' ? 'font-mono text-lg' : ''}>
-                      {option.text}
-                    </span>
-                    {showResult && option.isCorrect && (
-                      <span className="ml-auto text-green-600">✓</span>
-                    )}
-                    {showResult && selectedAnswer === option.id && !option.isCorrect && (
-                      <span className="ml-auto text-red-600">✗</span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            <div className="text-center">
-              {!showResult ? (
-                <button
-                  onClick={showCorrectAnswer}
-                  disabled={selectedAnswer === null}
-                  className={`px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg font-medium transition-colors ${
-                    selectedAnswer === null
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
-                  }`}
-                >
-                  {currentIndex === questions.length - 1 ? 'Hoàn thành' : 'Câu tiếp theo'}
-                </button>
-              ) : (
-                <div className="text-center">
-                  <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm sm:text-base">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                    Đang chuyển sang câu tiếp theo...
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
+          <MultipleChoiceAnswers
+            options={currentQuestion.options || []}
+            selectedAnswer={selectedAnswer}
+            onSelect={handleAnswerSelect}
+            onNext={handleNextQuestion}
+            isLastQuestion={state.currentIndex >= state.questions.length - 1}
+          />
         ) : (
-          // Text Input Questions
-          <>
-            <div className="mb-6">
-              <input
-                type="text"
-                value={textAnswer}
-                onChange={(e) => setTextAnswer(e.target.value)}
-                placeholder="Nhập đáp án của bạn..."
-                className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-base sm:text-lg"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && textAnswer.trim()) {
-                    handleTextSubmit();
-                  }
-                }}
-              />
-            </div>
-
-            {/* Hints */}
-            {currentQuestion.hints && (
-              <div className="mb-6">
-                <button
-                  onClick={() => setShowHints(!showHints)}
-                  className="text-blue-600 hover:text-blue-700 text-sm mb-2"
-                >
-                  💡 {showHints ? 'Ẩn gợi ý' : 'Hiển thị gợi ý'}
-                </button>
-                {showHints && (
-                  <div className="bg-yellow-50 p-3 rounded-lg">
-                    {currentQuestion.hints.map((hint, index) => (
-                      <p key={index} className="text-sm text-yellow-800">• {hint}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="text-center">
-              <button
-                onClick={handleTextSubmit}
-                disabled={!textAnswer.trim()}
-                className={`px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg font-medium transition-colors ${
-                  !textAnswer.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                }`}
-              >
-                {currentIndex === questions.length - 1 ? 'Hoàn thành bài kiểm tra' : 'Câu tiếp theo'}
-              </button>
-            </div>
-          </>
+          <TextInputAnswer
+            value={textAnswer}
+            onChange={setTextAnswer}
+            onSubmit={handleTextSubmit}
+            isLastQuestion={state.currentIndex >= state.questions.length - 1}
+          />
         )}
-      </div>
-
-      {/* Help Text */}
-      <div className="text-center text-gray-500 text-xs sm:text-sm">
-        {currentQuestion.inputType === 'multiple-choice'
-          ? (currentQuestion.questionType === 'en-to-vi'
-              ? 'Chọn nghĩa tiếng Việt đúng của từ tiếng Anh'
-              : 'Chọn từ tiếng Anh đúng của nghĩa tiếng Việt')
-          : (currentQuestion.questionType === 'en-to-vi'
-              ? 'Nhập nghĩa tiếng Việt của từ tiếng Anh'
-              : 'Nhập từ tiếng Anh tương ứng với nghĩa tiếng Việt')
-        }
       </div>
     </div>
   );
 }
+
+// Extracted components for better performance
+const ModeSelection = ({ onStartTest, testMode, inputType, setTestMode, setInputType }: any) => (
+  <div className="max-w-3xl mx-auto p-4 sm:p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+      <div className="text-center mb-8">
+        <div className="text-4xl sm:text-5xl mb-4">📝</div>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-4">Cấu Hình Bài Kiểm Tra</h2>
+        <p className="text-gray-600 mb-8 text-sm sm:text-base">
+          Chọn loại câu hỏi và cách thức trả lời
+        </p>
+      </div>
+
+      {/* Mode Selection */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">1. Chọn loại câu hỏi:</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { value: 'en-to-vi', label: 'Anh → Việt', icon: '🇺🇸➡️🇻🇳', desc: 'Cho từ Anh, tìm nghĩa Việt' },
+            { value: 'vi-to-en', label: 'Việt → Anh', icon: '🇻🇳➡️🇺🇸', desc: 'Cho nghĩa Việt, tìm từ Anh' },
+            { value: 'mixed', label: 'Hỗn hợp', icon: '🔀', desc: 'Kết hợp cả hai loại' },
+          ].map((mode) => (
+            <button
+              key={mode.value}
+              onClick={() => setTestMode(mode.value)}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                testMode === mode.value
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-2xl mb-2">{mode.icon}</div>
+              <div className="font-semibold text-sm">{mode.label}</div>
+              <div className="text-xs text-gray-600">{mode.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Input Type Selection */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">2. Chọn cách trả lời:</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { value: 'multiple-choice', label: 'Trắc nghiệm', icon: '☑️', desc: 'Chọn từ các đáp án có sẵn' },
+            { value: 'text-input', label: 'Nhập text', icon: '✍️', desc: 'Gõ đáp án trực tiếp' },
+          ].map((type) => (
+            <button
+              key={type.value}
+              onClick={() => setInputType(type.value)}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                inputType === type.value
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-2xl mb-2">{type.icon}</div>
+              <div className="font-semibold text-sm">{type.label}</div>
+              <div className="text-xs text-gray-600">{type.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="text-center">
+        <button
+          onClick={() => onStartTest(testMode, inputType)}
+          className="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 font-medium text-lg"
+        >
+          🚀 Bắt đầu kiểm tra
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const LoadingState = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+      <p className="text-gray-600">Đang tải câu hỏi...</p>
+    </div>
+  </div>
+);
+
+const NoQuestionsState = () => (
+  <div className="text-center p-8">
+    <div className="text-6xl mb-4">📚</div>
+    <h2 className="text-xl font-bold mb-2">Không có câu hỏi nào</h2>
+    <p className="text-gray-600">Vui lòng học thêm từ vựng trước khi làm bài kiểm tra.</p>
+  </div>
+);
+
+const MultipleChoiceAnswers = ({ options, selectedAnswer, onSelect, onNext, isLastQuestion }: any) => (
+  <div className="space-y-4">
+    <div className="grid gap-3">
+      {options.map((option: any) => (
+        <button
+          key={option.id}
+          onClick={() => onSelect(option.id)}
+          className={`p-4 text-left rounded-lg border-2 transition-all ${
+            selectedAnswer === option.id
+              ? 'border-purple-500 bg-purple-50'
+              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          <div className="flex items-center">
+            <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
+              selectedAnswer === option.id ? 'bg-purple-500 border-purple-500' : 'border-gray-300'
+            }`} />
+            <span className="text-base">{option.text}</span>
+          </div>
+        </button>
+      ))}
+    </div>
+
+    <div className="text-center pt-4">
+      <button
+        onClick={onNext}
+        disabled={selectedAnswer === null}
+        className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+      >
+        {isLastQuestion ? '🏁 Hoàn thành' : '➡️ Câu tiếp theo'}
+      </button>
+    </div>
+  </div>
+);
+
+const TextInputAnswer = ({ value, onChange, onSubmit, isLastQuestion }: any) => (
+  <div className="space-y-4">
+    <div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && onSubmit()}
+        placeholder="Nhập đáp án của bạn..."
+        className="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+        autoFocus
+      />
+    </div>
+
+    <div className="text-center">
+      <button
+        onClick={onSubmit}
+        disabled={!value.trim()}
+        className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+      >
+        {isLastQuestion ? '🏁 Hoàn thành' : '➡️ Câu tiếp theo'}
+      </button>
+    </div>
+  </div>
+);
+
+const TestResults = ({ results, questions }: any) => {
+  const router = useRouter();
+  const correctCount = results.correctAnswers || 0;
+  const totalQuestions = questions.length;
+  const percentage = Math.round((correctCount / totalQuestions) * 100);
+
+  return (
+    <div className="max-w-2xl mx-auto p-4 sm:p-6 text-center">
+      <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+        <div className="text-4xl sm:text-6xl mb-4">
+          {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4">Hoàn thành bài kiểm tra!</h2>
+
+        <div className="bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg p-6 mb-6">
+          <div className="text-3xl font-bold mb-2">
+            {correctCount}/{totalQuestions}
+          </div>
+          <div className="text-xl mb-2">
+            Điểm số: {percentage}%
+          </div>
+          <div className="text-sm opacity-90">
+            {percentage >= 80 ? 'Xuất sắc! 🌟' :
+             percentage >= 60 ? 'Tốt! Tiếp tục cố gắng 💪' :
+             'Cần cải thiện thêm 📖'}
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600"
+          >
+            📊 Về Dashboard
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700"
+          >
+            🔄 Làm lại bài test
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

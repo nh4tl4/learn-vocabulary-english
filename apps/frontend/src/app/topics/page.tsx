@@ -3,78 +3,13 @@
 import { useState, useEffect } from 'react';
 import { vocabularyAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { getTopicEmoji, getTopicDisplay } from '@/lib/topicUtils';
 
 interface TopicInfo {
   topic: string;
   topicVi: string;
   count: number;
 }
-
-// Simple topic icons as strings to avoid React component issues
-const getTopicEmoji = (topic: string): string => {
-  const emojiMap: { [key: string]: string } = {
-    'actions': '⚡',
-    'animals': '🐕',
-    'arts_culture': '🎨',
-    'beverages': '🥤',
-    'body_parts': '👁️',
-    'business': '💼',
-    'chemistry': '⚗️',
-    'clothing': '👕',
-    'clothing_fashion': '👗',
-    'colors': '🎨',
-    'cooking': '👨‍🍳',
-    'economics': '📈',
-    'education': '📚',
-    'emotions': '😊',
-    'entertainment': '🎭',
-    'environment': '🌍',
-    'family': '👨‍👩‍👧‍👦',
-    'finance': '💰',
-    'food': '🍕',
-    'food_drink': '🍔',
-    'fruits': '🍎',
-    'health': '🏥',
-    'history': '📜',
-    'home': '🏠',
-    'house_home': '🏡',
-    'human_body': '🧠',
-    'jobs_careers': '💼',
-    'jobs_professions': '👨‍💼',
-    'law': '⚖️',
-    'marketing': '📊',
-    'media_communication': '📱',
-    'nature': '🌳',
-    'people_relationships': '👥',
-    'personality': '🧑‍🎓',
-    'physics': '⚛️',
-    'plants_flowers': '🌸',
-    'politics': '🏛️',
-    'psychology': '🧠',
-    'school': '🏫',
-    'school_supplies': '✏️',
-    'science': '🔬',
-    'shapes': '🔵',
-    'shopping': '🛒',
-    'sports': '⚽',
-    'subjects': '📖',
-    'technology': '💻',
-    'time': '⏰',
-    'transportation': '🚗',
-    'travel': '✈️',
-    'vegetables': '🥕',
-    'weather': '🌤️'
-  };
-  return emojiMap[topic] || '📖';
-};
-
-// Simple display function
-const getTopicDisplay = (topic: string, topicVi?: string): string => {
-  if (topicVi) {
-    return topicVi;
-  }
-  return topic.charAt(0).toUpperCase() + topic.slice(1).replace('_', ' ');
-};
 
 export default function TopicsPage() {
   const [availableTopics, setAvailableTopics] = useState<TopicInfo[]>([]);

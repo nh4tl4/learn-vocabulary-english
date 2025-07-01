@@ -16,6 +16,7 @@ export enum LearningStatus {
   REVIEWING = 'reviewing',
   MASTERED = 'mastered',
   DIFFICULT = 'difficult',
+  NOT_LEARNED = 'not_learned', // For words not yet learned
 }
 
 @Entity('user_vocabulary')

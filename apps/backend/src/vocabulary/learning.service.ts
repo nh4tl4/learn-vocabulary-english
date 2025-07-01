@@ -434,55 +434,86 @@ export class LearningService {
     };
   }
 
-  // Get learning dashboard data - HEAVILY OPTIMIZED with Promise.all
+  // Get learning dashboard data - SUPER OPTIMIZED with Redis caching
   async getLearningDashboard(userId: number) {
-    // Run all independent queries in parallel for maximum performance
-    const [user, todayProgress, userProgress, wordsToReview] = await Promise.all([
-      // Get user info
-      this.userRepository.findOne({ where: { id: userId } }),
+    const cacheKey = `learning_dashboard_${userId}`;
 
-      // Get today's progress
-      this.getTodayProgress(userId),
+    try {
+      // Try to get from Redis cache first
+      const cached = await this.vocabularyCacheService['redisService'].get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      console.warn('Dashboard cache miss or error:', error.message);
+    }
 
-      // Get user progress stats
-      this.getUserProgress(userId),
+    // Single optimized query to get all dashboard stats at once
+    const [user, dashboardStats] = await Promise.all([
+      this.userRepository.findOne({
+        where: { id: userId },
+        select: ['dailyGoal', 'currentStreak', 'longestStreak', 'totalWordsLearned']
+      }),
 
-      // Fix: Include words that need review (nextReviewDate is null or less than now)
-      this.userVocabularyRepository.count({
-        where: [
-          {
-            userId,
-            nextReviewDate: LessThan(new Date()),
-            status: LearningStatus.LEARNING,
-          },
-          {
-            userId,
-            nextReviewDate: null,
-            status: LearningStatus.LEARNING,
-          }
-        ],
-      })
+      // Single mega-query to get all stats at once
+      this.userVocabularyRepository
+        .createQueryBuilder('uv')
+        .select([
+          // Today's progress - PostgreSQL compatible
+          `SUM(CASE WHEN DATE(uv.firstLearnedDate) = CURRENT_DATE THEN 1 ELSE 0 END) as todayLearned`,
+          `SUM(CASE WHEN DATE(uv.lastReviewedAt) = CURRENT_DATE THEN 1 ELSE 0 END) as todayReviewed`,
+
+          // Total progress stats
+          'COUNT(*) as totalLearned',
+          'SUM(CASE WHEN uv.status = :mastered THEN 1 ELSE 0 END) as masteredWords',
+          'SUM(CASE WHEN uv.status = :learning THEN 1 ELSE 0 END) as learningWords',
+          'SUM(CASE WHEN uv.status = :difficult THEN 1 ELSE 0 END) as difficultWords',
+
+          // Words to review (need review today or overdue) - PostgreSQL compatible
+          `SUM(CASE WHEN (uv.nextReviewDate IS NULL OR uv.nextReviewDate < CURRENT_TIMESTAMP) AND uv.status = :learning THEN 1 ELSE 0 END) as wordsToReview`
+        ])
+        .where('uv.userId = :userId', { userId })
+        .setParameters({
+          mastered: LearningStatus.MASTERED,
+          learning: LearningStatus.LEARNING,
+          difficult: LearningStatus.DIFFICULT
+        })
+        .getRawOne()
     ]);
 
+    const todayProgress = {
+      wordsLearned: parseInt(dashboardStats.todayLearned) || 0,
+      wordsReviewed: parseInt(dashboardStats.todayReviewed) || 0,
+      totalProgress: (parseInt(dashboardStats.todayLearned) || 0) + (parseInt(dashboardStats.todayReviewed) || 0)
+    };
 
     const progressPercentage = user?.dailyGoal > 0
       ? Math.round((todayProgress.totalProgress / user.dailyGoal) * 100)
       : 0;
 
-    return {
+    const result = {
       user: {
         dailyGoal: user?.dailyGoal || 10,
         currentStreak: user?.currentStreak || 0,
         longestStreak: user?.longestStreak || 0,
-        totalWordsLearned: userProgress.totalLearned,
+        totalWordsLearned: parseInt(dashboardStats.totalLearned) || 0,
       },
       todayProgress,
-      wordsToReview,
-      difficultWords: userProgress.difficult,
-      masteredWords: userProgress.mastered,
-      totalLearned: userProgress.totalLearned,
+      wordsToReview: parseInt(dashboardStats.wordsToReview) || 0,
+      difficultWords: parseInt(dashboardStats.difficultWords) || 0,
+      masteredWords: parseInt(dashboardStats.masteredWords) || 0,
+      totalLearned: parseInt(dashboardStats.totalLearned) || 0,
       progressPercentage: Math.min(progressPercentage, 100),
     };
+
+    // Cache for 2 minutes (shorter than user stats since this changes more frequently)
+    try {
+      await this.vocabularyCacheService['redisService'].set(cacheKey, JSON.stringify(result), 120);
+    } catch (error) {
+      console.warn('Failed to cache dashboard data:', error.message);
+    }
+
+    return result;
   }
 
   // Helper method to calculate next review date
@@ -917,5 +948,103 @@ export class LearningService {
       incorrectCount: uv.incorrectCount,
       reviewCount: uv.reviewCount,
     }));
+  }
+
+  // Generate test by topic - new method for topic-specific tests
+  async generateTestByTopic(userId: number, topic: string, count: number = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) {
+    // Get learned words for this specific topic
+    let query = this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .leftJoinAndSelect('uv.vocabulary', 'v')
+      .where('uv.userId = :userId', { userId })
+      .andWhere('v.topic = :topic', { topic })
+      .andWhere('uv.status != :status', { status: LearningStatus.NOT_LEARNED });
+
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
+
+    const learnedWords = await query
+      .orderBy('uv.lastReviewedAt', 'DESC')
+      .take(count * 2) // Get more words to ensure we have enough for the test
+      .getMany();
+
+    if (learnedWords.length === 0) {
+      return [];
+    }
+
+    const testQuestions = [];
+
+    for (let i = 0; i < Math.min(count, learnedWords.length); i++) {
+      const userVocab = learnedWords[i];
+      const word = userVocab.vocabulary;
+
+      // Determine question type based on mode
+      let questionType: 'en-to-vi' | 'vi-to-en';
+      if (mode === 'mixed') {
+        questionType = Math.random() > 0.5 ? 'en-to-vi' : 'vi-to-en';
+      } else {
+        questionType = mode;
+      }
+
+      // Get wrong answers from the same topic and level for better test quality
+      let wrongAnswersQuery = this.vocabularyRepository
+        .createQueryBuilder('v')
+        .where('v.topic = :topic', { topic })
+        .andWhere('v.id != :currentId', { currentId: word.id });
+
+      if (level) {
+        wrongAnswersQuery = wrongAnswersQuery.andWhere('v.level = :level', { level });
+      }
+
+      const wrongAnswers = await wrongAnswersQuery
+        .orderBy('RANDOM()')
+        .take(3)
+        .getMany();
+
+      if (inputType === 'multiple-choice' || inputType === 'mixed') {
+        if (questionType === 'en-to-vi') {
+          const options = [
+            { id: 1, text: word.meaning, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.meaning || 'nghĩa sai 1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.meaning || 'nghĩa sai 2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.meaning || 'nghĩa sai 3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'en-to-vi',
+            inputType: 'multiple-choice',
+            question: `Nghĩa của từ "${word.word}" trong chủ đề "${topic}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            word: word.word,
+            pronunciation: word.pronunciation,
+            topic: topic,
+          });
+        } else {
+          const options = [
+            { id: 1, text: word.word, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.word || 'word1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.word || 'word2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.word || 'word3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'vi-to-en',
+            inputType: 'multiple-choice',
+            question: `Từ tiếng Anh của "${word.meaning}" trong chủ đề "${topic}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            meaning: word.meaning,
+            pronunciation: word.pronunciation,
+            topic: topic,
+          });
+        }
+      }
+    }
+
+    return testQuestions;
   }
 }

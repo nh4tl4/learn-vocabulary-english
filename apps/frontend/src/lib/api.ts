@@ -194,8 +194,15 @@ export const vocabularyAPI = {
     return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/new?${params}`);
   },
 
-  generateTestByTopic: (topic: string, count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice') =>
-    apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/test?count=${count}&mode=${mode}&inputType=${inputType}`),
+  generateTestByTopic: (topic: string, count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) => {
+    const params = new URLSearchParams({
+      count: count.toString(),
+      mode,
+      inputType
+    });
+    if (level) params.append('level', level);
+    return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/test?${params}`);
+  },
 
   getProgressByTopic: (topic: string, level?: string) => {
     const params = level ? `?level=${level}` : '';

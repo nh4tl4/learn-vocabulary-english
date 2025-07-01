@@ -182,4 +182,16 @@ export class VocabularyController {
   ) {
     return this.vocabularyService.findByTopic(topic, page, limit);
   }
+
+  @Get('topics/:topic/test')
+  async generateTestByTopic(
+    @Request() req,
+    @Param('topic') topic: string,
+    @Query('count') count: number = 10,
+    @Query('mode') mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed',
+    @Query('inputType') inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice',
+    @Query('level') level?: string
+  ) {
+    return this.learningService.generateTestByTopic(req.user.userId, topic, count, mode, inputType, level);
+  }
 }

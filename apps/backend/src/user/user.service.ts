@@ -21,44 +21,79 @@ export class UserService {
     private redisService: RedisService,
   ) {}
 
+  // Optimized findOne with caching
   async findOne(id: number): Promise<User> {
-    return this.userRepository.findOne({ where: { id } });
+    // Try cache first
+    const cacheKey = `user_profile_${id}`;
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+
+      if (cached) {
+        // Check if cached data is already an object or needs parsing
+        if (typeof cached === 'string') {
+          return JSON.parse(cached);
+        } else if (typeof cached === 'object') {
+          return cached as User;
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to get cached user profile for ${id}:`, error.message);
+      // Continue to fetch from database if cache fails
+    }
+
+    // Get from database with only necessary fields
+    const user = await this.userRepository.findOne({
+      where: { id },
+      select: [
+        'id', 'name', 'email', 'level', 'dailyGoal',
+        'currentStreak', 'longestStreak', 'totalWordsLearned',
+        'totalTestsTaken', 'averageTestScore', 'createdAt'
+      ]
+    });
+
+    if (user) {
+      // Cache for 10 minutes
+      try {
+        await this.redisService.set(cacheKey, JSON.stringify(user), 600);
+      } catch (error) {
+        console.warn(`Failed to cache user profile for ${id}:`, error.message);
+      }
+    }
+
+    return user;
   }
 
+  // Heavily optimized getUserStats with caching and single query
   async getUserStats(userId: number) {
-    // Use Promise.all to run all queries in parallel for better performance
-    const [
-      user,
-      totalWords,
-      masteredWords,
-      reviewWords,
-      difficultWords,
-      vocabularyStats
-    ] = await Promise.all([
-      this.userRepository.findOne({ where: { id: userId } }),
+    const cacheKey = `user_stats_${userId}`;
+    const cached = await this.redisService.get(cacheKey);
 
-      this.userVocabularyRepository.count({
-        where: { userId },
-      }),
+    if (cached) {
+      return JSON.parse(cached);
+    }
 
-      this.userVocabularyRepository.count({
-        where: { userId, status: LearningStatus.MASTERED },
-      }),
+    // Single optimized query to get all vocabulary stats
+    const [user, vocabularyStats] = await Promise.all([
+      this.findOne(userId), // This will use cache if available
 
-      this.userVocabularyRepository.count({
-        where: { userId, status: LearningStatus.REVIEWING },
-      }),
-
-      this.userVocabularyRepository.count({
-        where: { userId, status: LearningStatus.DIFFICULT },
-      }),
-
-      // Calculate accuracy in a single query
+      // Single query to get all vocabulary stats at once
       this.userVocabularyRepository
         .createQueryBuilder('uv')
-        .select('SUM(uv.correctCount)', 'totalCorrect')
-        .addSelect('SUM(uv.incorrectCount)', 'totalIncorrect')
+        .select([
+          'COUNT(*) as totalWords',
+          'SUM(CASE WHEN uv.status = :mastered THEN 1 ELSE 0 END) as masteredWords',
+          'SUM(CASE WHEN uv.status = :reviewing THEN 1 ELSE 0 END) as reviewWords',
+          'SUM(CASE WHEN uv.status = :difficult THEN 1 ELSE 0 END) as difficultWords',
+          'SUM(COALESCE(uv.correctCount, 0)) as totalCorrect',
+          'SUM(COALESCE(uv.incorrectCount, 0)) as totalIncorrect'
+        ])
         .where('uv.userId = :userId', { userId })
+        .setParameters({
+          mastered: LearningStatus.MASTERED,
+          reviewing: LearningStatus.REVIEWING,
+          difficult: LearningStatus.DIFFICULT
+        })
         .getRawOne()
     ]);
 
@@ -66,34 +101,52 @@ export class UserService {
     const totalAttempts = (vocabularyStats.totalCorrect || 0) + (vocabularyStats.totalIncorrect || 0);
     const accuracy = totalAttempts > 0 ? Math.round((vocabularyStats.totalCorrect / totalAttempts) * 100) : 0;
 
-    return {
+    const result = {
       user: {
-        name: user.name,
-        email: user.email,
-        dailyGoal: user.dailyGoal,
-        currentStreak: user.currentStreak,
-        longestStreak: user.longestStreak,
-        totalWordsLearned: user.totalWordsLearned,
-        totalTestsTaken: user.totalTestsTaken,
-        averageTestScore: user.averageTestScore,
+        name: user?.name,
+        email: user?.email,
+        level: user?.level,
+        dailyGoal: user?.dailyGoal || 10,
+        currentStreak: user?.currentStreak || 0,
+        longestStreak: user?.longestStreak || 0,
+        totalWordsLearned: user?.totalWordsLearned || 0,
+        totalTestsTaken: user?.totalTestsTaken || 0,
+        averageTestScore: user?.averageTestScore || 0,
       },
       vocabulary: {
-        totalWords,
-        masteredWords,
-        reviewWords,
-        difficultWords,
+        totalWords: parseInt(vocabularyStats.totalWords) || 0,
+        masteredWords: parseInt(vocabularyStats.masteredWords) || 0,
+        reviewWords: parseInt(vocabularyStats.reviewWords) || 0,
+        difficultWords: parseInt(vocabularyStats.difficultWords) || 0,
         accuracy,
       },
     };
+
+    // Cache for 5 minutes
+    await this.redisService.set(cacheKey, JSON.stringify(result), 300);
+
+    return result;
   }
 
+  // Optimized updateProfile with cache invalidation
   async updateProfile(userId: number, updateData: { name?: string }) {
     await this.userRepository.update(userId, updateData);
+
+    // Clear cache to ensure fresh data
+    await this.redisService.delete(`user_profile_${userId}`);
+    await this.redisService.delete(`user_stats_${userId}`);
+
     return this.findOne(userId);
   }
 
+  // Optimized setDailyGoal with cache invalidation
   async setDailyGoal(userId: number, dailyGoal: number) {
     await this.userRepository.update(userId, { dailyGoal });
+
+    // Clear cache to ensure fresh data
+    await this.redisService.delete(`user_profile_${userId}`);
+    await this.redisService.delete(`user_stats_${userId}`);
+
     return this.findOne(userId);
   }
 
