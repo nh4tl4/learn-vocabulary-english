@@ -173,4 +173,88 @@ export class VocabularyCacheService {
       console.warn('Failed to clear cache:', error.message);
     }
   }
+
+  // Clear all learning dashboard related cache
+  async clearLearningDashboardCache(): Promise<void> {
+    try {
+      console.log('🧹 Clearing learning dashboard cache...');
+
+      // Common cache patterns for dashboard data
+      const commonCacheKeys = [
+        // Level-based caches
+        'level:beginner:10:0',
+        'level:beginner:20:0',
+        'level:beginner:30:0',
+        'level:intermediate:10:0',
+        'level:intermediate:20:0',
+        'level:intermediate:30:0',
+        'level:advanced:10:0',
+        'level:advanced:20:0',
+        'level:advanced:30:0',
+
+        // Topic-based caches (common topics)
+        'topic:business:all:10',
+        'topic:business:all:20',
+        'topic:technology:all:10',
+        'topic:technology:all:20',
+        'topic:education:all:10',
+        'topic:education:all:20',
+        'topic:health:all:10',
+        'topic:health:all:20',
+        'topic:travel:all:10',
+        'topic:travel:all:20',
+        'topic:food:all:10',
+        'topic:food:all:20',
+      ];
+
+      // Clear all common cache keys
+      const deletePromises = commonCacheKeys.map(key =>
+        this.redisService.delete(`${this.CACHE_PREFIX}${key}`)
+      );
+
+      await Promise.all(deletePromises);
+
+      console.log('✅ Learning dashboard cache cleared successfully!');
+    } catch (error) {
+      console.error('❌ Failed to clear learning dashboard cache:', error.message);
+      throw error;
+    }
+  }
+
+  // Clear cache for all levels
+  async clearAllLevelCache(): Promise<void> {
+    try {
+      const levels = ['beginner', 'intermediate', 'advanced'];
+      await Promise.all(levels.map(level => this.clearLevelCache(level)));
+      console.log('✅ All level cache cleared successfully!');
+    } catch (error) {
+      console.error('❌ Failed to clear all level cache:', error.message);
+      throw error;
+    }
+  }
+
+  // Clear cache for specific topic
+  async clearTopicCache(topic: string): Promise<void> {
+    try {
+      const levels = ['all', 'beginner', 'intermediate', 'advanced'];
+      const limits = [10, 20, 30];
+
+      const cacheKeys = [];
+      for (const level of levels) {
+        for (const limit of limits) {
+          cacheKeys.push(`topic:${topic}:${level}:${limit}`);
+        }
+      }
+
+      const deletePromises = cacheKeys.map(key =>
+        this.redisService.delete(`${this.CACHE_PREFIX}${key}`)
+      );
+
+      await Promise.all(deletePromises);
+      console.log(`✅ Topic cache for "${topic}" cleared successfully!`);
+    } catch (error) {
+      console.error(`❌ Failed to clear topic cache for "${topic}":`, error.message);
+      throw error;
+    }
+  }
 }

@@ -48,7 +48,7 @@ export default function ReviewSession() {
   const searchParams = useSearchParams();
 
   // Get URL params for topic-based review
-  const topic = searchParams.get('topic');
+  const topic = searchParams.get('topic') ?? undefined;
   const limit = parseInt(searchParams.get('limit') || '20');
   const level = searchParams.get('level') || undefined;
 

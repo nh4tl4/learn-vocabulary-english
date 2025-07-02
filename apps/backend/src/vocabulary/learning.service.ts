@@ -325,6 +325,9 @@ export class LearningService {
 
     await this.userVocabularyRepository.save(userVocab);
 
+    // Update user statistics for review activity
+    await this.updateUserStats(userId, false);
+
     return {
       success: true,
       nextReviewDate: userVocab.nextReviewDate,
@@ -342,6 +345,8 @@ export class LearningService {
       where: { userId, vocabularyId },
       relations: ['vocabulary'],
     });
+
+    const isNewWord = !userVocab;
 
     if (!userVocab) {
       // Create new record for first-time learning
@@ -378,6 +383,9 @@ export class LearningService {
     userVocab.easeFactor = Math.max(1.3, userVocab.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
 
     await this.userVocabularyRepository.save(userVocab);
+
+    // Update User statistics
+    await this.updateUserStats(userId, isNewWord);
 
     return {
       success: true,
@@ -434,19 +442,8 @@ export class LearningService {
     };
   }
 
-  // Get learning dashboard data - SUPER OPTIMIZED with Redis caching
+  // Get learning dashboard data - Direct database fetch (no caching)
   async getLearningDashboard(userId: number) {
-    const cacheKey = `learning_dashboard_${userId}`;
-
-    try {
-      // Try to get from Redis cache first
-      const cached = await this.vocabularyCacheService['redisService'].get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch (error) {
-      console.warn('Dashboard cache miss or error:', error.message);
-    }
 
     // Single optimized query to get all dashboard stats at once
     const [user, dashboardStats] = await Promise.all([
@@ -506,12 +503,7 @@ export class LearningService {
       progressPercentage: Math.min(progressPercentage, 100),
     };
 
-    // Cache for 2 minutes (shorter than user stats since this changes more frequently)
-    try {
-      await this.vocabularyCacheService['redisService'].set(cacheKey, JSON.stringify(result), 120);
-    } catch (error) {
-      console.warn('Failed to cache dashboard data:', error.message);
-    }
+    console.log(`✅ Dashboard data fetched directly from DB for user ${userId}`);
 
     return result;
   }
@@ -882,169 +874,87 @@ export class LearningService {
       });
     }
 
+    const testScore = Math.round((correctAnswers / testResults.length) * 100);
+
+    // Update user test statistics
+    await this.updateUserTestStats(userId, testScore);
+
     return {
       totalQuestions: testResults.length,
       correctAnswers,
-      percentage: Math.round((correctAnswers / testResults.length) * 100),
+      percentage: testScore,
     };
   }
 
-  // Get words learned today
-  async getTodayLearnedWords(userId: number): Promise<any[]> {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  // Update user statistics - called when user learns new words or reviews
+  private async updateUserStats(userId: number, isNewWord: boolean = false) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) return;
 
-    const todayLearnedWords = await this.userVocabularyRepository.find({
-      where: {
-        userId,
-        firstLearnedDate: Between(today, tomorrow),
-      },
-      relations: ['vocabulary'],
-      order: { firstLearnedDate: 'DESC' },
-    });
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    return todayLearnedWords.map(uv => ({
-      id: uv.vocabulary.id,
-      word: uv.vocabulary.word,
-      meaning: uv.vocabulary.meaning,
-      pronunciation: uv.vocabulary.pronunciation,
-      partOfSpeech: uv.vocabulary.partOfSpeech,
-      example: uv.vocabulary.example,
-      exampleVi: uv.vocabulary.exampleVi,
-      firstLearnedDate: uv.firstLearnedDate,
-      status: uv.status,
-    }));
-  }
+      // Update lastStudyDate
+      user.lastStudyDate = new Date();
 
-  // Get words reviewed today
-  async getTodayReviewedWords(userId: number): Promise<any[]> {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+      // Update streak logic
+      if (user.lastStudyDate) {
+        const lastStudyDate = new Date(user.lastStudyDate);
+        lastStudyDate.setHours(0, 0, 0, 0);
 
-    const todayReviewedWords = await this.userVocabularyRepository.find({
-      where: {
-        userId,
-        lastReviewedAt: Between(today, tomorrow),
-      },
-      relations: ['vocabulary'],
-      order: { lastReviewedAt: 'DESC' },
-    });
+        const diffTime = today.getTime() - lastStudyDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    return todayReviewedWords.map(uv => ({
-      id: uv.vocabulary.id,
-      word: uv.vocabulary.word,
-      meaning: uv.vocabulary.meaning,
-      pronunciation: uv.vocabulary.pronunciation,
-      partOfSpeech: uv.vocabulary.partOfSpeech,
-      example: uv.vocabulary.example,
-      exampleVi: uv.vocabulary.exampleVi,
-      lastReviewedAt: uv.lastReviewedAt,
-      status: uv.status,
-      correctCount: uv.correctCount,
-      incorrectCount: uv.incorrectCount,
-      reviewCount: uv.reviewCount,
-    }));
-  }
-
-  // Generate test by topic - new method for topic-specific tests
-  async generateTestByTopic(userId: number, topic: string, count: number = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) {
-    // Get learned words for this specific topic
-    let query = this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .leftJoinAndSelect('uv.vocabulary', 'v')
-      .where('uv.userId = :userId', { userId })
-      .andWhere('v.topic = :topic', { topic })
-      .andWhere('uv.status != :status', { status: LearningStatus.NOT_LEARNED });
-
-    if (level) {
-      query = query.andWhere('v.level = :level', { level });
-    }
-
-    const learnedWords = await query
-      .orderBy('uv.lastReviewedAt', 'DESC')
-      .take(count * 2) // Get more words to ensure we have enough for the test
-      .getMany();
-
-    if (learnedWords.length === 0) {
-      return [];
-    }
-
-    const testQuestions = [];
-
-    for (let i = 0; i < Math.min(count, learnedWords.length); i++) {
-      const userVocab = learnedWords[i];
-      const word = userVocab.vocabulary;
-
-      // Determine question type based on mode
-      let questionType: 'en-to-vi' | 'vi-to-en';
-      if (mode === 'mixed') {
-        questionType = Math.random() > 0.5 ? 'en-to-vi' : 'vi-to-en';
-      } else {
-        questionType = mode;
-      }
-
-      // Get wrong answers from the same topic and level for better test quality
-      let wrongAnswersQuery = this.vocabularyRepository
-        .createQueryBuilder('v')
-        .where('v.topic = :topic', { topic })
-        .andWhere('v.id != :currentId', { currentId: word.id });
-
-      if (level) {
-        wrongAnswersQuery = wrongAnswersQuery.andWhere('v.level = :level', { level });
-      }
-
-      const wrongAnswers = await wrongAnswersQuery
-        .orderBy('RANDOM()')
-        .take(3)
-        .getMany();
-
-      if (inputType === 'multiple-choice' || inputType === 'mixed') {
-        if (questionType === 'en-to-vi') {
-          const options = [
-            { id: 1, text: word.meaning, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.meaning || 'nghĩa sai 1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.meaning || 'nghĩa sai 2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.meaning || 'nghĩa sai 3', isCorrect: false },
-          ].sort(() => Math.random() - 0.5);
-
-          testQuestions.push({
-            vocabularyId: word.id,
-            questionType: 'en-to-vi',
-            inputType: 'multiple-choice',
-            question: `Nghĩa của từ "${word.word}" trong chủ đề "${topic}" là gì?`,
-            options,
-            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
-            word: word.word,
-            pronunciation: word.pronunciation,
-            topic: topic,
-          });
-        } else {
-          const options = [
-            { id: 1, text: word.word, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.word || 'word1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.word || 'word2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.word || 'word3', isCorrect: false },
-          ].sort(() => Math.random() - 0.5);
-
-          testQuestions.push({
-            vocabularyId: word.id,
-            questionType: 'vi-to-en',
-            inputType: 'multiple-choice',
-            question: `Từ tiếng Anh của "${word.meaning}" trong chủ đề "${topic}" là gì?`,
-            options,
-            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
-            meaning: word.meaning,
-            pronunciation: word.pronunciation,
-            topic: topic,
-          });
+        if (diffDays === 1) {
+          // Consecutive day - increment streak
+          user.currentStreak += 1;
+          user.longestStreak = Math.max(user.longestStreak, user.currentStreak);
+        } else if (diffDays > 1) {
+          // Streak broken - reset to 1
+          user.currentStreak = 1;
         }
+        // If diffDays === 0, it's the same day, don't change streak
+      } else {
+        // First time studying
+        user.currentStreak = 1;
+        user.longestStreak = 1;
       }
-    }
 
-    return testQuestions;
+      // Update total words learned if it's a new word
+      if (isNewWord) {
+        user.totalWordsLearned += 1;
+      }
+
+      await this.userRepository.save(user);
+
+      console.log(`✅ Updated user stats for user ${userId}: streak=${user.currentStreak}, totalWords=${user.totalWordsLearned}`);
+    } catch (error) {
+      console.error('❌ Error updating user stats:', error);
+    }
+  }
+
+  // Update user test statistics
+  private async updateUserTestStats(userId: number, testScore: number) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) return;
+
+      // Update test statistics
+      user.totalTestsTaken += 1;
+
+      // Calculate new average score
+      const totalScore = user.averageTestScore * (user.totalTestsTaken - 1) + testScore;
+      user.averageTestScore = Math.round(totalScore / user.totalTestsTaken);
+
+      // Update lastStudyDate for test activities too
+      user.lastStudyDate = new Date();
+
+      await this.userRepository.save(user);
+
+      console.log(`✅ Updated user test stats for user ${userId}: totalTests=${user.totalTestsTaken}, avgScore=${user.averageTestScore}`);
+    } catch (error) {
+      console.error('❌ Error updating user test stats:', error);
+    }
   }
 }

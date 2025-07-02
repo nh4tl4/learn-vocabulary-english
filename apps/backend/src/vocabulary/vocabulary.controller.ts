@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { VocabularyService } from './vocabulary.service';
 import { LearningService } from './learning.service';
+import { VocabularyCacheService } from './vocabulary-cache.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { StudySessionDto, TestResultDto } from './dto/learning.dto';
 
@@ -19,6 +20,7 @@ export class VocabularyController {
   constructor(
     private readonly vocabularyService: VocabularyService,
     private readonly learningService: LearningService,
+    private readonly vocabularyCacheService: VocabularyCacheService,
   ) {}
 
   // Existing endpoints
