@@ -58,7 +58,12 @@ export default function DifficultWordsPage() {
 
   const handlePracticeWord = async (wordId: number, isCorrect: boolean) => {
     try {
-      await vocabularyAPI.recordReviewResult(wordId, isCorrect);
+      // Use processStudySession instead of recordReviewResult
+      await vocabularyAPI.processStudySession({
+        vocabularyId: wordId,
+        quality: isCorrect ? 5 : 1, // High quality (5) for correct, low quality (1) for incorrect
+        responseTime: 1000 // Default response time in ms
+      });
 
       // Update local state
       setDifficultWords(prev =>

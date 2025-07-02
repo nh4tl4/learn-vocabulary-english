@@ -48,7 +48,9 @@ export default function ReviewSession() {
   const searchParams = useSearchParams();
 
   // Get URL params for topic-based review
-  const topic = searchParams.get('topic') ?? undefined;
+  const topicParam = searchParams.get('topic');
+  const topicString = topicParam || undefined; // Keep original string for display
+  const topic = topicParam ? parseInt(topicParam) : undefined; // Parse to number for API
   const limit = parseInt(searchParams.get('limit') || '20');
   const level = searchParams.get('level') || undefined;
 
@@ -140,7 +142,7 @@ export default function ReviewSession() {
   }
 
   if (state.words.length === 0) {
-    return <NoWordsState topic={topic} />;
+    return <NoWordsState topic={topicString} />;
   }
 
   if (state.sessionComplete) {
@@ -148,7 +150,7 @@ export default function ReviewSession() {
   }
 
   if (!currentWord) {
-    return <NoWordsState topic={topic} />;
+    return <NoWordsState topic={topicString} />;
   }
 
   return (
@@ -160,9 +162,9 @@ export default function ReviewSession() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-1">
               Ôn Tập Từ Vựng
             </h1>
-            {topic && (
+            {topicString && (
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong>Chủ đề:</strong> {topic}
+                <strong>Chủ đề:</strong> {topicString}
               </p>
             )}
           </div>

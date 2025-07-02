@@ -143,7 +143,8 @@ export default function StudySession(topic: string) {
       const levelParam = selectedLevel === 'all' ? undefined : selectedLevel;
 
       if (topic) {
-        response = await vocabularyAPI.getNewWordsByTopic(topic, 10, levelParam);
+        const topicId = parseInt(topic); // Convert string to number for API call
+        response = await vocabularyAPI.getNewWordsByTopic(topicId, 10, levelParam);
       } else {
         response = await vocabularyAPI.getNewWords(10, levelParam);
       }

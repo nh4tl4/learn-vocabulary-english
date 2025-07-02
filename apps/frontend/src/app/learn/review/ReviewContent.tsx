@@ -185,7 +185,12 @@ export default function ReviewContent() {
     if (!currentWord) return;
 
     try {
-      await vocabularyAPI.recordReviewResult(currentWord.id, isCorrect);
+      // Use processStudySession instead of recordReviewResult
+      await vocabularyAPI.processStudySession({
+        vocabularyId: currentWord.id,
+        quality: isCorrect ? 5 : 1, // High quality (5) for correct, low quality (1) for incorrect
+        responseTime: 1000 // Default response time in ms
+      });
 
       setCurrentWordStats(prev => ({
         correct: prev.correct + (isCorrect ? 1 : 0),
