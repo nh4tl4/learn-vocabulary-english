@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useLearningSettingsStore } from '@/store/learningSettingsStore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { vocabularyAPI } from '@/lib/api';
+import { vocabularyAPI, topicsAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import TextToSpeech from '@/components/TextToSpeech';
 
@@ -20,12 +20,21 @@ interface Vocabulary {
   topic?: string;
 }
 
+interface TopicInfo {
+  id: number;
+  name: string;
+  nameVi: string;
+  description?: string;
+  descriptionVi?: string;
+  icon?: string;
+}
+
 export default function LearnNewContent() {
   const { isAuthenticated, loadUser } = useAuthStore();
   const { getTopicSettings, newWordsPerSession } = useLearningSettingsStore();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const topic = searchParams.get('topic');
+  const topicId = searchParams.get('topicId'); // ✅ Changed from 'topic' to 'topicId'
   const level = searchParams.get('level'); // Add level support
   const limitParam = searchParams.get('limit');
 
@@ -33,6 +42,7 @@ export default function LearnNewContent() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMeaning, setShowMeaning] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [topicInfo, setTopicInfo] = useState<TopicInfo | null>(null);
 
   useEffect(() => {
     loadUser();
@@ -48,22 +58,47 @@ export default function LearnNewContent() {
     if (isAuthenticated) {
       loadNewWords();
     }
-  }, [isAuthenticated, topic, level]);
+  }, [isAuthenticated, topicId, level]); // ✅ Changed from 'topic' to 'topicId'
+
+  // Load topic information when topicId changes
+  useEffect(() => {
+    if (topicId) {
+      loadTopicInfo();
+    }
+  }, [topicId]);
+
+  const loadTopicInfo = async () => {
+    if (!topicId) return;
+
+    try {
+      const numericTopicId = parseInt(topicId);
+      if (isNaN(numericTopicId)) return;
+
+      const response = await topicsAPI.getById(numericTopicId);
+      setTopicInfo(response.data);
+    } catch (error) {
+      console.error('Failed to load topic info:', error);
+    }
+  };
 
   const loadNewWords = async () => {
     try {
       setLoading(true);
 
       let limit = parseInt(limitParam || '10');
-      if (topic) {
-        const settings = getTopicSettings(topic);
-        limit = settings.newWordsPerSession;
-      }
 
       let response;
-      if (topic) {
-        // Load words by topic with optional level filter
-        response = await vocabularyAPI.getNewWordsByTopic(topic, limit, level || undefined);
+      if (topicId) {
+        // ✅ Convert topicId string to number and call API with topicId
+        const numericTopicId = parseInt(topicId);
+        if (isNaN(numericTopicId)) {
+          toast.error('Topic ID không hợp lệ!');
+          router.push('/learn');
+          return;
+        }
+
+        // Load words by topicId with optional level filter
+        response = await vocabularyAPI.getNewWordsByTopic(numericTopicId, limit, level || undefined);
       } else {
         // Load general new words with optional level filter
         response = await vocabularyAPI.getNewWords(limit, level || undefined);
@@ -75,7 +110,7 @@ export default function LearnNewContent() {
         setShowMeaning(false);
       } else {
         const levelText = level ? ` (cấp độ ${level})` : '';
-        const topicText = topic ? ` trong chủ đề "${topic}"` : '';
+        const topicText = topicInfo ? ` trong chủ đề "${topicInfo.nameVi || topicInfo.name}"` : '';
         toast.error(`Không có từ mới nào để học${topicText}${levelText}!`);
         router.push('/learn');
       }
@@ -148,13 +183,13 @@ export default function LearnNewContent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            {topic
-              ? `Không có từ mới trong chủ đề "${topic}"`
+            {topicId
+              ? `Không có từ mới trong chủ đề ID "${topicId}"`
               : "Không có từ mới"
             }
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            {topic
+            {topicId
               ? "Bạn đã học hết tất cả từ mới trong chủ đề này hoặc chưa có từ nào được thêm vào."
               : "Bạn đã học hết tất cả từ mới hoặc chưa có từ nào được thêm vào."
             }
@@ -193,8 +228,10 @@ export default function LearnNewContent() {
           </div>
 
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {topic
-              ? `Học từ mới: ${topic.charAt(0).toUpperCase() + topic.slice(1)}`
+            {topicInfo
+              ? `Học từ mới: ${topicInfo.icon || '📚'} ${topicInfo.nameVi || topicInfo.name}`
+              : topicId
+              ? `Học từ mới: Chủ đề ID ${topicId}`
               : "Học từ mới"
             }
           </h1>

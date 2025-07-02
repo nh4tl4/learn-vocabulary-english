@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { UserVocabulary } from './user-vocabulary.entity';
+import { Topic } from './topic.entity';
 
 @Entity()
 export class Vocabulary {
@@ -30,10 +31,7 @@ export class Vocabulary {
   level: string;
 
   @Column({ nullable: true })
-  topic: string; // Thêm trường topic
-
-  @Column({ nullable: true })
-  topicVi: string; // Thêm trường topic tiếng Việt
+  topicId: number; // Foreign key to Topic
 
   @Column({ nullable: true })
   imageUrl: string;
@@ -46,4 +44,9 @@ export class Vocabulary {
 
   @OneToMany(() => UserVocabulary, userVocabulary => userVocabulary.vocabulary)
   userVocabularies: UserVocabulary[];
+
+  // New relation to Topic
+  @ManyToOne(() => Topic, topic => topic.vocabularies, { nullable: true })
+  @JoinColumn({ name: 'topicId' })
+  topicEntity: Topic;
 }

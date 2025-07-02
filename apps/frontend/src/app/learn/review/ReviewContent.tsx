@@ -50,7 +50,7 @@ export default function ReviewContent() {
   const { getTopicSettings, reviewWordsPerSession } = useLearningSettingsStore();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const topic = searchParams.get('topic');
+  const topicId = searchParams.get('topicId'); // ✅ Changed from 'topic' to 'topicId'
 
   const [words, setWords] = useState<Vocabulary[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -80,11 +80,39 @@ export default function ReviewContent() {
   const loadReviewStats = async () => {
     try {
       setLoading(true);
-      const response = await vocabularyAPI.getReviewStats();
-      setReviewStats(response.data);
-    } catch (error: any) {
+
+      if (topicId) {
+        // For topic-specific review, we need to get words by topicId
+        const numericTopicId = parseInt(topicId);
+        if (isNaN(numericTopicId)) {
+          toast.error('Topic ID không hợp lệ!');
+          router.push('/learn');
+          return;
+        }
+
+        // Load review words for specific topic using topicId
+        const response = await vocabularyAPI.getReviewWordsByTopic(numericTopicId, 20, selectedPeriod);
+        setWords(response.data);
+        setCurrentIndex(0);
+        setShowMeaning(false);
+        setCurrentWordStats({correct: 0, incorrect: 0});
+
+        if (response.data.length === 0) {
+          const periodText = getPeriodText(selectedPeriod);
+          toast(`Không có từ nào để ôn tập ${periodText}!`);
+          setReviewMode('selection');
+          return;
+        }
+
+        setReviewMode('review');
+      } else {
+        // Load general review stats
+        const response = await vocabularyAPI.getReviewStats();
+        setReviewStats(response.data);
+      }
+    } catch (error) {
       console.error('Failed to load review stats:', error);
-      toast.error('Không thể tải thống kê ôn tập');
+      toast.error('Không thể tải thống kê ôn tập!');
     } finally {
       setLoading(false);
     }
@@ -96,10 +124,18 @@ export default function ReviewContent() {
       let response;
 
       const urlLimit = searchParams.get('limit');
-      const limit = urlLimit ? parseInt(urlLimit) : (topic ? getTopicSettings(topic).reviewWordsPerSession : reviewWordsPerSession);
+      const limit = urlLimit ? parseInt(urlLimit) : reviewWordsPerSession;
 
-      if (topic) {
-        response = await vocabularyAPI.getReviewWordsByTopic(topic, limit, period);
+      if (topicId) {
+        // ✅ Convert topicId to number and use the correct API method
+        const numericTopicId = parseInt(topicId);
+        if (isNaN(numericTopicId)) {
+          toast.error('Topic ID không hợp lệ!');
+          router.push('/learn');
+          return;
+        }
+
+        response = await vocabularyAPI.getReviewWordsByTopic(numericTopicId, limit, period);
       } else {
         response = await vocabularyAPI.getWordsForReviewByPeriod(period, limit);
       }

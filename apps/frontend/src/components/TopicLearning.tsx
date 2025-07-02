@@ -1,19 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { vocabularyAPI, userAPI } from '@/lib/api';
+import { vocabularyAPI, topicsAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useLearningSettingsStore } from '@/store/learningSettingsStore';
 import { useAuthStore } from '@/store/authStore';
 import LearningSettingsModal from './LearningSettingsModal';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
-import { getTopicDisplayBilingual, getTopicEmoji } from '@/lib/topicUtils';
-
-interface TopicStat {
-  topic: string;
-  topicVi?: string;
-  count: number;
-}
+import { Topic, TopicStats } from '@/types';
 
 interface TopicProgress {
   topic: string;
@@ -30,8 +24,8 @@ interface LoadingState {
 }
 
 export default function TopicLearning() {
-  // Consolidated state
-  const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
+  // Consolidated state - Updated to use Topic interface from database
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [topicProgress, setTopicProgress] = useState<Record<string, TopicProgress>>({});
   const [loading, setLoading] = useState<LoadingState>({ initial: true, more: false });
   const [showSettings, setShowSettings] = useState(false);
@@ -45,58 +39,78 @@ export default function TopicLearning() {
   const userLevel = useMemo(() => user?.level || 'beginner', [user?.level]);
 
   const totalStats = useMemo(() => ({
-    topics: topicStats.length,
-    totalWords: topicStats.reduce((sum, topic) => sum + topic.count, 0),
+    topics: topics.length,
+    totalWords: topics.reduce((sum, topic) => sum + (topic.vocabularyCount || 0), 0),
     learnedWords: Object.values(topicProgress).reduce((sum, progress) => sum + progress.totalLearned, 0),
     masteredWords: Object.values(topicProgress).reduce((sum, progress) => sum + progress.mastered, 0),
-  }), [topicStats, topicProgress]);
+  }), [topics, topicProgress]);
 
-  // Load topic progress
-  const loadTopicProgress = useCallback(async (stats: TopicStat[]) => {
-    const progressPromises = stats.map(async (topicStat) => {
-      try {
-        const response = await vocabularyAPI.getProgressByTopic(topicStat.topic, userLevel);
-        return { topic: topicStat.topic, progress: response.data };
-      } catch (error) {
-        console.error(`Failed to load progress for topic ${topicStat.topic}:`, error);
-        return { topic: topicStat.topic, progress: null };
+  // Load topic progress - OPTIMIZED to use bulk API with topicId
+  const loadTopicProgress = useCallback(async (topicList: Topic[]) => {
+    if (topicList.length === 0) return {};
+
+    try {
+      const topicNames = topicList.map(topic => topic.name);
+      const response = await vocabularyAPI.getProgressByMultipleTopics(topicNames, userLevel);
+
+      // Convert array response to object keyed by topic name
+      const progressMap: Record<string, TopicProgress> = {};
+      if (response.data && Array.isArray(response.data)) {
+        response.data.forEach((progress: TopicProgress) => {
+          progressMap[progress.topic] = progress;
+        });
       }
-    });
 
-    const results = await Promise.all(progressPromises);
-    const progressMap: Record<string, TopicProgress> = {};
+      return progressMap;
+    } catch (error) {
+      console.error('Failed to load bulk topic progress:', error);
 
-    results.forEach(({ topic, progress }) => {
-      if (progress) progressMap[topic] = progress;
-    });
+      // Fallback to individual calls using topicId
+      const progressPromises = topicList.map(async (topic) => {
+        try {
+          const response = await vocabularyAPI.getProgressByTopic(topic.id, userLevel);
+          return { topicName: topic.name, progress: response.data };
+        } catch (error) {
+          console.error(`Failed to load progress for topic ${topic.name}:`, error);
+          return { topicName: topic.name, progress: null };
+        }
+      });
 
-    return progressMap;
+      const results = await Promise.all(progressPromises);
+      const progressMap: Record<string, TopicProgress> = {};
+
+      results.forEach(({ topicName, progress }) => {
+        if (progress) progressMap[topicName] = progress;
+      });
+
+      return progressMap;
+    }
   }, [userLevel]);
 
-  // Main data loading function
+  // Main data loading function - Updated to use topics from database
   const loadTopicsData = useCallback(async () => {
     try {
       setLoading(prev => ({ ...prev, initial: true }));
 
-      // Load selected topics and stats in parallel
-      const [selectedResponse, statsResponse] = await Promise.all([
+      // Load selected topics and all topics from database in parallel
+      const [selectedResponse, topicsResponse] = await Promise.all([
         userAPI.getSelectedTopics(),
-        vocabularyAPI.getTopicStats(1, 50)
+        topicsAPI.getWithCounts() // Get topics directly from database with counts
       ]);
 
       const selectedTopics = selectedResponse.data.topics || [];
-      const allStats = statsResponse.data.topics || [];
+      const allTopics = topicsResponse.data || [];
 
-      // Filter stats for selected topics only
-      const selectedStats = allStats.filter((stat: any) =>
-        selectedTopics.includes(stat.topic)
+      // Filter topics for selected topics only
+      const selectedTopicsList = allTopics.filter((topic: Topic) =>
+        selectedTopics.includes(topic.name)
       );
 
-      setTopicStats(selectedStats);
+      setTopics(selectedTopicsList);
 
       // Load progress if we have topics
-      if (selectedStats.length > 0) {
-        const progressMap = await loadTopicProgress(selectedStats);
+      if (selectedTopicsList.length > 0) {
+        const progressMap = await loadTopicProgress(selectedTopicsList);
         setTopicProgress(progressMap);
       }
 
@@ -107,16 +121,24 @@ export default function TopicLearning() {
     }
   }, [loadTopicProgress]);
 
-  // Navigation helpers
-  const navigateToLearning = useCallback((topic: string, mode: 'learn' | 'review' | 'test') => {
-    const settings = getTopicSettings(topic);
+  // Navigation helpers - Updated to use topicId
+  const navigateToLearning = useCallback((topicId: number, topicName: string, mode: 'learn' | 'review' | 'test') => {
+    const settings = getTopicSettings(topicName);
     const limits = {
       learn: settings.newWordsPerSession,
       review: settings.reviewWordsPerSession,
       test: settings.testWordsPerSession
     };
 
-    router.push(`/learn/${mode}?topic=${topic}&limit=${limits[mode]}&level=${userLevel}`);
+    // Map mode to correct route path
+    const routeMap = {
+      learn: 'new',
+      review: 'review',
+      test: 'test'
+    };
+
+    // Use topicId instead of topic name in URL
+    router.push(`/learn/${routeMap[mode]}?topicId=${topicId}&limit=${limits[mode]}&level=${userLevel}`);
   }, [getTopicSettings, router, userLevel]);
 
   const openSettings = useCallback((topic?: string) => {
@@ -147,7 +169,7 @@ export default function TopicLearning() {
   }
 
   // Empty state
-  if (topicStats.length === 0) {
+  if (topics.length === 0) {
     return (
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         <EmptyTopicsState onSelectTopics={() => router.push('/topics')} />
@@ -162,12 +184,12 @@ export default function TopicLearning() {
 
       {/* Topics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
-        {topicStats.map((topicStat) => (
+        {topics.map((topic) => (
           <TopicCard
-            key={topicStat.topic}
-            topicStat={topicStat}
-            progress={topicProgress[topicStat.topic]}
-            settings={getTopicSettings(topicStat.topic)}
+            key={topic.name}
+            topic={topic}
+            progress={topicProgress[topic.name]}
+            settings={getTopicSettings(topic.name)}
             onNavigate={navigateToLearning}
             onOpenSettings={(topic) => openSettings(topic)}
             getProgressColor={getProgressColor}
@@ -240,17 +262,17 @@ const EmptyTopicsState = ({ onSelectTopics }: { onSelectTopics: () => void }) =>
 );
 
 const TopicCard = ({
-  topicStat,
+  topic,
   progress,
   settings,
   onNavigate,
   onOpenSettings,
   getProgressColor
 }: {
-  topicStat: TopicStat;
+  topic: Topic;
   progress?: TopicProgress;
   settings: any;
-  onNavigate: (topic: string, mode: 'learn' | 'review' | 'test') => void;
+  onNavigate: (topicId: number, topicName: string, mode: 'learn' | 'review' | 'test') => void;
   onOpenSettings: (topic: string) => void;
   getProgressColor: (percentage: number) => string;
 }) => {
@@ -261,15 +283,16 @@ const TopicCard = ({
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-2xl">{getTopicEmoji(topicStat.topic)}</span>
+          {/* Use icon from database or fallback to default */}
+          <span className="text-2xl">{topic.icon || '📖'}</span>
           <div className="flex items-center space-x-2">
             <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-              {topicStat.count} từ
+              {topic.vocabularyCount || 0} từ
             </span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onOpenSettings(topicStat.topic);
+                onOpenSettings(topic.name);
               }}
               className="p-1 hover:bg-white/20 rounded transition-colors"
             >
@@ -277,9 +300,13 @@ const TopicCard = ({
             </button>
           </div>
         </div>
+        {/* Use nameVi and name from database */}
         <h3 className="font-semibold text-sm sm:text-base line-clamp-2">
-          {getTopicDisplayBilingual(topicStat.topic, topicStat.topicVi)}
+          {topic.nameVi || topic.name}
         </h3>
+        {topic.nameVi && topic.nameVi !== topic.name && (
+          <p className="text-xs text-white/80 mt-1">{topic.name}</p>
+        )}
       </div>
 
       {/* Content */}
@@ -298,20 +325,20 @@ const TopicCard = ({
               />
             </div>
             <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-              <span>Đã học: {progress.totalLearned}/{topicStat.count}</span>
+              <span>Đã học: {progress.totalLearned}/{topic.vocabularyCount || 0}</span>
               <span>Thành thạo: {progress.mastered}</span>
             </div>
           </div>
         ) : (
           <div className="mb-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-            Chưa bắt đầu học (0/{topicStat.count})
+            Chưa bắt đầu học (0/{topic.vocabularyCount || 0})
           </div>
         )}
 
         {/* Action Buttons */}
         <div className="space-y-2">
           <ActionButton
-            onClick={() => onNavigate(topicStat.topic, 'learn')}
+            onClick={() => onNavigate(topic.id, topic.name, 'learn')}
             className="bg-green-500 hover:bg-green-600"
             icon="📚"
             label={`Học từ mới (${settings.newWordsPerSession})`}
@@ -319,7 +346,7 @@ const TopicCard = ({
 
           {(progress?.learning || 0) > 0 && (
             <ActionButton
-              onClick={() => onNavigate(topicStat.topic, 'review')}
+              onClick={() => onNavigate(topic.id, topic.name, 'review')}
               className="bg-yellow-500 hover:bg-yellow-600"
               icon="🔄"
               label={`Ôn tập (${settings.reviewWordsPerSession})`}
@@ -328,7 +355,7 @@ const TopicCard = ({
 
           {(progress?.totalLearned || 0) >= 5 && (
             <ActionButton
-              onClick={() => onNavigate(topicStat.topic, 'test')}
+              onClick={() => onNavigate(topic.id, topic.name, 'test')}
               className="bg-purple-500 hover:bg-purple-600"
               icon="📝"
               label={`Kiểm tra (${settings.testWordsPerSession})`}

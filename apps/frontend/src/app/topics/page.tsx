@@ -1,23 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { vocabularyAPI, userAPI } from '@/lib/api';
+import { topicsAPI, userAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { getTopicEmoji, getTopicDisplay } from '@/lib/topicUtils';
-
-interface TopicInfo {
-  topic: string;
-  topicVi: string;
-  count: number;
-}
+import { Topic } from '@/types';
+import Toast from '@/components/Toast';
 
 export default function TopicsPage() {
-  const [availableTopics, setAvailableTopics] = useState<TopicInfo[]>([]);
+  const [availableTopics, setAvailableTopics] = useState<Topic[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Toast state
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error';
+    isVisible: boolean;
+  }>({
+    message: '',
+    type: 'success',
+    isVisible: false
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -29,28 +34,20 @@ export default function TopicsPage() {
       setLoading(true);
       setError(null);
 
-      const [topicsResponse, selectedResponse] = await Promise.all([
-        vocabularyAPI.getTopicStats(1, 50),
+      // Chỉ lấy danh sách topics đã chọn từ user, không cần vocabulary count
+      // Vocabulary count sẽ được lấy khi thực sự vào học
+      const [allTopicsResponse, selectedResponse] = await Promise.all([
+        topicsAPI.getAll(), // Lấy tất cả topics (không có count) để hiển thị danh sách chọn
         userAPI.getSelectedTopics().catch(() => ({ data: { topics: [] } }))
       ]);
 
-      const topics = topicsResponse.data?.topics?.map((item: any) => ({
-        topic: item.topic,
-        topicVi: item.topicVi || '',
-        count: item.count || 0
-      })) || [];
+      console.log('All topics from database:', allTopicsResponse.data);
+      console.log('Selected topics:', selectedResponse.data);
 
-      // Remove duplicates
-      const seen = new Set();
-      const uniqueTopics = topics.filter((topicInfo: TopicInfo) => {
-        if (seen.has(topicInfo.topic)) {
-          return false;
-        }
-        seen.add(topicInfo.topic);
-        return true;
-      });
+      // Sử dụng tất cả topics để cho phép chọn, nhưng không cần count
+      const allTopics = allTopicsResponse.data || [];
 
-      setAvailableTopics(uniqueTopics);
+      setAvailableTopics(allTopics);
       setSelectedTopics(selectedResponse.data?.topics || []);
     } catch (err: any) {
       console.error('Error loading topics:', err);
@@ -74,7 +71,7 @@ export default function TopicsPage() {
     if (selectedTopics.length === availableTopics.length) {
       setSelectedTopics([]);
     } else {
-      setSelectedTopics(availableTopics.map(t => t.topic));
+      setSelectedTopics(availableTopics.map(t => t.name)); // Sử dụng t.name thay vì t.topic
     }
   };
 
@@ -89,9 +86,11 @@ export default function TopicsPage() {
       setError(null);
       await userAPI.saveSelectedTopics(selectedTopics);
       setSuccess('Đã lưu lựa chọn thành công!');
+      setToast({ message: 'Đã lưu lựa chọn thành công!', type: 'success', isVisible: true });
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError('Không thể lưu. Vui lòng thử lại.');
+      setToast({ message: 'Không thể lưu. Vui lòng thử lại.', type: 'error', isVisible: true });
     } finally {
       setSaving(false);
     }
@@ -122,7 +121,6 @@ export default function TopicsPage() {
     );
   }
 
-  const totalWords = availableTopics.reduce((sum, topic) => sum + topic.count, 0);
   const isAllSelected = selectedTopics.length === availableTopics.length && availableTopics.length > 0;
 
   return (
@@ -147,7 +145,7 @@ export default function TopicsPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 text-center shadow-sm">
             <div className="text-2xl mb-2">✨</div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{selectedTopics.length}</p>
@@ -157,11 +155,6 @@ export default function TopicsPage() {
             <div className="text-2xl mb-2">🔥</div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{availableTopics.length}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Tổng chủ đề</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 text-center shadow-sm">
-            <div className="text-2xl mb-2">📚</div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalWords}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Từ vựng</p>
           </div>
         </div>
 
@@ -194,15 +187,13 @@ export default function TopicsPage() {
 
         {/* Topics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
-          {availableTopics.map((topicInfo) => {
-            const isSelected = selectedTopics.includes(topicInfo.topic);
-            const emoji = getTopicEmoji(topicInfo.topic);
-            const displayName = getTopicDisplay(topicInfo.topic, topicInfo.topicVi);
+          {availableTopics.map((topic) => {
+            const isSelected = selectedTopics.includes(topic.name); // Sử dụng topic.name
 
             return (
               <div
-                key={`topic-${topicInfo.topic}`}
-                onClick={() => handleTopicToggle(topicInfo.topic)}
+                key={`topic-${topic.name}`} // Sử dụng topic.name
+                onClick={() => handleTopicToggle(topic.name)} // Sử dụng topic.name
                 className={`relative bg-white dark:bg-gray-800 rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
                   isSelected 
                     ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
@@ -219,27 +210,27 @@ export default function TopicsPage() {
                 </div>
 
                 <div className="text-center">
-                  {/* Icon */}
+                  {/* Icon - Sử dụng icon từ database */}
                   <div className={`w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center text-2xl ${
                     isSelected 
                       ? 'bg-purple-500 text-white' 
                       : 'bg-gray-100 dark:bg-gray-700'
                   }`}>
-                    {emoji}
+                    {topic.icon || '📖'} {/* Sử dụng topic.icon từ database */}
                   </div>
 
-                  {/* Name */}
+                  {/* Name - Sử dụng nameVi từ database */}
                   <h3 className="font-semibold text-sm mb-2 text-gray-900 dark:text-white">
-                    {displayName}
+                    {topic.nameVi || topic.name} {/* Sử dụng topic.nameVi hoặc fallback topic.name */}
                   </h3>
 
-                  {/* Count */}
+                  {/* Count - Sử dụng vocabularyCount từ database */}
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     isSelected 
                       ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200' 
                       : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                   }`}>
-                    {topicInfo.count} từ
+                    {topic.vocabularyCount || 0} từ {/* Sử dụng topic.vocabularyCount */}
                   </span>
                 </div>
               </div>
@@ -275,6 +266,14 @@ export default function TopicsPage() {
             <p className="text-green-700 dark:text-green-400">{success}</p>
           </div>
         )}
+
+        {/* Toast Notification */}
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+        />
       </div>
     </div>
   );

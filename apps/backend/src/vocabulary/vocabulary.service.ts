@@ -118,22 +118,28 @@ export class VocabularyService {
     return result;
   }
 
-  // Get all available topics with pagination - OPTIMIZED with Promise.all
+  // Get all available topics with pagination - UPDATED to use topics table
   async getTopics(page: number = 1, limit: number = 20, level?: string) {
     const offset = (page - 1) * limit;
 
-    // Build queries for parallel execution
+    // Build queries for parallel execution using topics table
     let topicsQuery = this.vocabularyRepository
       .createQueryBuilder('vocabulary')
-      .select('vocabulary.topic', 'topic')
-      .addSelect('vocabulary.topicVi', 'topicVi')
-      .addSelect('COUNT(*)', 'count')
-      .where('vocabulary.topic IS NOT NULL');
+      .innerJoin('vocabulary.topicEntity', 'topic')
+      .select('topic.id', 'id')
+      .addSelect('topic.name', 'name')
+      .addSelect('topic.nameVi', 'nameVi')
+      .addSelect('topic.description', 'description')
+      .addSelect('topic.descriptionVi', 'descriptionVi')
+      .addSelect('topic.icon', 'icon')
+      .addSelect('COUNT(vocabulary.id)', 'count')
+      .where('topic.isActive = :isActive', { isActive: true });
 
     let totalQuery = this.vocabularyRepository
       .createQueryBuilder('vocabulary')
-      .select('COUNT(DISTINCT vocabulary.topic)', 'total')
-      .where('vocabulary.topic IS NOT NULL');
+      .innerJoin('vocabulary.topicEntity', 'topic')
+      .select('COUNT(DISTINCT topic.id)', 'total')
+      .where('topic.isActive = :isActive', { isActive: true });
 
     // Add level filter if provided
     if (level) {
@@ -144,10 +150,14 @@ export class VocabularyService {
     // Execute both queries in parallel
     const [topics, totalTopics] = await Promise.all([
       topicsQuery
-        .groupBy('vocabulary.topic')
-        .addGroupBy('vocabulary.topicVi')
-        .orderBy('COUNT(*)', 'DESC')
-        .addOrderBy('vocabulary.topic', 'ASC')
+        .groupBy('topic.id')
+        .addGroupBy('topic.name')
+        .addGroupBy('topic.nameVi')
+        .addGroupBy('topic.description')
+        .addGroupBy('topic.descriptionVi')
+        .addGroupBy('topic.icon')
+        .orderBy('COUNT(vocabulary.id)', 'DESC')
+        .addOrderBy('topic.name', 'ASC')
         .offset(offset)
         .limit(limit)
         .getRawMany(),
@@ -157,8 +167,12 @@ export class VocabularyService {
 
     return {
       topics: topics.map(t => ({
-        topic: t.topic,
-        topicVi: t.topicVi,
+        id: t.id,
+        name: t.name,
+        nameVi: t.nameVi,
+        description: t.description,
+        descriptionVi: t.descriptionVi,
+        icon: t.icon,
         count: parseInt(t.count)
       })),
       total: parseInt(totalTopics.total),
@@ -186,27 +200,30 @@ export class VocabularyService {
     return result;
   }
 
-  // Find vocabulary by topic with pagination
-  async findByTopic(topic: string, page: number = 1, limit: number = 20, level?: string) {
+  // Find vocabulary by topic with pagination - UPDATED to use topicId
+  async findByTopic(topicName: string, page: number = 1, limit: number = 20, level?: string) {
     // Cache key for vocabulary by topic with longer TTL
-    const cacheKey = `vocabulary:topic:${topic}:page:${page}:limit:${limit}:level:${level || 'all'}`;
+    const cacheKey = `vocabulary:topic:${topicName}:page:${page}:limit:${limit}:level:${level || 'all'}`;
     const cached = await this.redisService.getVocabularyByTopic(cacheKey);
 
     if (cached) {
       return cached;
     }
 
-    const whereCondition: any = { topic };
+    let query = this.vocabularyRepository
+      .createQueryBuilder('vocabulary')
+      .innerJoin('vocabulary.topicEntity', 'topic')
+      .where('topic.name = :topicName', { topicName });
+
     if (level) {
-      whereCondition.level = level;
+      query = query.andWhere('vocabulary.level = :level', { level });
     }
 
-    const [vocabularies, total] = await this.vocabularyRepository.findAndCount({
-      where: whereCondition,
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-    });
+    const [vocabularies, total] = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('vocabulary.createdAt', 'DESC')
+      .getManyAndCount();
 
     const result = {
       vocabularies,
@@ -214,7 +231,7 @@ export class VocabularyService {
       page,
       totalPages: Math.ceil(total / limit),
       hasMore: page < Math.ceil(total / limit),
-      topic,
+      topic: topicName,
       level
     };
 
@@ -223,11 +240,12 @@ export class VocabularyService {
     return result;
   }
 
-  // Search words by topic with pagination
-  async searchWordsByTopic(topic: string, word: string, limit: number = 10, level?: string) {
+  // Search words by topic with pagination - UPDATED to use topicId
+  async searchWordsByTopic(topicName: string, word: string, limit: number = 10, level?: string) {
     let query = this.vocabularyRepository
       .createQueryBuilder('vocabulary')
-      .where('vocabulary.topic = :topic', { topic })
+      .innerJoin('vocabulary.topicEntity', 'topic')
+      .where('topic.name = :topicName', { topicName })
       .andWhere('vocabulary.word ILIKE :word', { word: `%${word}%` });
 
     if (level) {
@@ -240,15 +258,65 @@ export class VocabularyService {
       .getMany();
   }
 
-  // Find vocabulary by topic and word (exact match)
-  async findByTopicAndWord(topic: string, word: string, level?: string) {
-    const whereCondition: any = { topic, word };
+  // Find vocabulary by topic and word (exact match) - UPDATED to use topicId
+  async findByTopicAndWord(topicName: string, word: string, level?: string) {
+    let query = this.vocabularyRepository
+      .createQueryBuilder('vocabulary')
+      .innerJoin('vocabulary.topicEntity', 'topic')
+      .where('topic.name = :topicName', { topicName })
+      .andWhere('vocabulary.word = :word', { word });
+
     if (level) {
-      whereCondition.level = level;
+      query = query.andWhere('vocabulary.level = :level', { level });
     }
 
-    return await this.vocabularyRepository.findOne({
-      where: whereCondition
+    return await query.getOne();
+  }
+
+  // Find vocabulary by topic ID
+  async findByTopicId(topicId: number, page: number = 1, limit: number = 20) {
+    const cacheKey = `vocabulary:topic:${topicId}:page:${page}:limit:${limit}`;
+    const cached = await this.redisService.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const [vocabularies, total] = await this.vocabularyRepository.findAndCount({
+      where: { topicId },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { id: 'ASC' },
+      relations: ['topicEntity'],
     });
+
+    const result = {
+      vocabularies,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      topicId,
+    };
+
+    // Cache for 5 minutes
+    await this.redisService.set(cacheKey, result, 300);
+    return result;
+  }
+
+  // Search words by topic ID
+  async searchWordsByTopicId(topicId: number, word: string, limit: number = 10, level?: string) {
+    let query = this.vocabularyRepository
+      .createQueryBuilder('v')
+      .where('v.topicId = :topicId', { topicId })
+      .andWhere('(v.word ILIKE :word OR v.meaning ILIKE :word)', { word: `%${word}%` });
+
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
+
+    return await query
+      .orderBy('v.word', 'ASC')
+      .take(limit)
+      .getMany();
   }
 }

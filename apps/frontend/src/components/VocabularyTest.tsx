@@ -69,7 +69,7 @@ export default function VocabularyTest() {
   const searchParams = useSearchParams();
 
   // Get URL params for topic-based tests
-  const topic = searchParams.get('topic');
+  const topicId = searchParams.get('topicId'); // ✅ Changed from 'topic' to 'topicId'
   const limit = parseInt(searchParams.get('limit') || '10');
   const level = searchParams.get('level') || undefined; // Convert null to undefined
 
@@ -85,9 +85,17 @@ export default function VocabularyTest() {
       setState(prev => ({ ...prev, loading: true }));
 
       let response;
-      if (topic) {
-        // Load test for specific topic
-        response = await vocabularyAPI.generateTestByTopic(topic, limit, testMode, inputType, level);
+      if (topicId) {
+        // ✅ Convert topicId to number for API call
+        const numericTopicId = parseInt(topicId);
+        if (isNaN(numericTopicId)) {
+          console.error('Invalid topicId:', topicId);
+          setState(prev => ({ ...prev, loading: false }));
+          return;
+        }
+
+        // Load test for specific topic using numeric topicId
+        response = await vocabularyAPI.generateTestByTopic(numericTopicId, limit, testMode, inputType, level);
       } else {
         // Load general test
         response = await vocabularyAPI.generateTest(limit, testMode, inputType);
@@ -114,7 +122,7 @@ export default function VocabularyTest() {
       console.error('Failed to load test questions:', error);
       setState(prev => ({ ...prev, loading: false }));
     }
-  }, [topic, limit, testMode, inputType, level]);
+  }, [topicId, limit, testMode, inputType, level]);
 
   // Optimized answer submission
   const submitAnswer = useCallback(async (answer: number | string) => {

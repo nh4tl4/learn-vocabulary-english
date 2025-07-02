@@ -1,8 +1,9 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './user.entity';
+import { Topic } from './topic.entity';
 
 @Entity('user_topic_history')
-@Index(['userId', 'topic']) // Index để query nhanh
+@Index(['userId', 'topicId']) // Updated index để query nhanh
 @Index(['userId', 'createdAt']) // Index theo thời gian
 export class UserTopicHistory {
   @PrimaryGeneratedColumn()
@@ -11,8 +12,11 @@ export class UserTopicHistory {
   @Column()
   userId: number;
 
-  @Column({ nullable: true }) // null = "Tất cả chủ đề"
-  topic: string;
+  @Column({ nullable: true })
+  topicId: number; // Foreign key to Topic (null = "Tất cả chủ đề")
+
+  @Column({ nullable: true })
+  topic: string; // Deprecated - keep for backward compatibility
 
   @Column({ default: 1 })
   sessionCount: number; // Số lần chọn chủ đề này
@@ -29,4 +33,9 @@ export class UserTopicHistory {
   @ManyToOne(() => User, user => user.topicHistory)
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  // New relation to Topic
+  @ManyToOne(() => Topic, topic => topic.userTopicHistories, { nullable: true })
+  @JoinColumn({ name: 'topicId' })
+  topicEntity: Topic;
 }

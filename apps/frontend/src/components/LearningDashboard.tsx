@@ -192,7 +192,7 @@ export default function LearningDashboard() {
               <div className="flex justify-between items-center text-sm mb-3">
                 <span className="font-medium flex items-center gap-2">
                   <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-                  {todayProgress.totalProgress} / {user.dailyGoal} từ
+                  {todayProgress.wordsLearned} / {user.dailyGoal} từ
                 </span>
                 <div className="flex items-center gap-2">
                   <span className={`font-bold text-lg ${progressPercentage >= 100 ? 'text-green-300' : progressPercentage >= 75 ? 'text-yellow-300' : 'text-white'}`}>

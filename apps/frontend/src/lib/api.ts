@@ -135,15 +135,12 @@ export const vocabularyAPI = {
     return apiClient.get(`/vocabulary/review/by-period?${params}`);
   },
 
-  getReviewWordsByTopic: (topic: string, limit = 20, period?: string, level?: string) => {
+  getReviewWordsByTopic: (topicId: number, limit = 20, period?: string, level?: string) => {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (period) params.append('period', period);
     if (level) params.append('level', level);
-    return apiClient.get(`/vocabulary/topics/${topic}/review/by-period?${params}`);
+    return apiClient.get(`/vocabulary/topics/${topicId}/review/by-period?${params}`);
   },
-
-  recordReviewResult: (wordId: number, isCorrect: boolean, difficulty?: number) =>
-    apiClient.post('/vocabulary/review/result', { wordId, isCorrect, difficulty }),
 
   // Process study session
   processStudySession: (sessionData: { vocabularyId: number; quality: number; responseTime: number }) =>
@@ -168,7 +165,7 @@ export const vocabularyAPI = {
     return apiClient.get(`/vocabulary/learn/difficult?${params}`);
   },
 
-  // Topic-based endpoints with level support
+  // Topic-based endpoints with level support - UPDATED for new topic structure
   getTopics: (page = 1, limit = 20, level?: string) => {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
     if (level) params.append('level', level);
@@ -181,42 +178,49 @@ export const vocabularyAPI = {
     return apiClient.get(`/vocabulary/topics/stats?${params}`);
   },
 
-  getVocabularyByTopic: (topic: string, page = 1, limit = 20, level?: string) => {
+  getVocabularyByTopic: (topicId: number, page = 1, limit = 20, level?: string) => {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
     if (level) params.append('level', level);
-    return apiClient.get(`/vocabulary/topic/${encodeURIComponent(topic)}?${params}`);
+    return apiClient.get(`/vocabulary/topic/${topicId}?${params}`);
   },
 
-  getNewWordsByTopic: (topic: string, limit = 10, level?: string) => {
+  getNewWordsByTopic: (topicId: number, limit = 10, level?: string) => {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (level) params.append('level', level);
-    return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/new?${params}`);
+    return apiClient.get(`/vocabulary/topics/${topicId}/new?${params}`);
   },
 
-  generateTestByTopic: (topic: string, count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) => {
+  generateTestByTopic: (topicId: number, count = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) => {
     const params = new URLSearchParams({
       count: count.toString(),
       mode,
       inputType
     });
     if (level) params.append('level', level);
-    return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/test?${params}`);
+    return apiClient.get(`/vocabulary/topics/${topicId}/test?${params}`);
   },
 
-  getProgressByTopic: (topic: string, level?: string) => {
+  getProgressByTopic: (topicId: number, level?: string) => {
     const params = level ? `?level=${level}` : '';
-    return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/progress${params}`);
+    return apiClient.get(`/vocabulary/topics/${topicId}/progress${params}`);
+  },
+
+  // Bulk progress endpoint for multiple topics - NEW
+  getProgressByMultipleTopics: (topics: string[], level?: string) => {
+    const params = new URLSearchParams({ topics: topics.join(',') });
+    if (level) params.append('level', level);
+    return apiClient.get(`/vocabulary/progress/multiple?${params}`);
   },
 
   // Search words by topic with level support
-  searchWordsByTopic: (topic: string, word: string, limit = 10, level?: string) => {
+  searchWordsByTopic: (topicId: number, word: string, limit = 10, level?: string) => {
     const params = new URLSearchParams({ word: word, limit: limit.toString() });
     if (level) params.append('level', level);
-    return apiClient.get(`/vocabulary/topics/${encodeURIComponent(topic)}/search?${params}`);
+    return apiClient.get(`/vocabulary/topics/${topicId}/search?${params}`);
   },
 
-  findWordByTopic: (topic: string, word: string, level?: string) => {
-    const params = new URLSearchParams({ topic: topic, word: word });
+  findWordByTopic: (topicName: string, word: string, level?: string) => {
+    const params = new URLSearchParams({ topic: topicName, word: word });
     if (level) params.append('level', level);
     return apiClient.get(`/vocabulary/search/topic?${params}`);
   },
@@ -256,6 +260,39 @@ export const aiAPI = {
 
   // Get study motivation
   getMotivation: () => apiClient.get('/ai/study-motivation'),
+};
+
+// Add new Topics API for direct access to topics table
+export const topicsAPI = {
+  // Get all topics with vocabulary counts
+  getAll: () => apiClient.get('/topics'),
+
+  // Get topics with vocabulary counts (paginated)
+  getWithCounts: () => apiClient.get('/topics/with-counts'),
+
+  // Get topic by ID
+  getById: (id: number) => apiClient.get(`/topics/${id}`),
+
+  // Create new topic (admin only)
+  create: (topicData: {
+    name: string;
+    nameVi: string;
+    description?: string;
+    descriptionVi?: string;
+    icon?: string;
+    displayOrder?: number;
+  }) => apiClient.post('/topics', topicData),
+
+  // Update topic (admin only)
+  update: (id: number, topicData: Partial<{
+    name: string;
+    nameVi: string;
+    description: string;
+    descriptionVi: string;
+    icon: string;
+    displayOrder: number;
+    isActive: boolean;
+  }>) => apiClient.put(`/topics/${id}`, topicData),
 };
 
 export default apiClient;

@@ -15,10 +15,10 @@ import {
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
-// Topic mappings with Vietnamese translations
+// DEPRECATED: Legacy topic mappings - use Topic interface instead
 export const TOPIC_MAPPINGS: Record<string, string> = {
   'animals': 'Động vật',
-  'body_parts': 'Bộ phận c�� thể',
+  'body_parts': 'Bộ phận cơ thể',
   'business': 'Kinh doanh',
   'clothing': 'Quần áo',
   'colors': 'Màu sắc',
@@ -34,7 +34,7 @@ export const TOPIC_MAPPINGS: Record<string, string> = {
   'weather': 'Thời tiết'
 };
 
-// Topic icons mapping
+// Default topic icons mapping - use with Topic.name
 export const TOPIC_ICONS: Record<string, any> = {
   'animals': FaceSmileIcon,
   'body_parts': HeartIcon,
@@ -49,7 +49,7 @@ export const TOPIC_ICONS: Record<string, any> = {
   'sports': FaceSmileIcon,
   'technology': ComputerDesktopIcon,
   'transportation': TruckIcon,
-  'travel': MapPinIcon,
+  'travel': GlobeAltIcon,
   'weather': CloudIcon
 };
 
@@ -63,33 +63,17 @@ export function getVietnameseTopicName(topic: string): string {
   return TOPIC_MAPPINGS[topic] || formatTopicDisplay(topic);
 }
 
-// Get topic icon component
-export function getTopicIcon(topic: string) {
-  return TOPIC_ICONS[topic] || GlobeAltIcon;
-}
+// Helper function to get topic icon by name
+export const getTopicIcon = (topicName: string) => {
+  return TOPIC_ICONS[topicName] || FaceSmileIcon;
+};
+
+// Helper function to get Vietnamese name (legacy support)
+export const getTopicVietnameseName = (topicName: string) => {
+  return TOPIC_MAPPINGS[topicName] || topicName;
+};
 
 // Get topic color class
-export function getTopicColorClass(topic: string): string {
-  const colors: Record<string, string> = {
-    'animals': 'bg-green-100 text-green-800 border-green-200',
-    'body_parts': 'bg-red-100 text-red-800 border-red-200',
-    'business': 'bg-blue-100 text-blue-800 border-blue-200',
-    'clothing': 'bg-purple-100 text-purple-800 border-purple-200',
-    'colors': 'bg-pink-100 text-pink-800 border-pink-200',
-    'education': 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    'food': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'fruits': 'bg-orange-100 text-orange-800 border-orange-200',
-    'health_medical': 'bg-red-100 text-red-800 border-red-200',
-    'house_furniture': 'bg-brown-100 text-brown-800 border-brown-200',
-    'sports': 'bg-green-100 text-green-800 border-green-200',
-    'technology': 'bg-gray-100 text-gray-800 border-gray-200',
-    'transportation': 'bg-blue-100 text-blue-800 border-blue-200',
-    'travel': 'bg-teal-100 text-teal-800 border-teal-200',
-    'weather': 'bg-sky-100 text-sky-800 border-sky-200'
-  };
-
-  return colors[topic] || 'bg-gray-100 text-gray-800 border-gray-200';
-}
 
 // Get topic display with both Vietnamese and English
 export function getTopicDisplayBilingual(topic: string, topicVi?: string): string {

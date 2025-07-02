@@ -7,6 +7,7 @@ import {
   UseGuards,
   Request,
   Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { VocabularyService } from './vocabulary.service';
 import { LearningService } from './learning.service';
@@ -88,15 +89,15 @@ export class VocabularyController {
     return this.learningService.recordReviewResult(req.user.userId, wordId, isCorrect, difficulty);
   }
 
-  @Get('topics/:topic/review/by-period')
+  @Get('topics/:topicId/review/by-period')
   async getReviewWordsByTopicAndPeriod(
     @Request() req,
-    @Param('topic') topic: string,
+    @Param('topicId', ParseIntPipe) topicId: number,
     @Query('period') period: string = 'today',
     @Query('limit') limit: number = 20,
     @Query('level') level?: string
   ) {
-    return this.learningService.getReviewWordsByTopicAndPeriod(req.user.userId, topic, period, limit, level);
+    return this.learningService.getReviewWordsByTopicIdAndPeriod(req.user.userId, topicId, period, limit, level);
   }
 
   @Get('progress')
@@ -109,24 +110,24 @@ export class VocabularyController {
     return this.vocabularyService.getTopics(page, limit, level);
   }
 
-  @Get('topics/:topic/new')
-  async getNewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 10, @Query('level') level?: string) {
-    return this.learningService.getNewWordsForLearningByTopic(req.user.userId, topic, limit, level);
+  @Get('topics/:topicId/new')
+  async getNewWordsByTopic(@Request() req, @Param('topicId', ParseIntPipe) topicId: number, @Query('limit') limit: number = 10, @Query('level') level?: string) {
+    return this.learningService.getNewWordsForLearningByTopicId(req.user.userId, topicId, limit, level);
   }
 
-  @Get('topics/:topic/review')
-  async getReviewWordsByTopic(@Request() req, @Param('topic') topic: string, @Query('limit') limit: number = 20, @Query('level') level?: string) {
-    return this.learningService.getWordsForReviewByTopic(req.user.userId, topic, limit, level);
+  @Get('topics/:topicId/review')
+  async getReviewWordsByTopic(@Request() req, @Param('topicId', ParseIntPipe) topicId: number, @Query('limit') limit: number = 20, @Query('level') level?: string) {
+    return this.learningService.getWordsForReviewByTopicId(req.user.userId, topicId, limit, level);
   }
 
-  @Get('topics/:topic/progress')
-  async getProgressByTopic(@Request() req, @Param('topic') topic: string, @Query('level') level?: string) {
-    return this.learningService.getUserProgressByTopic(req.user.userId, topic, level);
+  @Get('topics/:topicId/progress')
+  async getProgressByTopic(@Request() req, @Param('topicId', ParseIntPipe) topicId: number, @Query('level') level?: string) {
+    return this.learningService.getUserProgressByTopicId(req.user.userId, topicId, level);
   }
 
-  @Get('topics/:topic/search')
-  async searchWordsByTopic(@Param('topic') topic: string, @Query('word') word: string, @Query('limit') limit: number = 10, @Query('level') level?: string) {
-    return this.vocabularyService.searchWordsByTopic(topic, word, limit, level);
+  @Get('topics/:topicId/search')
+  async searchWordsByTopic(@Param('topicId', ParseIntPipe) topicId: number, @Query('word') word: string, @Query('limit') limit: number = 10, @Query('level') level?: string) {
+    return this.vocabularyService.searchWordsByTopicId(topicId, word, limit, level);
   }
 
   @Get('search/topic')
@@ -176,24 +177,34 @@ export class VocabularyController {
     return this.vocabularyService.getTopicStats(page, limit);
   }
 
-  @Get('topic/:topic')
+  @Get('topic/:topicId')
   async getVocabularyByTopic(
-    @Param('topic') topic: string,
+    @Param('topicId', ParseIntPipe) topicId: number,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20
   ) {
-    return this.vocabularyService.findByTopic(topic, page, limit);
+    return this.vocabularyService.findByTopicId(topicId, page, limit);
   }
 
-  @Get('topics/:topic/test')
+  @Get('topics/:topicId/test')
   async generateTestByTopic(
     @Request() req,
-    @Param('topic') topic: string,
+    @Param('topicId', ParseIntPipe) topicId: number,
     @Query('count') count: number = 10,
     @Query('mode') mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed',
     @Query('inputType') inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice',
     @Query('level') level?: string
   ) {
-    return this.learningService.generateTestByTopic(req.user.userId, topic, count, mode, inputType, level);
+    return this.learningService.generateTestByTopicId(req.user.userId, topicId, count, mode, inputType, level);
+  }
+
+  @Get('progress/multiple')
+  async getProgressByMultipleTopics(
+    @Request() req,
+    @Query('topics') topics: string,
+    @Query('level') level?: string
+  ) {
+    const topicNames = topics.split(',').filter(t => t.trim());
+    return this.learningService.getUserProgressByMultipleTopics(req.user.userId, topicNames, level);
   }
 }
