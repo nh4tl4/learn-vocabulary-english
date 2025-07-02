@@ -12,11 +12,6 @@ export class UserController {
     return this.userService.findOne(req.user.userId);
   }
 
-  @Get('stats')
-  async getStats(@Request() req) {
-    return this.userService.getUserStats(req.user.userId);
-  }
-
   @Put('profile')
   async updateProfile(@Request() req, @Body() updateData: { name?: string }) {
     return this.userService.updateProfile(req.user.userId, updateData);

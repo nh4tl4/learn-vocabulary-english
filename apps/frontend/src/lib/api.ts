@@ -57,7 +57,6 @@ export const authAPI = {
 
 export const userAPI = {
   getProfile: () => apiClient.get('/user/profile'),
-  getStats: () => apiClient.get('/user/stats'),
   updateProfile: (data: { name?: string }) =>
     apiClient.put('/user/profile', data),
   setDailyGoal: (dailyGoal: number) =>

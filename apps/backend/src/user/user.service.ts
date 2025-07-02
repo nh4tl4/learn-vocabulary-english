@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../database/entities/user.entity';
-import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
-import { UserTopicHistory } from '../database/entities/user-topic-history.entity';
-import { UserSelectedTopic } from '../database/entities/user-selected-topic.entity';
-import { RedisService } from '../redis/redis.service';
+import {Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {User} from '../database/entities/user.entity';
+import {LearningStatus, UserVocabulary} from '../database/entities/user-vocabulary.entity';
+import {UserTopicHistory} from '../database/entities/user-topic-history.entity';
+import {UserSelectedTopic} from '../database/entities/user-selected-topic.entity';
+import {RedisService} from '../redis/redis.service';
 
 @Injectable()
 export class UserService {
@@ -21,57 +21,85 @@ export class UserService {
     private redisService: RedisService,
   ) {}
 
-  // Optimized findOne with caching
-  async findOne(id: number): Promise<User> {
-    // Try cache first
-    const cacheKey = `user_profile_${id}`;
+  // Optimized findOne with full profile including stats
+  async findOne(id: number): Promise<any> {
+    // Single optimized query to get user profile and vocabulary stats
+    const [user, vocabularyStats] = await Promise.all([
+      this.userRepository.findOne({
+        where: { id },
+        select: [
+          'id', 'name', 'email', 'level', 'dailyGoal',
+          'currentStreak', 'longestStreak', 'totalWordsLearned',
+          'totalTestsTaken', 'averageTestScore', 'lastStudyDate', 'createdAt'
+        ]
+      }),
 
-    try {
-      const cached = await this.redisService.get(cacheKey);
+      // Get vocabulary stats - Use same logic as dashboard
+      this.userVocabularyRepository
+        .createQueryBuilder('uv')
+        .select([
+          // Only count words that are actually learned (not NEW status)
+          'SUM(CASE WHEN uv.status != :newStatus THEN 1 ELSE 0 END) as totalWords',
+          'SUM(CASE WHEN uv.status = :mastered THEN 1 ELSE 0 END) as masteredWords',
+          'SUM(CASE WHEN uv.status = :learning THEN 1 ELSE 0 END) as learningWords',
+          'SUM(CASE WHEN uv.status = :difficult THEN 1 ELSE 0 END) as difficultWords',
+          'SUM(COALESCE(uv.correctCount, 0)) as totalCorrect',
+          'SUM(COALESCE(uv.incorrectCount, 0)) as totalIncorrect'
+        ])
+        .where('uv.userId = :userId', { userId: id })
+        .setParameters({
+          mastered: LearningStatus.MASTERED,
+          learning: LearningStatus.LEARNING,
+          difficult: LearningStatus.DIFFICULT,
+          newStatus: LearningStatus.NEW
+        })
+        .getRawOne()
+    ]);
 
-      if (cached) {
-        // Check if cached data is already an object or needs parsing
-        if (typeof cached === 'string') {
-          return JSON.parse(cached);
-        } else if (typeof cached === 'object') {
-          return cached as User;
-        }
-      }
-    } catch (error) {
-      console.warn(`Failed to get cached user profile for ${id}:`, error.message);
-      // Continue to fetch from database if cache fails
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    // Get from database with only necessary fields
-    const user = await this.userRepository.findOne({
-      where: { id },
-      select: [
-        'id', 'name', 'email', 'level', 'dailyGoal',
-        'currentStreak', 'longestStreak', 'totalWordsLearned',
-        'totalTestsTaken', 'averageTestScore', 'createdAt'
-      ]
-    });
+    // Calculate accuracy
+    const totalAttempts = (vocabularyStats.totalCorrect || 0) + (vocabularyStats.totalIncorrect || 0);
+    const accuracy = totalAttempts > 0 ? Math.round((vocabularyStats.totalCorrect / totalAttempts) * 100) : 0;
 
-    if (user) {
-      // Cache for 10 minutes
-      try {
-        await this.redisService.set(cacheKey, JSON.stringify(user), 600);
-      } catch (error) {
-        console.warn(`Failed to cache user profile for ${id}:`, error.message);
+    // Use calculated totalWords from vocabulary stats for consistency with dashboard
+    const actualTotalWordsLearned = parseInt(vocabularyStats.totalWords) || 0;
+
+    return {
+      // User profile data
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      level: user.level,
+      dailyGoal: user.dailyGoal || 10,
+      currentStreak: user.currentStreak || 0,
+      longestStreak: user.longestStreak || 0,
+      totalWordsLearned: actualTotalWordsLearned, // Use calculated value for consistency
+      totalTestsTaken: user.totalTestsTaken || 0,
+      averageTestScore: user.averageTestScore || 0,
+      lastStudyDate: user.lastStudyDate || null,
+      createdAt: user.createdAt,
+
+      // Vocabulary statistics
+      vocabulary: {
+        totalLearned: actualTotalWordsLearned,
+        masteredWords: parseInt(vocabularyStats.masteredWords) || 0,
+        learningWords: parseInt(vocabularyStats.learningWords) || 0,
+        difficultWords: parseInt(vocabularyStats.difficultWords) || 0,
+        accuracy: accuracy
       }
-    }
-
-    return user;
+    };
   }
 
-  // Heavily optimized getUserStats with caching and single query
   async getUserStats(userId: number) {
-    const cacheKey = `user_stats_${userId}`;
-    const cached = await this.redisService.get(cacheKey);
-
-    if (cached) {
-      return JSON.parse(cached);
-    }
+    // const cacheKey = `user_stats_${userId}`;
+    // const cached = await this.redisService.get(cacheKey);
+    //
+    // if (cached) {
+    //   return JSON.parse(cached);
+    // }
 
     // Single optimized query to get all vocabulary stats
     const [user, vocabularyStats] = await Promise.all([
@@ -101,7 +129,10 @@ export class UserService {
     const totalAttempts = (vocabularyStats.totalCorrect || 0) + (vocabularyStats.totalIncorrect || 0);
     const accuracy = totalAttempts > 0 ? Math.round((vocabularyStats.totalCorrect / totalAttempts) * 100) : 0;
 
-    const result = {
+    // Cache for 5 minutes
+    // await this.redisService.set(cacheKey, JSON.stringify(result), 300);
+
+    return {
       user: {
         name: user?.name,
         email: user?.email,
@@ -112,20 +143,17 @@ export class UserService {
         totalWordsLearned: user?.totalWordsLearned || 0,
         totalTestsTaken: user?.totalTestsTaken || 0,
         averageTestScore: user?.averageTestScore || 0,
+        lastStudyDate: user?.lastStudyDate || null,
+        createdAt: user?.createdAt
       },
       vocabulary: {
-        totalWords: parseInt(vocabularyStats.totalWords) || 0,
+        totalLearned: parseInt(vocabularyStats.totalLearned) || 0,
         masteredWords: parseInt(vocabularyStats.masteredWords) || 0,
         reviewWords: parseInt(vocabularyStats.reviewWords) || 0,
         difficultWords: parseInt(vocabularyStats.difficultWords) || 0,
-        accuracy,
-      },
+        accuracy: accuracy
+      }
     };
-
-    // Cache for 5 minutes
-    await this.redisService.set(cacheKey, JSON.stringify(result), 300);
-
-    return result;
   }
 
   // Optimized updateProfile with cache invalidation

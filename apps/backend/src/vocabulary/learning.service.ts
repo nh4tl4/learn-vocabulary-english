@@ -64,7 +64,6 @@ export class LearningService {
   // Get new words for learning - SUPER OPTIMIZED VERSION
   async getNewWordsForLearning(userId: number, limit: number = 10, level?: string) {
     try {
-      // Get user's level from cache or database
       if (!level) {
         const user = await this.userRepository.findOne({
           where: { id: userId },
@@ -73,8 +72,6 @@ export class LearningService {
         });
         level = user?.level || 'beginner';
       }
-      console.log(level)
-
       // Get learned word IDs efficiently
       const learnedIds = await this.userVocabularyRepository
         .createQueryBuilder('uv')
@@ -84,7 +81,6 @@ export class LearningService {
         .getRawMany()
         .then(results => results.map(item => item.uv_vocabularyId));
 
-      // Use cache service to get vocabulary by level
       const allWords = await this.vocabularyCacheService.getVocabularyByLevel(level, limit * 3);
 
       // Filter out already learned words
@@ -444,66 +440,109 @@ export class LearningService {
 
   // Get learning dashboard data - Direct database fetch (no caching)
   async getLearningDashboard(userId: number) {
+    console.log(`📊 Getting learning dashboard for user ${userId} (direct DB fetch)`);
+
+    // Calculate today's date range for accurate comparison
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    console.log(`📅 Today range: ${today.toISOString()} to ${tomorrow.toISOString()}`);
 
     // Single optimized query to get all dashboard stats at once
     const [user, dashboardStats] = await Promise.all([
       this.userRepository.findOne({
         where: { id: userId },
-        select: ['dailyGoal', 'currentStreak', 'longestStreak', 'totalWordsLearned']
+        select: ['id', 'name', 'email', 'level', 'dailyGoal', 'currentStreak', 'longestStreak', 'totalWordsLearned', 'totalTestsTaken', 'averageTestScore', 'lastStudyDate', 'createdAt']
       }),
 
-      // Single mega-query to get all stats at once
+      // Updated query with proper SQLite date handling
       this.userVocabularyRepository
         .createQueryBuilder('uv')
         .select([
-          // Today's progress - PostgreSQL compatible
-          `SUM(CASE WHEN DATE(uv.firstLearnedDate) = CURRENT_DATE THEN 1 ELSE 0 END) as todayLearned`,
-          `SUM(CASE WHEN DATE(uv.lastReviewedAt) = CURRENT_DATE THEN 1 ELSE 0 END) as todayReviewed`,
+          // Today's progress - SQLite compatible using date range
+          `SUM(CASE WHEN uv.firstLearnedDate >= :today AND uv.firstLearnedDate < :tomorrow THEN 1 ELSE 0 END) as todayLearned`,
+          `SUM(CASE WHEN uv.lastReviewedAt >= :today AND uv.lastReviewedAt < :tomorrow THEN 1 ELSE 0 END) as todayReviewed`,
 
-          // Total progress stats
-          'COUNT(*) as totalLearned',
+          // Total progress stats - Only count words that are actually learned (not NEW status)
+          'SUM(CASE WHEN uv.status != :newStatus THEN 1 ELSE 0 END) as totalLearned',
           'SUM(CASE WHEN uv.status = :mastered THEN 1 ELSE 0 END) as masteredWords',
           'SUM(CASE WHEN uv.status = :learning THEN 1 ELSE 0 END) as learningWords',
           'SUM(CASE WHEN uv.status = :difficult THEN 1 ELSE 0 END) as difficultWords',
 
-          // Words to review (need review today or overdue) - PostgreSQL compatible
-          `SUM(CASE WHEN (uv.nextReviewDate IS NULL OR uv.nextReviewDate < CURRENT_TIMESTAMP) AND uv.status = :learning THEN 1 ELSE 0 END) as wordsToReview`
+          // Words to review (need review today or overdue) - SQLite compatible
+          `SUM(CASE WHEN (uv.nextReviewDate IS NULL OR uv.nextReviewDate < :now) AND uv.status = :learning THEN 1 ELSE 0 END) as wordsToReview`
         ])
         .where('uv.userId = :userId', { userId })
         .setParameters({
+          today: today.toISOString(),
+          tomorrow: tomorrow.toISOString(),
+          now: now.toISOString(),
           mastered: LearningStatus.MASTERED,
           learning: LearningStatus.LEARNING,
-          difficult: LearningStatus.DIFFICULT
+          difficult: LearningStatus.DIFFICULT,
+          newStatus: LearningStatus.NEW
         })
         .getRawOne()
     ]);
 
+    console.log('📊 Raw dashboard stats:', dashboardStats);
+
     const todayProgress = {
-      wordsLearned: parseInt(dashboardStats.todayLearned) || 0,
-      wordsReviewed: parseInt(dashboardStats.todayReviewed) || 0,
-      totalProgress: (parseInt(dashboardStats.todayLearned) || 0) + (parseInt(dashboardStats.todayReviewed) || 0)
+      wordsLearned: parseInt(dashboardStats.todaylearned) || 0, // Fix: lowercase
+      wordsReviewed: parseInt(dashboardStats.todayreviewed) || 0, // Fix: lowercase
+      totalProgress: (parseInt(dashboardStats.todaylearned) || 0) + (parseInt(dashboardStats.todayreviewed) || 0)
     };
 
     const progressPercentage = user?.dailyGoal > 0
       ? Math.round((todayProgress.totalProgress / user.dailyGoal) * 100)
       : 0;
 
+    // Parse the raw stats correctly - use lowercase field names as returned by TypeORM
+    const totalWordsLearned = parseInt(dashboardStats.totallearned) || 0; // Fix: lowercase
+    const masteredWords = parseInt(dashboardStats.masteredwords) || 0; // Fix: lowercase
+    const learningWords = parseInt(dashboardStats.learningwords) || 0; // Fix: lowercase
+    const difficultWords = parseInt(dashboardStats.difficultwords) || 0; // Fix: lowercase
+    const wordsToReview = parseInt(dashboardStats.wordstoreview) || 0; // Fix: lowercase
+
+    console.log('🔍 Parsed values:', {
+      totalWordsLearned,
+      masteredWords,
+      learningWords,
+      difficultWords,
+      wordsToReview
+    });
+
     const result = {
+      // Complete user profile information
       user: {
+        id: user?.id,
+        name: user?.name,
+        email: user?.email,
+        level: user?.level,
         dailyGoal: user?.dailyGoal || 10,
         currentStreak: user?.currentStreak || 0,
         longestStreak: user?.longestStreak || 0,
-        totalWordsLearned: parseInt(dashboardStats.totalLearned) || 0,
+        totalWordsLearned: totalWordsLearned, // Use the parsed value from query
+        totalTestsTaken: user?.totalTestsTaken || 0,
+        averageTestScore: user?.averageTestScore || 0,
+        lastStudyDate: user?.lastStudyDate || null,
+        createdAt: user?.createdAt || null,
       },
+      // Dashboard specific data
       todayProgress,
-      wordsToReview: parseInt(dashboardStats.wordsToReview) || 0,
-      difficultWords: parseInt(dashboardStats.difficultWords) || 0,
-      masteredWords: parseInt(dashboardStats.masteredWords) || 0,
-      totalLearned: parseInt(dashboardStats.totalLearned) || 0,
+      vocabulary: {
+        wordsToReview: wordsToReview,
+        difficultWords: difficultWords,
+        masteredWords: masteredWords,
+        learningWords: learningWords,
+        totalLearned: totalWordsLearned,
+      },
       progressPercentage: Math.min(progressPercentage, 100),
     };
 
-    console.log(`✅ Dashboard data fetched directly from DB for user ${userId}`);
+    console.log(`✅ Final dashboard result:`, result);
 
     return result;
   }
@@ -894,41 +933,70 @@ export class LearningService {
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const now = new Date();
+
+      // Get the previous lastStudyDate before updating
+      const previousLastStudyDate = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
 
       // Update lastStudyDate
-      user.lastStudyDate = new Date();
+      user.lastStudyDate = now;
 
-      // Update streak logic
-      if (user.lastStudyDate) {
-        const lastStudyDate = new Date(user.lastStudyDate);
+      // Update streak logic based on PREVIOUS lastStudyDate
+      if (previousLastStudyDate) {
+        const lastStudyDate = new Date(previousLastStudyDate);
         lastStudyDate.setHours(0, 0, 0, 0);
 
         const diffTime = today.getTime() - lastStudyDate.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 1) {
+        console.log(`🔄 Streak calculation: lastStudy=${lastStudyDate.toISOString()}, today=${today.toISOString()}, diffDays=${diffDays}`);
+
+        if (diffDays === 0) {
+          // Same day - no change to streak
+          console.log(`📅 Same day study - streak unchanged: ${user.currentStreak}`);
+        } else if (diffDays === 1) {
           // Consecutive day - increment streak
           user.currentStreak += 1;
           user.longestStreak = Math.max(user.longestStreak, user.currentStreak);
+          console.log(`🔥 Streak incremented: ${user.currentStreak}`);
         } else if (diffDays > 1) {
           // Streak broken - reset to 1
+          console.log(`💔 Streak broken after ${diffDays} days - reset to 1`);
           user.currentStreak = 1;
+          user.longestStreak = Math.max(user.longestStreak, user.currentStreak);
         }
-        // If diffDays === 0, it's the same day, don't change streak
       } else {
         // First time studying
         user.currentStreak = 1;
         user.longestStreak = 1;
+        console.log(`🌟 First time studying - streak set to 1`);
       }
 
       // Update total words learned if it's a new word
       if (isNewWord) {
         user.totalWordsLearned += 1;
+        console.log(`📚 New word learned! Total: ${user.totalWordsLearned}`);
+      }
+
+      // Sync totalWordsLearned with actual database count to ensure accuracy
+      const actualTotalLearned = await this.userVocabularyRepository
+        .createQueryBuilder('uv')
+        .select('SUM(CASE WHEN uv.status != :newStatus THEN 1 ELSE 0 END)', 'count')
+        .where('uv.userId = :userId', { userId })
+        .setParameter('newStatus', LearningStatus.NEW)
+        .getRawOne();
+
+      const actualCount = parseInt(actualTotalLearned?.count) || 0;
+
+      // Only update if there's a significant difference to avoid unnecessary updates
+      if (Math.abs(user.totalWordsLearned - actualCount) > 0) {
+        console.log(`🔄 Syncing totalWordsLearned: ${user.totalWordsLearned} -> ${actualCount}`);
+        user.totalWordsLearned = actualCount;
       }
 
       await this.userRepository.save(user);
 
-      console.log(`✅ Updated user stats for user ${userId}: streak=${user.currentStreak}, totalWords=${user.totalWordsLearned}`);
+      console.log(`✅ Updated user stats for user ${userId}: streak=${user.currentStreak}, totalWords=${user.totalWordsLearned}, lastStudy=${user.lastStudyDate}`);
     } catch (error) {
       console.error('❌ Error updating user stats:', error);
     }
@@ -956,5 +1024,164 @@ export class LearningService {
     } catch (error) {
       console.error('❌ Error updating user test stats:', error);
     }
+  }
+
+  // Generate test by topic - new method for topic-specific tests
+  async generateTestByTopic(userId: number, topic: string, count: number = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) {
+    // Get learned words for this specific topic
+    let query = this.userVocabularyRepository
+      .createQueryBuilder('uv')
+      .leftJoinAndSelect('uv.vocabulary', 'v')
+      .where('uv.userId = :userId', { userId })
+      .andWhere('v.topic = :topic', { topic })
+      .andWhere('uv.status != :status', { status: LearningStatus.NOT_LEARNED });
+
+    if (level) {
+      query = query.andWhere('v.level = :level', { level });
+    }
+
+    const learnedWords = await query
+      .orderBy('uv.lastReviewedAt', 'DESC')
+      .take(count * 2) // Get more words to ensure we have enough for the test
+      .getMany();
+
+    if (learnedWords.length === 0) {
+      return [];
+    }
+
+    const testQuestions = [];
+
+    for (let i = 0; i < Math.min(count, learnedWords.length); i++) {
+      const userVocab = learnedWords[i];
+      const word = userVocab.vocabulary;
+
+      // Determine question type based on mode
+      let questionType: 'en-to-vi' | 'vi-to-en';
+      if (mode === 'mixed') {
+        questionType = Math.random() > 0.5 ? 'en-to-vi' : 'vi-to-en';
+      } else {
+        questionType = mode;
+      }
+
+      // Get wrong answers from the same topic and level for better test quality
+      let wrongAnswersQuery = this.vocabularyRepository
+        .createQueryBuilder('v')
+        .where('v.topic = :topic', { topic })
+        .andWhere('v.id != :currentId', { currentId: word.id });
+
+      if (level) {
+        wrongAnswersQuery = wrongAnswersQuery.andWhere('v.level = :level', { level });
+      }
+
+      const wrongAnswers = await wrongAnswersQuery
+        .orderBy('RANDOM()')
+        .take(3)
+        .getMany();
+
+      if (inputType === 'multiple-choice' || inputType === 'mixed') {
+        if (questionType === 'en-to-vi') {
+          const options = [
+            { id: 1, text: word.meaning, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.meaning || 'nghĩa sai 1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.meaning || 'nghĩa sai 2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.meaning || 'nghĩa sai 3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'en-to-vi',
+            inputType: 'multiple-choice',
+            question: `Nghĩa của từ "${word.word}" trong chủ đề "${topic}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            word: word.word,
+            pronunciation: word.pronunciation,
+            topic: topic,
+          });
+        } else {
+          const options = [
+            { id: 1, text: word.word, isCorrect: true },
+            { id: 2, text: wrongAnswers[0]?.word || 'word1', isCorrect: false },
+            { id: 3, text: wrongAnswers[1]?.word || 'word2', isCorrect: false },
+            { id: 4, text: wrongAnswers[2]?.word || 'word3', isCorrect: false },
+          ].sort(() => Math.random() - 0.5);
+
+          testQuestions.push({
+            vocabularyId: word.id,
+            questionType: 'vi-to-en',
+            inputType: 'multiple-choice',
+            question: `Từ tiếng Anh của "${word.meaning}" trong chủ đề "${topic}" là gì?`,
+            options,
+            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
+            meaning: word.meaning,
+            pronunciation: word.pronunciation,
+            topic: topic,
+          });
+        }
+      }
+    }
+
+    return testQuestions;
+  }
+
+  // Get words learned today
+  async getTodayLearnedWords(userId: number): Promise<any[]> {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayLearnedWords = await this.userVocabularyRepository.find({
+      where: {
+        userId,
+        firstLearnedDate: Between(today, tomorrow),
+      },
+      relations: ['vocabulary'],
+      order: { firstLearnedDate: 'DESC' },
+    });
+
+    return todayLearnedWords.map(uv => ({
+      id: uv.vocabulary.id,
+      word: uv.vocabulary.word,
+      meaning: uv.vocabulary.meaning,
+      pronunciation: uv.vocabulary.pronunciation,
+      partOfSpeech: uv.vocabulary.partOfSpeech,
+      example: uv.vocabulary.example,
+      exampleVi: uv.vocabulary.exampleVi,
+      firstLearnedDate: uv.firstLearnedDate,
+      status: uv.status,
+    }));
+  }
+
+  // Get words reviewed today
+  async getTodayReviewedWords(userId: number): Promise<any[]> {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayReviewedWords = await this.userVocabularyRepository.find({
+      where: {
+        userId,
+        lastReviewedAt: Between(today, tomorrow),
+      },
+      relations: ['vocabulary'],
+      order: { lastReviewedAt: 'DESC' },
+    });
+
+    return todayReviewedWords.map(uv => ({
+      id: uv.vocabulary.id,
+      word: uv.vocabulary.word,
+      meaning: uv.vocabulary.meaning,
+      pronunciation: uv.vocabulary.pronunciation,
+      partOfSpeech: uv.vocabulary.partOfSpeech,
+      example: uv.vocabulary.example,
+      exampleVi: uv.vocabulary.exampleVi,
+      lastReviewedAt: uv.lastReviewedAt,
+      status: uv.status,
+      correctCount: uv.correctCount,
+      incorrectCount: uv.incorrectCount,
+      reviewCount: uv.reviewCount,
+    }));
   }
 }

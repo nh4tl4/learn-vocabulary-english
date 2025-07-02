@@ -11,6 +11,9 @@ interface DashboardData {
     currentStreak: number;
     longestStreak: number;
     totalWordsLearned: number;
+    totalTestsTaken: number;
+    averageTestScore: number;
+    lastStudyDate: string;
   };
   todayProgress: {
     wordsLearned: number;
@@ -337,7 +340,7 @@ export default function LearningDashboard() {
           <ActionCard
             title="Học Từ Mới"
             description="Khám phá từ vựng mới hôm nay"
-            count={`Còn ${Math.max(0, user.dailyGoal - todayProgress.wordsLearned)} từ`}
+            count={`Còn ${Math.max(0, user.dailyGoal - todayProgress.wordsLearned) || 0} từ`}
             gradient="from-green-500 to-emerald-600"
             icon="📖"
             iconBg="bg-green-100 dark:bg-green-900"
@@ -361,7 +364,7 @@ export default function LearningDashboard() {
           <ActionCard
             title="Ôn Tập Từ"
             description="Ôn tập các từ cần nhớ lại"
-            count={`${wordsToReview} từ`}
+            count={`${wordsToReview || 0} từ`}
             gradient="from-yellow-500 to-orange-600"
             icon="🔄"
             iconBg="bg-yellow-100 dark:bg-yellow-900"
@@ -385,7 +388,7 @@ export default function LearningDashboard() {
           <ActionCard
             title="Từ Khó"
             description="Luyện tập từ vựng khó nhớ"
-            count={`${difficultWords} từ`}
+            count={`${difficultWords || 0} từ`}
             gradient="from-red-500 to-rose-600"
             icon="💪"
             iconBg="bg-red-100 dark:bg-red-900"
@@ -408,7 +411,7 @@ export default function LearningDashboard() {
         </div>
 
         {/* Enhanced Statistics Overview */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/20">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/20 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-xl">📊</span>
@@ -416,7 +419,7 @@ export default function LearningDashboard() {
             <h3 className="text-xl font-bold text-gray-800 dark:text-white">Thống Kê Tổng Quan</h3>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Tổng Từ Đã Học"
               value={user.totalWordsLearned}
@@ -445,6 +448,100 @@ export default function LearningDashboard() {
               color="text-purple-600"
               bgColor="bg-purple-50 dark:bg-purple-900/30"
             />
+          </div>
+
+          {/* Test Statistics Section */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
+                <span className="text-lg">📝</span>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white">Thống Kê Kiểm Tra</h4>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <StatCard
+                title="Tổng Bài Test"
+                value={user.totalTestsTaken || 0}
+                icon="📝"
+                color="text-pink-600"
+                bgColor="bg-pink-50 dark:bg-pink-900/30"
+              />
+              <StatCard
+                title="Điểm Trung Bình"
+                value={user.averageTestScore ? `${user.averageTestScore}%` : 'Chưa có'}
+                icon="🎯"
+                color="text-indigo-600"
+                bgColor="bg-indigo-50 dark:bg-indigo-900/30"
+              />
+              <StatCard
+                title="Lần Học Cuối"
+                value={user.lastStudyDate ? new Date(user.lastStudyDate).toLocaleDateString('vi-VN') : 'Chưa có'}
+                icon="📅"
+                color="text-teal-600"
+                bgColor="bg-teal-50 dark:bg-teal-900/30"
+              />
+            </div>
+
+            {/* Performance indicator */}
+            {user.averageTestScore && (
+              <div className="mt-4 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      user.averageTestScore >= 80 ? 'bg-green-100 dark:bg-green-900/30' :
+                      user.averageTestScore >= 60 ? 'bg-yellow-100 dark:bg-yellow-900/30' : 
+                      'bg-red-100 dark:bg-red-900/30'
+                    }`}>
+                      <span className="text-lg">
+                        {user.averageTestScore >= 80 ? '🌟' :
+                         user.averageTestScore >= 60 ? '👍' : '📈'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className={`font-medium ${
+                        user.averageTestScore >= 80 ? 'text-green-700 dark:text-green-300' :
+                        user.averageTestScore >= 60 ? 'text-yellow-700 dark:text-yellow-300' : 
+                        'text-red-700 dark:text-red-300'
+                      }`}>
+                        {user.averageTestScore >= 80 ? 'Xuất sắc!' :
+                         user.averageTestScore >= 60 ? 'Tốt!' : 'Cần cải thiện'}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {user.averageTestScore >= 80 ? 'Kết quả học tập rất tốt' :
+                         user.averageTestScore >= 60 ? 'Tiếp tục phát huy' : 'Hãy ôn tập thêm nhé'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`text-2xl font-bold ${
+                    user.averageTestScore >= 80 ? 'text-green-600' :
+                    user.averageTestScore >= 60 ? 'text-yellow-600' : 
+                    'text-red-600'
+                  }`}>
+                    {user.averageTestScore}%
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Encouragement message for users with no tests */}
+            {(!user.totalTestsTaken || user.totalTestsTaken === 0) && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">🚀</div>
+                  <div>
+                    <p className="font-medium text-blue-700 dark:text-blue-300">Hãy thử sức với bài kiểm tra đầu tiên!</p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400">Kiểm tra kiến thức và theo dõi tiến độ học tập của bạn</p>
+                  </div>
+                  <button
+                    onClick={() => router.push('/learn/test')}
+                    className="ml-auto bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Làm Test
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
