@@ -35,7 +35,7 @@ export class User {
   @Column({ default: 0 })
   totalTestsTaken: number;
 
-  @Column({ default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   averageTestScore: number;
 
   @Column({ default: 'beginner' })

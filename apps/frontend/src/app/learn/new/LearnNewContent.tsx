@@ -111,8 +111,8 @@ export default function LearnNewContent() {
       } else {
         const levelText = level ? ` (cấp độ ${level})` : '';
         const topicText = topicInfo ? ` trong chủ đề "${topicInfo.nameVi || topicInfo.name}"` : '';
-        toast.error(`Không có từ mới nào để học${topicText}${levelText}!`);
-        router.push('/learn');
+        // toast.error(`Không có từ mới nào để học${topicText}${levelText}!`);
+        // router.push('/learn');
       }
     } catch (error) {
       console.error('Failed to load new words:', error);

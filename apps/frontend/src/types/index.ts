@@ -21,6 +21,22 @@ export interface Topic {
   updatedAt: string;
 }
 
+// Interface for topic progress data
+export interface TopicProgress {
+  topic: string;
+  totalLearned: number;
+  mastered: number;
+  learning: number;
+  difficult: number;
+  masteryPercentage: number;
+  level?: string;
+}
+
+// Interface for the consolidated API response
+export interface TopicWithProgress extends Topic {
+  progress?: TopicProgress;
+}
+
 // Updated Vocabulary interface - removed deprecated topic fields
 export interface Vocabulary {
   id: number;

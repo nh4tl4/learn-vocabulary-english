@@ -270,6 +270,12 @@ export const topicsAPI = {
   // Get topics with vocabulary counts (paginated)
   getWithCounts: () => apiClient.get('/topics/with-counts'),
 
+  // NEW: Get topics with vocabulary counts AND progress data in one call
+  getWithCountsAndProgress: (selectedTopics: string[], level?: string) => {
+    const params = level ? `?level=${level}` : '';
+    return apiClient.post(`/topics/with-counts-and-progress${params}`, { selectedTopics });
+  },
+
   // Get topic by ID
   getById: (id: number) => apiClient.get(`/topics/${id}`),
 

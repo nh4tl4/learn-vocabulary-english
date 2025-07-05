@@ -59,65 +59,6 @@ export class VocabularyService {
     return await this.vocabularyRepository.save(vocabulary);
   }
 
-  async getUserProgress(userId: number) {
-    // Try cache first
-    const cached = await this.redisService.getUserProgress(userId);
-    if (cached) {
-      return cached;
-    }
-
-    const userVocabularies = await this.userVocabularyRepository.find({
-      where: { userId },
-      relations: ['vocabulary'],
-      order: { lastReviewedAt: 'DESC' },
-    });
-
-    const result = userVocabularies.map(uv => ({
-      vocabulary: uv.vocabulary,
-      status: uv.status,
-      correctCount: uv.correctCount,
-      incorrectCount: uv.incorrectCount,
-      accuracy: uv.accuracy,
-      nextReviewDate: uv.nextReviewDate,
-    }));
-
-    // Cache user progress for 15 minutes - fix parameter order
-    await this.redisService.setUserProgress(userId, result, 'v1', 900);
-    return result;
-  }
-
-  async updateProgress(userId: number, vocabularyId: number, isCorrect: boolean) {
-    let userVocabulary = await this.userVocabularyRepository.findOne({
-      where: { userId, vocabularyId },
-    });
-
-    if (!userVocabulary) {
-      userVocabulary = this.userVocabularyRepository.create({
-        userId,
-        vocabularyId,
-        status: LearningStatus.LEARNING,
-        firstLearnedDate: new Date(),
-      });
-    }
-
-    if (isCorrect) {
-      userVocabulary.correctCount++;
-      userVocabulary.status = LearningStatus.REVIEWING;
-    } else {
-      userVocabulary.incorrectCount++;
-      userVocabulary.status = LearningStatus.DIFFICULT;
-    }
-
-    userVocabulary.lastReviewedAt = new Date();
-
-    const result = await this.userVocabularyRepository.save(userVocabulary);
-
-    // Clear user progress cache when updated
-    await this.redisService.setUserProgress(userId, null);
-
-    return result;
-  }
-
   // Get all available topics with pagination - UPDATED to use topics table
   async getTopics(page: number = 1, limit: number = 20, level?: string) {
     const offset = (page - 1) * limit;
@@ -200,63 +141,6 @@ export class VocabularyService {
     return result;
   }
 
-  // Find vocabulary by topic with pagination - UPDATED to use topicId
-  async findByTopic(topicName: string, page: number = 1, limit: number = 20, level?: string) {
-    // Cache key for vocabulary by topic with longer TTL
-    const cacheKey = `vocabulary:topic:${topicName}:page:${page}:limit:${limit}:level:${level || 'all'}`;
-    const cached = await this.redisService.getVocabularyByTopic(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
-    let query = this.vocabularyRepository
-      .createQueryBuilder('vocabulary')
-      .innerJoin('vocabulary.topicEntity', 'topic')
-      .where('topic.name = :topicName', { topicName });
-
-    if (level) {
-      query = query.andWhere('vocabulary.level = :level', { level });
-    }
-
-    const [vocabularies, total] = await query
-      .skip((page - 1) * limit)
-      .take(limit)
-      .orderBy('vocabulary.createdAt', 'DESC')
-      .getManyAndCount();
-
-    const result = {
-      vocabularies,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-      hasMore: page < Math.ceil(total / limit),
-      topic: topicName,
-      level
-    };
-
-    // Cache for 30 minutes (longer for Oregon deployment)
-    await this.redisService.setVocabularyByTopic(cacheKey, result, 1800);
-    return result;
-  }
-
-  // Search words by topic with pagination - UPDATED to use topicId
-  async searchWordsByTopic(topicName: string, word: string, limit: number = 10, level?: string) {
-    let query = this.vocabularyRepository
-      .createQueryBuilder('vocabulary')
-      .innerJoin('vocabulary.topicEntity', 'topic')
-      .where('topic.name = :topicName', { topicName })
-      .andWhere('vocabulary.word ILIKE :word', { word: `%${word}%` });
-
-    if (level) {
-      query = query.andWhere('vocabulary.level = :level', { level });
-    }
-
-    return await query
-      .orderBy('vocabulary.word', 'ASC')
-      .limit(limit)
-      .getMany();
-  }
 
   // Find vocabulary by topic and word (exact match) - UPDATED to use topicId
   async findByTopicAndWord(topicName: string, word: string, level?: string) {
@@ -274,34 +158,6 @@ export class VocabularyService {
   }
 
   // Find vocabulary by topic ID
-  async findByTopicId(topicId: number, page: number = 1, limit: number = 20) {
-    const cacheKey = `vocabulary:topic:${topicId}:page:${page}:limit:${limit}`;
-    const cached = await this.redisService.get(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
-    const [vocabularies, total] = await this.vocabularyRepository.findAndCount({
-      where: { topicId },
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { id: 'ASC' },
-      relations: ['topicEntity'],
-    });
-
-    const result = {
-      vocabularies,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-      topicId,
-    };
-
-    // Cache for 5 minutes
-    await this.redisService.set(cacheKey, result, 300);
-    return result;
-  }
 
   // Search words by topic ID
   async searchWordsByTopicId(topicId: number, word: string, limit: number = 10, level?: string) {

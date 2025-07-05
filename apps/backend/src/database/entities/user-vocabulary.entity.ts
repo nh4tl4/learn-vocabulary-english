@@ -21,6 +21,12 @@ export enum LearningStatus {
 
 @Entity('user_vocabulary')
 @Index(['userId', 'vocabularyId'], { unique: true })
+@Index(['userId', 'status']) // For filtering by user and status
+@Index(['userId', 'lastReviewedAt']) // For today's reviews queries
+@Index(['userId', 'firstLearnedDate']) // For today's learned words queries
+@Index(['userId', 'nextReviewDate']) // For review scheduling queries
+@Index(['vocabularyId']) // For vocabulary lookups
+@Index(['status']) // For status-based filtering
 export class UserVocabulary {
   @PrimaryGeneratedColumn()
   id: number;

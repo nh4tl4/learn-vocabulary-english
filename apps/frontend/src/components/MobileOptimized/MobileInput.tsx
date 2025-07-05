@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, InputHTMLAttributes } from 'react';
+import React, { forwardRef, InputHTMLAttributes } from 'react';
 
 interface MobileInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;

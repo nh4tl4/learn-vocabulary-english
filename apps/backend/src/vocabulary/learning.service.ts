@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, Between } from 'typeorm';
+import { Repository, LessThan, Between, In } from 'typeorm';
 import { UserVocabulary, LearningStatus } from '../database/entities/user-vocabulary.entity';
 import { User } from '../database/entities/user.entity';
 import { Vocabulary } from '../database/entities/vocabulary.entity';
@@ -26,10 +26,6 @@ export class LearningService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    console.log(`📊 Getting today progress for user ${userId}:`);
-    console.log(`📅 Today range: ${today.toISOString()} to ${tomorrow.toISOString()}`);
-
-    // Use Promise.all to run queries in parallel
     const [todayLearned, todayReviewed, todayReviewedRecords] = await Promise.all([
       this.userVocabularyRepository.count({
         where: {
@@ -43,7 +39,6 @@ export class LearningService {
           lastReviewedAt: Between(today, tomorrow),
         },
       }),
-      // Debug: Get actual records for today's reviews
       this.userVocabularyRepository.find({
         where: {
           userId,
@@ -68,33 +63,25 @@ export class LearningService {
         const user = await this.userRepository.findOne({
           where: { id: userId },
           select: ['level'],
-          cache: 300000 // Cache for 5 minutes
+          cache: 300000
         });
         level = user?.level || 'beginner';
       }
-      // Get learned word IDs efficiently
       const learnedRecords = await this.userVocabularyRepository
         .createQueryBuilder('uv')
         .select(['uv.vocabularyId'])
         .where('uv.userId = :userId', { userId })
-        .cache(60000) // Cache for 1 minute
+        .cache(60000)
         .getMany();
 
       const learnedIds = learnedRecords.map(record => record.vocabularyId);
-
-      console.log(`📖 User has learned ${learnedIds.length} words`);
-
       const allWords = await this.vocabularyCacheService.getVocabularyByLevel(level, limit * 3);
-
-      // Filter out already learned words
       const unlearnedWords = allWords.filter(word => !learnedIds.includes(word.id));
 
       return unlearnedWords.slice(0, limit);
 
     } catch (error) {
       console.error('Error in optimized getNewWordsForLearning:', error);
-
-      // Fallback to direct database query
       return this.getNewWordsForLearningFallback(userId, limit, level);
     }
   }
@@ -316,7 +303,7 @@ export class LearningService {
 
     // Update mastery level based on performance
     const accuracy = userVocab.correctCount / userVocab.reviewCount;
-    if (accuracy >= 0.9 && userVocab.reviewCount >= 5) {
+    if (accuracy >= 0.9 && userVocab.reviewCount >= 3) { // Changed from 5 to 3
       userVocab.status = LearningStatus.MASTERED;
     } else if (accuracy < 0.5) {
       userVocab.status = LearningStatus.DIFFICULT;
@@ -443,38 +430,26 @@ export class LearningService {
 
   // Get learning dashboard data - Direct database fetch (no caching)
   async getLearningDashboard(userId: number) {
-    console.log(`📊 Getting learning dashboard for user ${userId} (direct DB fetch)`);
-
-    // Calculate today's date range for accurate comparison
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    console.log(`📅 Today range: ${today.toISOString()} to ${tomorrow.toISOString()}`);
-
-    // Single optimized query to get all dashboard stats at once
     const [user, dashboardStats] = await Promise.all([
       this.userRepository.findOne({
         where: { id: userId },
         select: ['id', 'name', 'email', 'level', 'dailyGoal', 'currentStreak', 'longestStreak', 'totalWordsLearned', 'totalTestsTaken', 'averageTestScore', 'lastStudyDate', 'createdAt']
       }),
 
-      // Updated query with proper SQLite date handling
       this.userVocabularyRepository
         .createQueryBuilder('uv')
         .select([
-          // Today's progress - SQLite compatible using date range
           `SUM(CASE WHEN uv.firstLearnedDate >= :today AND uv.firstLearnedDate < :tomorrow THEN 1 ELSE 0 END) as todayLearned`,
           `SUM(CASE WHEN uv.lastReviewedAt >= :today AND uv.lastReviewedAt < :tomorrow THEN 1 ELSE 0 END) as todayReviewed`,
-
-          // Total progress stats - Only count words that are actually learned (not NEW status)
           'SUM(CASE WHEN uv.status != :newStatus THEN 1 ELSE 0 END) as totalLearned',
           'SUM(CASE WHEN uv.status = :mastered THEN 1 ELSE 0 END) as masteredWords',
           'SUM(CASE WHEN uv.status = :learning THEN 1 ELSE 0 END) as learningWords',
           'SUM(CASE WHEN uv.status = :difficult THEN 1 ELSE 0 END) as difficultWords',
-
-          // Words to review (need review today or overdue) - SQLite compatible
           `SUM(CASE WHEN (uv.nextReviewDate IS NULL OR uv.nextReviewDate < :now) AND uv.status = :learning THEN 1 ELSE 0 END) as wordsToReview`
         ])
         .where('uv.userId = :userId', { userId })
@@ -490,11 +465,9 @@ export class LearningService {
         .getRawOne()
     ]);
 
-    console.log('📊 Raw dashboard stats:', dashboardStats);
-
     const todayProgress = {
-      wordsLearned: parseInt(dashboardStats.todaylearned) || 0, // Fix: lowercase
-      wordsReviewed: parseInt(dashboardStats.todayreviewed) || 0, // Fix: lowercase
+      wordsLearned: parseInt(dashboardStats.todaylearned) || 0,
+      wordsReviewed: parseInt(dashboardStats.todayreviewed) || 0,
       totalProgress: (parseInt(dashboardStats.todaylearned) || 0) + (parseInt(dashboardStats.todayreviewed) || 0)
     };
 
@@ -502,23 +475,13 @@ export class LearningService {
       ? Math.round((dashboardStats.todaylearned / user.dailyGoal) * 100)
       : 0;
 
-    // Parse the raw stats correctly - use lowercase field names as returned by TypeORM
-    const totalWordsLearned = parseInt(dashboardStats.totallearned) || 0; // Fix: lowercase
-    const masteredWords = parseInt(dashboardStats.masteredwords) || 0; // Fix: lowercase
-    const learningWords = parseInt(dashboardStats.learningwords) || 0; // Fix: lowercase
-    const difficultWords = parseInt(dashboardStats.difficultwords) || 0; // Fix: lowercase
-    const wordsToReview = parseInt(dashboardStats.wordstoreview) || 0; // Fix: lowercase
-
-    console.log('🔍 Parsed values:', {
-      totalWordsLearned,
-      masteredWords,
-      learningWords,
-      difficultWords,
-      wordsToReview
-    });
+    const totalWordsLearned = parseInt(dashboardStats.totallearned) || 0;
+    const masteredWords = parseInt(dashboardStats.masteredwords) || 0;
+    const learningWords = parseInt(dashboardStats.learningwords) || 0;
+    const difficultWords = parseInt(dashboardStats.difficultwords) || 0;
+    const wordsToReview = parseInt(dashboardStats.wordstoreview) || 0;
 
     const result = {
-      // Complete user profile information
       user: {
         id: user?.id,
         name: user?.name,
@@ -527,13 +490,12 @@ export class LearningService {
         dailyGoal: user?.dailyGoal || 10,
         currentStreak: user?.currentStreak || 0,
         longestStreak: user?.longestStreak || 0,
-        totalWordsLearned: totalWordsLearned, // Use the parsed value from query
+        totalWordsLearned: totalWordsLearned,
         totalTestsTaken: user?.totalTestsTaken || 0,
         averageTestScore: user?.averageTestScore || 0,
         lastStudyDate: user?.lastStudyDate || null,
         createdAt: user?.createdAt || null,
       },
-      // Dashboard specific data
       todayProgress,
       vocabulary: {
         wordsToReview: wordsToReview,
@@ -544,8 +506,6 @@ export class LearningService {
       },
       progressPercentage: Math.min(progressPercentage, 100),
     };
-
-    console.log(`✅ Final dashboard result:`, result);
 
     return result;
   }
@@ -571,42 +531,31 @@ export class LearningService {
   // Get new words for learning by topic - UPDATED to use topics table
   async getNewWordsForLearningByTopic(userId: number, topicName: string, limit: number = 10, level?: string) {
     try {
-      // Get user's level if not provided, but prioritize the level parameter from FE
-      let targetLevel = level; // Use level from FE if provided
+      let targetLevel = level;
       if (!targetLevel) {
         const user = await this.userRepository.findOne({
           where: { id: userId },
           select: ['level'],
-          cache: 300000 // Cache for 5 minutes
+          cache: 300000
         });
         targetLevel = user?.level || 'beginner';
       }
 
-      console.log(`🔍 Getting words for topic: ${topicName}, level: ${targetLevel}, limit: ${limit}, userId: ${userId}`);
-
-      // Get learned word IDs efficiently with cache - FIX: Sử dụng getMany() thay vì getRawMany()
       const learnedRecords = await this.userVocabularyRepository
         .createQueryBuilder('uv')
         .select(['uv.vocabularyId'])
         .where('uv.userId = :userId', { userId })
-        .cache(60000) // Cache for 1 minute
+        .cache(60000)
         .getMany();
 
       const learnedIds = learnedRecords.map(record => record.vocabularyId);
 
-      console.log(`📖 User has learned ${learnedIds.length} words`);
-
-      // Fallback to direct database query with optimized approach using topics table
-      console.log(`⚠️ Using optimized database query with topics table`);
-
-      // Use EXISTS clause for better performance instead of NOT IN
       let queryBuilder = this.vocabularyRepository
         .createQueryBuilder('v')
         .innerJoin('v.topicEntity', 'topic')
         .where('topic.name = :topicName', { topicName })
         .andWhere('v.level = :level', { level: targetLevel });
 
-      // Use EXISTS instead of NOT IN for better performance
       if (learnedIds.length > 0) {
         queryBuilder = queryBuilder.andWhere(
           'NOT EXISTS (SELECT 1 FROM user_vocabulary uv WHERE uv."vocabularyId" = v.id AND uv."userId" = :userId)',
@@ -619,26 +568,6 @@ export class LearningService {
         .limit(limit)
         .getMany();
 
-      console.log(`✅ Found ${result.length} new words for learning`);
-
-      if (result.length === 0) {
-        // Debug: Check if there are any words for this topic and level using topics table
-        const totalWordsForTopicLevel = await this.vocabularyRepository
-          .createQueryBuilder('v')
-          .innerJoin('v.topicEntity', 'topic')
-          .where('topic.name = :topicName', { topicName })
-          .andWhere('v.level = :level', { level: targetLevel })
-          .getCount();
-        console.log(`🔍 Debug: Total words for topic '${topicName}' and level '${targetLevel}': ${totalWordsForTopicLevel}`);
-
-        // Debug: Check if there are any words for this topic (any level)
-        const totalWordsForTopic = await this.vocabularyRepository
-          .createQueryBuilder('v')
-          .innerJoin('v.topicEntity', 'topic')
-          .where('topic.name = :topicName', { topicName })
-          .getCount();
-        console.log(`🔍 Debug: Total words for topic '${topicName}' (any level): ${totalWordsForTopic}`);
-      }
 
       return result;
     } catch (error) {
@@ -779,8 +708,87 @@ export class LearningService {
     };
   }
 
-  // Get user progress by multiple topics - NEW method for batch progress loading
+  // Get user progress by multiple topics - UPDATED to use topics table
   async getUserProgressByMultipleTopics(userId: number, topicNames: string[], level?: string) {
+    try {
+      // Build a single optimized query instead of N separate queries
+      let query = this.userVocabularyRepository
+        .createQueryBuilder('uv')
+        .leftJoin('uv.vocabulary', 'v')
+        .leftJoin('v.topicEntity', 'topic')
+        .select([
+          'topic.name as topicName',
+          'uv.status as status',
+          'COUNT(*) as count'
+        ])
+        .where('uv.userId = :userId', { userId })
+        .andWhere('topic.name IN (:...topicNames)', { topicNames })
+        .groupBy('topic.name, uv.status');
+
+      if (level) {
+        query = query.andWhere('v.level = :level', { level });
+      }
+
+      const rawResults = await query.getRawMany();
+
+      // Process results into the expected format
+      const progressMap: Record<string, any> = {};
+
+      // Initialize all topics with zero values
+      topicNames.forEach(topicName => {
+        progressMap[topicName] = {
+          topic: topicName,
+          totalLearned: 0,
+          mastered: 0,
+          learning: 0,
+          difficult: 0,
+          masteryPercentage: 0,
+          level
+        };
+      });
+
+      // Aggregate the raw results
+      rawResults.forEach(row => {
+        const topicName = row.topicname;
+        const status = row.status;
+        const count = parseInt(row.count);
+
+        if (progressMap[topicName]) {
+          progressMap[topicName].totalLearned += count;
+
+          switch (status) {
+            case LearningStatus.MASTERED:
+              progressMap[topicName].mastered = count;
+              break;
+            case LearningStatus.LEARNING:
+              progressMap[topicName].learning = count;
+              break;
+            case LearningStatus.DIFFICULT:
+              progressMap[topicName].difficult = count;
+              break;
+          }
+        }
+      });
+
+      // Calculate mastery percentages
+      Object.values(progressMap).forEach((progress: any) => {
+        if (progress.totalLearned > 0) {
+          progress.masteryPercentage = Math.round((progress.mastered / progress.totalLearned) * 100);
+        }
+      });
+
+      return progressMap;
+
+    } catch (error) {
+      console.error('Error in optimized getUserProgressByMultipleTopics:', error);
+
+      // Fallback to the original method if optimized version fails
+      return this.getUserProgressByMultipleTopicsLegacy(userId, topicNames, level);
+    }
+  }
+
+  // Legacy method as fallback
+  private async getUserProgressByMultipleTopicsLegacy(userId: number, topicNames: string[], level?: string) {
     const progressPromises = topicNames.map(async (topicName) => {
       try {
         let query = this.userVocabularyRepository
@@ -895,20 +903,20 @@ export class LearningService {
           });
         }
       } else {
-        // Multiple choice questions
-        const wrongAnswers = await this.vocabularyRepository
-          .createQueryBuilder('v')
-          .where('v.id != :correctId', { correctId: word.id })
-          .orderBy('RANDOM()')
-          .take(3)
-          .getMany();
+        // Multiple choice questions - IMPROVED: Use same topic answers first
+        const wrongAnswers = await this.getWrongAnswersForQuestion(
+          word.id,
+          questionType,
+          word.topicId, // Pass topicId to prioritize same topic answers
+          3
+        );
 
         if (questionType === 'en-to-vi') {
           const options = [
             { id: 1, text: word.meaning, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.meaning || 'Đáp án sai 1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.meaning || 'Đáp án sai 2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.meaning || 'Đáp án sai 3', isCorrect: false },
+            { id: 2, text: wrongAnswers[0], isCorrect: false },
+            { id: 3, text: wrongAnswers[1], isCorrect: false },
+            { id: 4, text: wrongAnswers[2], isCorrect: false },
           ].sort(() => Math.random() - 0.5);
 
           testQuestions.push({
@@ -920,13 +928,14 @@ export class LearningService {
             correctAnswerId: options.find(opt => opt.isCorrect)?.id,
             word: word.word,
             pronunciation: word.pronunciation,
+            topicId: word.topicId, // Add topicId here
           });
         } else {
           const options = [
             { id: 1, text: word.word, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.word || 'wrong1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.word || 'wrong2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.word || 'wrong3', isCorrect: false },
+            { id: 2, text: wrongAnswers[0], isCorrect: false },
+            { id: 3, text: wrongAnswers[1], isCorrect: false },
+            { id: 4, text: wrongAnswers[2], isCorrect: false },
           ].sort(() => Math.random() - 0.5);
 
           testQuestions.push({
@@ -938,6 +947,7 @@ export class LearningService {
             correctAnswerId: options.find(opt => opt.isCorrect)?.id,
             meaning: word.meaning,
             pronunciation: word.pronunciation,
+            topicId: word.topicId, // Add topicId here
           });
         }
       }
@@ -946,163 +956,33 @@ export class LearningService {
     return testQuestions;
   }
 
-  // Submit test results
-  async submitTestResults(userId: number, testResults: any[]) {
-    let correctAnswers = 0;
+  // Generate test questions by topicId
+  async generateTestByTopicId(
+    userId: number,
+    topicId: number,
+    count: number = 10,
+    mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed',
+    inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice',
+    level?: string
+  ) {
+    const learnedWords = await this.userVocabularyRepository.find({
+      where: { userId },
+      relations: ['vocabulary'],
+      take: count * 3,
+      order: { lastReviewedAt: 'DESC' },
+    });
 
-    for (const result of testResults) {
-      const isCorrect = result.selectedOptionId === result.correctOptionId;
-      if (isCorrect) correctAnswers++;
+    const topicWords = learnedWords.filter(userVocab => userVocab.vocabulary.topicId === topicId);
 
-      // Update vocabulary stats based on test performance
-      await this.processStudySession(userId, {
-        vocabularyId: result.vocabularyId,
-        quality: isCorrect ? 4 : 2,
-        responseTime: result.timeSpent,
-      });
-    }
-
-    const testScore = Math.round((correctAnswers / testResults.length) * 100);
-
-    // Update user test statistics
-    await this.updateUserTestStats(userId, testScore);
-
-    return {
-      totalQuestions: testResults.length,
-      correctAnswers,
-      percentage: testScore,
-    };
-  }
-
-  // Update user statistics - called when user learns new words or reviews
-  private async updateUserStats(userId: number, isNewWord: boolean = false) {
-    try {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-      if (!user) return;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const now = new Date();
-
-      // Get the previous lastStudyDate before updating
-      const previousLastStudyDate = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
-
-      // Update lastStudyDate
-      user.lastStudyDate = now;
-
-      // Update streak logic based on PREVIOUS lastStudyDate
-      if (previousLastStudyDate) {
-        const lastStudyDate = new Date(previousLastStudyDate);
-        lastStudyDate.setHours(0, 0, 0, 0);
-
-        const diffTime = today.getTime() - lastStudyDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        console.log(`🔄 Streak calculation: lastStudy=${lastStudyDate.toISOString()}, today=${today.toISOString()}, diffDays=${diffDays}`);
-
-        if (diffDays === 0) {
-          // Same day - no change to streak
-          console.log(`📅 Same day study - streak unchanged: ${user.currentStreak}`);
-        } else if (diffDays === 1) {
-          // Consecutive day - increment streak
-          user.currentStreak += 1;
-          user.longestStreak = Math.max(user.longestStreak, user.currentStreak);
-          console.log(`🔥 Streak incremented: ${user.currentStreak}`);
-        } else if (diffDays > 1) {
-          // Streak broken - reset to 1
-          console.log(`💔 Streak broken after ${diffDays} days - reset to 1`);
-          user.currentStreak = 1;
-          user.longestStreak = Math.max(user.longestStreak, user.currentStreak);
-        }
-      } else {
-        // First time studying
-        user.currentStreak = 1;
-        user.longestStreak = 1;
-        console.log(`🌟 First time studying - streak set to 1`);
-      }
-
-      // Update total words learned if it's a new word
-      if (isNewWord) {
-        user.totalWordsLearned += 1;
-        console.log(`📚 New word learned! Total: ${user.totalWordsLearned}`);
-      }
-
-      // Sync totalWordsLearned with actual database count to ensure accuracy
-      const actualTotalLearned = await this.userVocabularyRepository
-        .createQueryBuilder('uv')
-        .select('SUM(CASE WHEN uv.status != :newStatus THEN 1 ELSE 0 END)', 'count')
-        .where('uv.userId = :userId', { userId })
-        .setParameter('newStatus', LearningStatus.NEW)
-        .getRawOne();
-
-      const actualCount = parseInt(actualTotalLearned?.count) || 0;
-
-      // Only update if there's a significant difference to avoid unnecessary updates
-      if (Math.abs(user.totalWordsLearned - actualCount) > 0) {
-        console.log(`🔄 Syncing totalWordsLearned: ${user.totalWordsLearned} -> ${actualCount}`);
-        user.totalWordsLearned = actualCount;
-      }
-
-      await this.userRepository.save(user);
-
-      console.log(`✅ Updated user stats for user ${userId}: streak=${user.currentStreak}, totalWords=${user.totalWordsLearned}, lastStudy=${user.lastStudyDate}`);
-    } catch (error) {
-      console.error('❌ Error updating user stats:', error);
-    }
-  }
-
-  // Update user test statistics
-  private async updateUserTestStats(userId: number, testScore: number) {
-    try {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-      if (!user) return;
-
-      // Update test statistics
-      user.totalTestsTaken += 1;
-
-      // Calculate new average score
-      const totalScore = user.averageTestScore * (user.totalTestsTaken - 1) + testScore;
-      user.averageTestScore = Math.round(totalScore / user.totalTestsTaken);
-
-      // Update lastStudyDate for test activities too
-      user.lastStudyDate = new Date();
-
-      await this.userRepository.save(user);
-
-      console.log(`✅ Updated user test stats for user ${userId}: totalTests=${user.totalTestsTaken}, avgScore=${user.averageTestScore}`);
-    } catch (error) {
-      console.error('❌ Error updating user test stats:', error);
-    }
-  }
-
-  // Generate test by topic - UPDATED to use topics table
-  async generateTestByTopic(userId: number, topicName: string, count: number = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) {
-    // Get learned words for this specific topic using topics table
-    let query = this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .leftJoinAndSelect('uv.vocabulary', 'v')
-      .innerJoin('v.topicEntity', 'topic')
-      .where('uv.userId = :userId', { userId })
-      .andWhere('topic.name = :topicName', { topicName })
-      .andWhere('uv.status != :status', { status: LearningStatus.NOT_LEARNED });
-
-    if (level) {
-      query = query.andWhere('v.level = :level', { level });
-    }
-
-    const learnedWords = await query
-      .orderBy('uv.lastReviewedAt', 'DESC')
-      .take(count * 2) // Get more words to ensure we have enough for the test
-      .getMany();
-
-    if (learnedWords.length === 0) {
+    if (topicWords.length === 0) {
       return [];
     }
 
     const testQuestions = [];
+    const selectedWords = topicWords.slice(0, Math.min(count, topicWords.length));
 
-    for (let i = 0; i < Math.min(count, learnedWords.length); i++) {
-      const userVocab = learnedWords[i];
+    for (let i = 0; i < selectedWords.length; i++) {
+      const userVocab = selectedWords[i];
       const word = userVocab.vocabulary;
 
       // Determine question type based on mode
@@ -1132,6 +1012,7 @@ export class LearningService {
             correctAnswer: word.meaning.toLowerCase().trim(),
             word: word.word,
             pronunciation: word.pronunciation,
+            topicId: word.topicId,
           });
         } else {
           testQuestions.push({
@@ -1142,54 +1023,55 @@ export class LearningService {
             correctAnswer: word.word.toLowerCase().trim(),
             meaning: word.meaning,
             pronunciation: word.pronunciation,
+            topicId: word.topicId,
           });
         }
       } else {
         // Multiple choice questions
-        const wrongAnswers = await this.vocabularyRepository
-          .createQueryBuilder('v')
-          .where('v.id != :correctId', { correctId: word.id })
-          .orderBy('RANDOM()')
-          .take(3)
-          .getMany();
+        const wrongAnswers = await this.getWrongAnswersForQuestion(
+          word.id,
+          questionType,
+          word.topicId,
+          3
+        );
 
         if (questionType === 'en-to-vi') {
           const options = [
             { id: 1, text: word.meaning, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.meaning || 'Đáp án sai 1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.meaning || 'Đáp án sai 2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.meaning || 'Đáp án sai 3', isCorrect: false },
+            { id: 2, text: wrongAnswers[0], isCorrect: false },
+            { id: 3, text: wrongAnswers[1], isCorrect: false },
+            { id: 4, text: wrongAnswers[2], isCorrect: false },
           ].sort(() => Math.random() - 0.5);
 
           testQuestions.push({
             vocabularyId: word.id,
             questionType: 'en-to-vi',
             inputType: 'multiple-choice',
-            question: `Nghĩa của từ "${word.word}" trong chủ đề "${topicName}" là gì?`,
+            question: `Nghĩa của từ "${word.word}" là gì?`,
             options,
             correctAnswerId: options.find(opt => opt.isCorrect)?.id,
             word: word.word,
             pronunciation: word.pronunciation,
-            topic: topicName,
+            topicId: word.topicId,
           });
         } else {
           const options = [
             { id: 1, text: word.word, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.word || 'word1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.word || 'word2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.word || 'word3', isCorrect: false },
+            { id: 2, text: wrongAnswers[0], isCorrect: false },
+            { id: 3, text: wrongAnswers[1], isCorrect: false },
+            { id: 4, text: wrongAnswers[2], isCorrect: false },
           ].sort(() => Math.random() - 0.5);
 
           testQuestions.push({
             vocabularyId: word.id,
             questionType: 'vi-to-en',
             inputType: 'multiple-choice',
-            question: `Từ tiếng Anh của "${word.meaning}" trong chủ đề "${topicName}" là gì?`,
+            question: `Từ tiếng Anh của "${word.meaning}" là gì?`,
             options,
             correctAnswerId: options.find(opt => opt.isCorrect)?.id,
             meaning: word.meaning,
             pronunciation: word.pronunciation,
-            topic: topicName,
+            topicId: word.topicId,
           });
         }
       }
@@ -1198,341 +1080,124 @@ export class LearningService {
     return testQuestions;
   }
 
-  // Get new words for learning by topic ID - UPDATED to use topicId
-  async getNewWordsForLearningByTopicId(userId: number, topicId: number, limit: number = 10, level?: string) {
+  // Submit test results - OPTIMIZED VERSION
+  async submitTestResults(userId: number, testResults: any[]) {
     try {
-      // Get user's level if not provided, but prioritize the level parameter from FE
-      let targetLevel = level; // Use level from FE if provided
-      if (!targetLevel) {
-        const user = await this.userRepository.findOne({
-          where: { id: userId },
-          select: ['level'],
-          cache: 300000 // Cache for 5 minutes
+      if (!testResults || testResults.length === 0) {
+        return {
+          totalQuestions: 0,
+          correctAnswers: 0,
+          percentage: 0,
+        };
+      }
+
+      let correctAnswers = 0;
+
+      // Calculate correct answers first
+      testResults.forEach(result => {
+        const isCorrect = result.selectedOptionId === result.correctOptionId;
+        if (isCorrect) correctAnswers++;
+      });
+
+      // Calculate test score BEFORE the transaction
+      const testScore = Math.round((correctAnswers / testResults.length) * 100);
+
+      // Batch process all vocabulary updates in a single transaction
+      await this.userVocabularyRepository.manager.transaction(async manager => {
+        // Get all vocabulary IDs from test results
+        const vocabularyIds = testResults.map(result => result.vocabularyId);
+
+        // Fetch all existing records in a single query
+        const existingRecords = await manager.find(UserVocabulary, {
+          where: {
+            userId,
+            vocabularyId: In(vocabularyIds)
+          }
         });
-        targetLevel = user?.level || 'beginner';
-      }
 
-      console.log(`🔍 Getting words for topicId: ${topicId}, level: ${targetLevel}, limit: ${limit}, userId: ${userId}`);
+        // Create a map for quick lookup
+        const existingRecordsMap = new Map<number, UserVocabulary>();
+        existingRecords.forEach(record => {
+          existingRecordsMap.set(record.vocabularyId, record);
+        });
 
-      // Get learned word IDs efficiently with cache - FIX: Sử dụng getMany() thay vì getRawMany()
-      const learnedRecords = await this.userVocabularyRepository
-        .createQueryBuilder('uv')
-        .select(['uv.vocabularyId'])
-        .where('uv.userId = :userId', { userId })
-        .cache(60000) // Cache for 1 minute
-        .getMany();
+        // Prepare bulk updates and inserts
+        const recordsToUpdate: UserVocabulary[] = [];
+        const recordsToCreate: Partial<UserVocabulary>[] = [];
 
-      const learnedIds = learnedRecords.map(record => record.vocabularyId);
+        testResults.forEach(result => {
+          const isCorrect = result.selectedOptionId === result.correctOptionId;
+          const quality = isCorrect ? 4 : 2;
+          const existingRecord = existingRecordsMap.get(result.vocabularyId);
 
-      console.log(`📖 User has learned ${learnedIds.length} words`);
+          if (existingRecord) {
+            // Update existing record
+            existingRecord.reviewCount += 1;
+            existingRecord.correctCount += isCorrect ? 1 : 0;
+            existingRecord.incorrectCount += !isCorrect ? 1 : 0;
+            existingRecord.lastReviewedAt = new Date();
+            existingRecord.status = isCorrect ? LearningStatus.LEARNING : LearningStatus.DIFFICULT;
+            existingRecord.nextReviewDate = this.calculateNextReviewDate(quality, existingRecord.correctCount);
+            existingRecord.easeFactor = Math.max(1.3, existingRecord.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
 
-      // Use topicId instead of topic name
-      console.log(`⚠️ Using optimized database query with topicId`);
+            recordsToUpdate.push(existingRecord);
+          } else {
+            // Create new record
+            recordsToCreate.push({
+              userId,
+              vocabularyId: result.vocabularyId,
+              status: isCorrect ? LearningStatus.LEARNING : LearningStatus.DIFFICULT,
+              reviewCount: 1,
+              correctCount: isCorrect ? 1 : 0,
+              incorrectCount: !isCorrect ? 1 : 0,
+              easeFactor: 2.5,
+              interval: 1,
+              firstLearnedDate: new Date(),
+              nextReviewDate: this.calculateNextReviewDate(quality, isCorrect ? 1 : 0),
+              lastReviewedAt: new Date(),
+            });
+          }
+        });
 
-      // Use EXISTS clause for better performance instead of NOT IN
-      let queryBuilder = this.vocabularyRepository
-        .createQueryBuilder('v')
-        .where('v.topicId = :topicId', { topicId })
-        .andWhere('v.level = :level', { level: targetLevel });
+        // Execute bulk operations
+        if (recordsToUpdate.length > 0) {
+          await manager.save(UserVocabulary, recordsToUpdate);
+        }
 
-      // Use EXISTS instead of NOT IN for better performance
-      if (learnedIds.length > 0) {
-        queryBuilder = queryBuilder.andWhere(
-          'NOT EXISTS (SELECT 1 FROM user_vocabulary uv WHERE uv."vocabularyId" = v.id AND uv."userId" = :userId)',
-          { userId }
-        );
-      }
+        if (recordsToCreate.length > 0) {
+          await manager.save(UserVocabulary, recordsToCreate);
+        }
 
-      const result = await queryBuilder
-        .orderBy('RANDOM()')
-        .limit(limit)
-        .getMany();
+        // Update user test statistics within the same transaction
+        const user = await manager.findOne(User, { where: { id: userId } });
+        if (user) {
+          const currentTotalTests = user.totalTestsTaken || 0;
+          const currentAverageScore = user.averageTestScore || 0;
 
-      console.log(`✅ Found ${result.length} new words for learning`);
+          // Calculate new average score
+          const newTotalTests = currentTotalTests + 1;
+          const newAverageScore = ((currentAverageScore * currentTotalTests) + testScore) / newTotalTests;
 
-      if (result.length === 0) {
-        // Debug: Check if there are any words for this topicId and level
-        const totalWordsForTopicLevel = await this.vocabularyRepository
-          .createQueryBuilder('v')
-          .where('v.topicId = :topicId', { topicId })
-          .andWhere('v.level = :level', { level: targetLevel })
-          .getCount();
-        console.log(`🔍 Debug: Total words for topicId '${topicId}' and level '${targetLevel}': ${totalWordsForTopicLevel}`);
+          user.totalTestsTaken = newTotalTests;
+          user.averageTestScore = Math.round(newAverageScore * 100) / 100;
 
-        // Debug: Check if there are any words for this topicId (any level)
-        const totalWordsForTopic = await this.vocabularyRepository
-          .createQueryBuilder('v')
-          .where('v.topicId = :topicId', { topicId })
-          .getCount();
-        console.log(`🔍 Debug: Total words for topicId '${topicId}' (any level): ${totalWordsForTopic}`);
-      }
+          await manager.save(User, user);
+        }
+      });
 
-      return result;
+      const response = {
+        totalQuestions: testResults.length,
+        correctAnswers,
+        percentage: testScore,
+      };
+
+      return response;
     } catch (error) {
-      console.error('❌ Error getting new words for learning by topicId:', error);
+      console.error('❌ Error in submitTestResults:', error);
       throw error;
     }
   }
 
-  // Get words for review by topic ID - UPDATED to use topicId
-  async getWordsForReviewByTopicId(userId: number, topicId: number, limit: number = 20, level?: string) {
-    const now = new Date();
-
-    let query = this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .leftJoinAndSelect('uv.vocabulary', 'v')
-      .where('uv.userId = :userId', { userId })
-      .andWhere('uv.nextReviewDate < :now', { now })
-      .andWhere('uv.status = :status', { status: LearningStatus.LEARNING })
-      .andWhere('v.topicId = :topicId', { topicId });
-
-    if (level) {
-      query = query.andWhere('v.level = :level', { level });
-    }
-
-    return await query
-      .orderBy('uv.nextReviewDate', 'ASC')
-      .take(limit)
-      .getMany();
-  }
-
-  // Get review words by topic ID and period - UPDATED to use topicId
-  async getReviewWordsByTopicIdAndPeriod(userId: number, topicId: number, period: string, limit: number = 20, level?: string) {
-    const now = new Date();
-    let startDate: Date;
-    let endDate: Date = new Date();
-
-    // Calculate date ranges based on period
-    switch (period) {
-      case 'today':
-        startDate = new Date();
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 1);
-        break;
-      case 'yesterday':
-        endDate = new Date();
-        endDate.setHours(0, 0, 0, 0);
-        startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 1);
-        break;
-      case '7days':
-        endDate = new Date();
-        endDate.setHours(23, 59, 59, 999);
-        startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 7);
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case '30days':
-        endDate = new Date();
-        endDate.setHours(23, 59, 59, 999);
-        startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 30);
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'all':
-      default:
-        let query = this.userVocabularyRepository
-          .createQueryBuilder('uv')
-          .leftJoinAndSelect('uv.vocabulary', 'v')
-          .where('uv.userId = :userId', { userId })
-          .andWhere('v.topicId = :topicId', { topicId })
-          .andWhere('uv.status = :status', { status: LearningStatus.LEARNING });
-
-        if (level) {
-          query = query.andWhere('v.level = :level', { level });
-        }
-
-        const result = await query
-          .orderBy('uv.lastReviewedAt', 'ASC')
-          .take(limit)
-          .getMany();
-
-        return result.map(item => item.vocabulary);
-    }
-
-    // For specific time periods with topicId filter
-    let query = this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .leftJoinAndSelect('uv.vocabulary', 'v')
-      .where('uv.userId = :userId', { userId })
-      .andWhere('v.topicId = :topicId', { topicId })
-      .andWhere('uv.firstLearnedDate BETWEEN :startDate AND :endDate', { startDate, endDate })
-      .andWhere('uv.status = :status', { status: LearningStatus.LEARNING });
-
-    if (level) {
-      query = query.andWhere('v.level = :level', { level });
-    }
-
-    const result = await query
-      .orderBy('uv.firstLearnedDate', 'DESC')
-      .take(limit)
-      .getMany();
-
-    return result.map(item => item.vocabulary);
-  }
-
-  // Get user progress by topic ID - UPDATED to use topicId
-  async getUserProgressByTopicId(userId: number, topicId: number, level?: string) {
-    let query = this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .leftJoinAndSelect('uv.vocabulary', 'v')
-      .where('uv.userId = :userId', { userId })
-      .andWhere('v.topicId = :topicId', { topicId });
-
-    if (level) {
-      query = query.andWhere('v.level = :level', { level });
-    }
-
-    const filteredWords = await query.getMany();
-
-    const totalLearned = filteredWords.length;
-    const mastered = filteredWords.filter(uv => uv.status === LearningStatus.MASTERED).length;
-    const learning = filteredWords.filter(uv => uv.status === LearningStatus.LEARNING).length;
-    const difficult = filteredWords.filter(uv => uv.status === LearningStatus.DIFFICULT).length;
-
-    // Get topic name for response
-    const topic = await this.vocabularyRepository
-      .createQueryBuilder('v')
-      .leftJoinAndSelect('v.topicEntity', 'topic')
-      .where('v.topicId = :topicId', { topicId })
-      .select(['topic.name', 'topic.nameVi'])
-      .getOne();
-
-    return {
-      topicId,
-      topicName: topic?.topicEntity?.name || `Topic ${topicId}`,
-      topicNameVi: topic?.topicEntity?.nameVi || `Chủ đề ${topicId}`,
-      totalLearned,
-      mastered,
-      learning,
-      difficult,
-      masteryPercentage: totalLearned > 0 ? Math.round((mastered / totalLearned) * 100) : 0,
-      level
-    };
-  }
-
-  // Generate test by topic ID - UPDATED to use topicId
-  async generateTestByTopicId(userId: number, topicId: number, count: number = 10, mode: 'en-to-vi' | 'vi-to-en' | 'mixed' = 'mixed', inputType: 'multiple-choice' | 'text-input' | 'mixed' = 'multiple-choice', level?: string) {
-    // Get learned words for this specific topicId
-    let query = this.userVocabularyRepository
-      .createQueryBuilder('uv')
-      .leftJoinAndSelect('uv.vocabulary', 'v')
-      .where('uv.userId = :userId', { userId })
-      .andWhere('v.topicId = :topicId', { topicId })
-      .andWhere('uv.status != :status', { status: LearningStatus.NOT_LEARNED });
-
-    if (level) {
-      query = query.andWhere('v.level = :level', { level });
-    }
-
-    const learnedWords = await query
-      .orderBy('uv.lastReviewedAt', 'DESC')
-      .take(count * 2) // Get more words to ensure we have enough for the test
-      .getMany();
-
-    if (learnedWords.length === 0) {
-      return [];
-    }
-
-    const testQuestions = [];
-
-    for (let i = 0; i < Math.min(count, learnedWords.length); i++) {
-      const userVocab = learnedWords[i];
-      const word = userVocab.vocabulary;
-
-      // Determine question type based on mode
-      let questionType: 'en-to-vi' | 'vi-to-en';
-      if (mode === 'mixed') {
-        questionType = Math.random() > 0.5 ? 'en-to-vi' : 'vi-to-en';
-      } else {
-        questionType = mode;
-      }
-
-      // Determine input type
-      let currentInputType: 'multiple-choice' | 'text-input';
-      if (inputType === 'mixed') {
-        currentInputType = Math.random() > 0.5 ? 'multiple-choice' : 'text-input';
-      } else {
-        currentInputType = inputType;
-      }
-
-      if (currentInputType === 'text-input') {
-        // Text input questions
-        if (questionType === 'en-to-vi') {
-          testQuestions.push({
-            vocabularyId: word.id,
-            questionType: 'en-to-vi',
-            inputType: 'text-input',
-            question: `Nghĩa của từ "${word.word}" là gì?`,
-            correctAnswer: word.meaning.toLowerCase().trim(),
-            word: word.word,
-            pronunciation: word.pronunciation,
-          });
-        } else {
-          testQuestions.push({
-            vocabularyId: word.id,
-            questionType: 'vi-to-en',
-            inputType: 'text-input',
-            question: `Từ tiếng Anh của "${word.meaning}" là gì?`,
-            correctAnswer: word.word.toLowerCase().trim(),
-            meaning: word.meaning,
-            pronunciation: word.pronunciation,
-          });
-        }
-      } else {
-        // Multiple choice questions
-        const wrongAnswers = await this.vocabularyRepository
-          .createQueryBuilder('v')
-          .where('v.id != :correctId', { correctId: word.id })
-          .orderBy('RANDOM()')
-          .take(3)
-          .getMany();
-
-        if (questionType === 'en-to-vi') {
-          const options = [
-            { id: 1, text: word.meaning, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.meaning || 'Đáp án sai 1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.meaning || 'Đáp án sai 2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.meaning || 'Đáp án sai 3', isCorrect: false },
-          ].sort(() => Math.random() - 0.5);
-
-          testQuestions.push({
-            vocabularyId: word.id,
-            questionType: 'en-to-vi',
-            inputType: 'multiple-choice',
-            question: `Nghĩa của từ "${word.word}" trong chủ đề này là gì?`,
-            options,
-            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
-            word: word.word,
-            pronunciation: word.pronunciation,
-            topicId,
-          });
-        } else {
-          const options = [
-            { id: 1, text: word.word, isCorrect: true },
-            { id: 2, text: wrongAnswers[0]?.word || 'word1', isCorrect: false },
-            { id: 3, text: wrongAnswers[1]?.word || 'word2', isCorrect: false },
-            { id: 4, text: wrongAnswers[2]?.word || 'word3', isCorrect: false },
-          ].sort(() => Math.random() - 0.5);
-
-          testQuestions.push({
-            vocabularyId: word.id,
-            questionType: 'vi-to-en',
-            inputType: 'multiple-choice',
-            question: `Từ tiếng Anh của "${word.meaning}" trong chủ đề này là gì?`,
-            options,
-            correctAnswerId: options.find(opt => opt.isCorrect)?.id,
-            meaning: word.meaning,
-            pronunciation: word.pronunciation,
-            topicId,
-          });
-        }
-      }
-    }
-
-    return testQuestions;
-  }
 
   // Get words learned today
   async getTodayLearnedWords(userId: number): Promise<any[]> {
@@ -1593,5 +1258,135 @@ export class LearningService {
       incorrectCount: uv.incorrectCount,
       reviewCount: uv.reviewCount,
     }));
+  }
+
+  // Update user statistics - called when user learns new words or reviews
+  private async updateUserStats(userId: number, isNewWord: boolean = false) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const now = new Date();
+
+      // Get the previous lastStudyDate before updating
+      const previousLastStudyDate = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
+      const previousLastStudyDateOnly = previousLastStudyDate ? new Date(previousLastStudyDate.getFullYear(), previousLastStudyDate.getMonth(), previousLastStudyDate.getDate()) : null;
+
+      // Check if this is a new study day
+      const isNewStudyDay = !previousLastStudyDateOnly || previousLastStudyDateOnly.getTime() !== today.getTime();
+
+      if (isNewStudyDay) {
+        // Check if it's consecutive (yesterday)
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (previousLastStudyDateOnly && previousLastStudyDateOnly.getTime() === yesterday.getTime()) {
+          // Consecutive day - increment streak
+          user.currentStreak = (user.currentStreak || 0) + 1;
+        } else {
+          // Not consecutive - reset streak to 1
+          user.currentStreak = 1;
+        }
+
+        // Update longest streak if current is longer
+        user.longestStreak = Math.max(user.longestStreak || 0, user.currentStreak);
+      }
+
+      // Update last study date
+      user.lastStudyDate = now;
+
+      // Update total words learned count if it's a new word
+      if (isNewWord) {
+        user.totalWordsLearned = (user.totalWordsLearned || 0) + 1;
+      }
+
+      await this.userRepository.save(user);
+    } catch (error) {
+      console.error('Error updating user stats:', error);
+    }
+  }
+
+  // Update user test statistics
+  private async updateUserTestStats(userId: number, testScore: number) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) return;
+
+      const currentTotalTests = user.totalTestsTaken || 0;
+      const currentAverageScore = user.averageTestScore || 0;
+
+      // Calculate new average score
+      const newTotalTests = currentTotalTests + 1;
+      const newAverageScore = ((currentAverageScore * currentTotalTests) + testScore) / newTotalTests;
+
+      user.totalTestsTaken = newTotalTests;
+      user.averageTestScore = Math.round(newAverageScore * 100) / 100; // Round to 2 decimal places
+
+      await this.userRepository.save(user);
+    } catch (error) {
+      console.error('Error updating user test stats:', error);
+    }
+  }
+
+  // Get wrong answers for multiple choice questions
+  private async getWrongAnswersForQuestion(
+    vocabularyId: number,
+    questionType: 'en-to-vi' | 'vi-to-en',
+    topicId?: number,
+    count: number = 3
+  ): Promise<string[]> {
+    try {
+      let queryBuilder = this.vocabularyRepository
+        .createQueryBuilder('v')
+        .where('v.id != :vocabularyId', { vocabularyId });
+
+      // Prioritize same topic if topicId is provided
+      if (topicId) {
+        queryBuilder = queryBuilder
+          .orderBy(`CASE WHEN v.topicId = :topicId THEN 0 ELSE 1 END`, 'ASC')
+          .addOrderBy('RANDOM()')
+          .setParameter('topicId', topicId);
+      } else {
+        queryBuilder = queryBuilder.orderBy('RANDOM()');
+      }
+
+      const randomWords = await queryBuilder
+        .take(count * 2) // Get more than needed as fallback
+        .getMany();
+
+      const wrongAnswers: string[] = [];
+
+      for (const word of randomWords) {
+        if (wrongAnswers.length >= count) break;
+
+        const answer = questionType === 'en-to-vi' ? word.meaning : word.word;
+        if (answer && !wrongAnswers.includes(answer)) {
+          wrongAnswers.push(answer);
+        }
+      }
+
+      // If we don't have enough wrong answers, fill with generic ones
+      while (wrongAnswers.length < count) {
+        if (questionType === 'en-to-vi') {
+          const genericAnswers = ['không biết', 'khác', 'khác nữa'];
+          wrongAnswers.push(genericAnswers[wrongAnswers.length % genericAnswers.length]);
+        } else {
+          const genericAnswers = ['unknown', 'other', 'different'];
+          wrongAnswers.push(genericAnswers[wrongAnswers.length % genericAnswers.length]);
+        }
+      }
+
+      return wrongAnswers.slice(0, count);
+    } catch (error) {
+      console.error('Error getting wrong answers:', error);
+      // Return fallback answers
+      if (questionType === 'en-to-vi') {
+        return ['không biết', 'khác', 'khác nữa'].slice(0, count);
+      } else {
+        return ['unknown', 'other', 'different'].slice(0, count);
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Put, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, ParseIntPipe, UseGuards, Request, Query } from '@nestjs/common';
 import { TopicService } from './topic.service';
 import { Topic } from '../database/entities/topic.entity';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @Controller('topics')
 export class TopicController {
@@ -14,6 +15,16 @@ export class TopicController {
   @Get('with-counts')
   async getTopicsWithCounts(): Promise<Topic[]> {
     return this.topicService.getTopicsWithCounts();
+  }
+
+  @Post('with-counts-and-progress')
+  @UseGuards(JwtAuthGuard)
+  async getTopicsWithCountsAndProgress(
+    @Request() req,
+    @Body() body: { selectedTopics: string[] },
+    @Query('level') level?: string
+  ): Promise<any[]> {
+    return this.topicService.getTopicsWithCountsAndProgress(req.user.userId, body.selectedTopics, level);
   }
 
   @Get(':id')
